@@ -1,4 +1,0 @@
-Demo credentials to test it:
-
-Admin → admin@phishguard.com / admin123
-Employee → employee@phishguard.com / emp123
