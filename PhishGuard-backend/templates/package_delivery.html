@@ -1,0 +1,39 @@
+<!--
+  Template: Package Delivery Alert
+  Category: Delivery
+  Difficulty: Easy
+  Description: Fake delivery notification requesting payment to reschedule delivery
+-->
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
+  <div style="background:#4d148c;padding:16px 20px;border-radius:8px 8px 0 0">
+    <p style="color:#ff6600;font-weight:900;margin:0;font-size:20px">📦 FedEx</p>
+  </div>
+  <div style="border:1px solid #ddd;border-top:none;padding:24px;border-radius:0 0 8px 8px">
+    <p>Dear {{.FirstName}},</p>
+    <p>We attempted to deliver your package today
+    <strong>(Tracking: FX-2840-9912-KL)</strong> but no one was available to receive it.</p>
+    <p>Your package will be <strong>returned to the sender in 48 hours</strong> unless you
+    take action to reschedule your delivery.</p>
+    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;margin:16px 0">
+      <p style="margin:0 0 8px 0"><strong>Package Details:</strong></p>
+      <p style="margin:0;font-size:14px;color:#666">
+        Tracking Number: FX-2840-9912-KL<br/>
+        Status: Delivery Attempted<br/>
+        Redelivery Fee: <strong>$2.99</strong>
+      </p>
+    </div>
+    <p style="text-align:center;margin:30px 0">
+      <a href="{{.URL}}" style="background:#4d148c;color:#fff;padding:12px 28px;
+      border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block">
+        Reschedule My Delivery — $2.99
+      </a>
+    </p>
+    <p style="font-size:12px;color:#999;border-top:1px solid #eee;padding-top:12px;margin-top:20px">
+      FedEx Delivery Services · Failure to pay within 48 hours will result in
+      your package being returned. {{.Tracker}}
+    </p>
+  </div>
+</body>
+</html>

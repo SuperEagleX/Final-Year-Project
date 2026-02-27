@@ -1,0 +1,39 @@
+<!--
+  Template: Microsoft 365 Suspension
+  Category: Credential Harvest
+  Difficulty: Hard
+  Description: Convincing Microsoft branding claiming account suspension to steal credentials
+-->
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
+  <div style="padding:16px 0;border-bottom:2px solid #00a4ef;margin-bottom:20px">
+    <p style="margin:0;font-size:22px;font-weight:700">
+      <span style="color:#f35325">■</span>
+      <span style="color:#81bc06">■</span>
+      <span style="color:#05a6f0">■</span>
+      <span style="color:#ffba08">■</span>
+      &nbsp;<strong style="color:#00a4ef">Microsoft</strong>
+    </p>
+  </div>
+  <p>Dear {{.FirstName}},</p>
+  <p>We detected unusual sign-in activity on your Microsoft account from an unrecognised device.
+  To protect your organisation your access to <strong>Microsoft 365, Teams, SharePoint and
+  OneDrive</strong> has been temporarily suspended.</p>
+  <div style="background:#fff3cd;border-left:4px solid #ffc107;padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0">
+    <strong>⚠️ You must verify your identity within 2 hours</strong> or your account will be
+    permanently deactivated.
+  </div>
+  <p style="text-align:center;margin:30px 0">
+    <a href="{{.URL}}" style="background:#0052cc;color:#fff;padding:12px 28px;
+    border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block">
+      Verify My Identity Now
+    </a>
+  </p>
+  <p>Reference ID: MS-SEC-{{.RId}}</p>
+  <p style="font-size:12px;color:#999;border-top:1px solid #eee;padding-top:12px;margin-top:20px">
+    Microsoft Account Security Team · microsoft.com
+    This is an automated security alert. Do not reply. {{.Tracker}}
+  </p>
+</body>
+</html>

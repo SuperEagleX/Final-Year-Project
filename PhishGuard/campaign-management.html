@@ -296,12 +296,15 @@
   </a>
   <div class="sidebar-footer">
     <div class="user-chip">
-      <div class="avatar">SA</div>
-      <div class="user-info">
-        <div class="user-name">Super Admin</div>
-        <div class="user-role">Administrator</div>
-      </div>
-    </div>
+  <div class="avatar">SA</div>
+  <div style="flex:1">
+    <div class="user-name">Super Admin</div>
+    <div class="user-role">Administrator</div>
+  </div>
+  <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+  </button>
+</div>
   </div>
 </aside>
 
@@ -643,36 +646,64 @@ async function init() {
   await loadCampaigns();
 }
 
-// ── Load real campaigns from API ────────────────────────────────────────
+// ── Load campaigns from API ─────────────────────────────────────────────
 async function loadCampaigns() {
   try {
     const campaigns = await apiFetch('campaigns');
-    console.log(`✅ ${campaigns.length} campaigns loaded`);
-    // You can extend this to dynamically render campaign cards
+    console.log(`✅ ${campaigns.length} campaigns loaded from API`);
   } catch(e) {
-    console.warn('⚠️ Using demo campaigns');
+    console.warn('⚠️ Using demo campaigns — API not reachable');
   }
 }
 
-// ── Launch campaign via YOUR API ────────────────────────────────────────
+// ── Send campaign emails via GoPhish ────────────────────────────────────
+async function sendCampaignEmails(campaignId, campaignName) {
+  if (!confirm(`Send phishing emails for "${campaignName}"?\n\nThis will send real emails to all targets via GoPhish.`)) return;
+
+  showToast('📧 Pushing to GoPhish and sending emails...', 'success');
+
+  try {
+    const result = await apiFetch(`campaigns/${campaignId}/send`, 'POST', {});
+    showToast(`✅ ${result.targets} phishing emails queued via GoPhish!`, 'success');
+    console.log('✅ Campaign launched:', result);
+  } catch(err) {
+    showToast(`❌ Failed: ${err.message}`, 'error');
+    console.error('❌ sendCampaignEmails error:', err);
+  }
+}
+
+// ── Update campaign status ──────────────────────────────────────────────
+async function updateCampaignStatus(campaignId, status) {
+  try {
+    await apiFetch(`campaigns/${campaignId}/status`, 'PUT', { status });
+    showToast(`✅ Campaign marked as ${status}`, 'success');
+  } catch(e) {
+    showToast('❌ Could not update status', 'error');
+  }
+}
+
+// ── Launch campaign (called from modal step 3) ──────────────────────────
 async function launchCampaign() {
   const btn = document.getElementById('nextBtn');
   btn.textContent = '⏳ Launching...';
   btn.disabled = true;
 
   try {
-    const name        = document.querySelector('#step1 input[type="text"]').value || 'New Campaign';
+    const name        = document.querySelector('#step1 input[type="text"]')?.value || 'New Campaign';
     const senderName  = document.querySelectorAll('#step1 input[type="text"]')[1]?.value || 'IT Support';
     const senderEmail = document.querySelector('#step1 input[type="email"]')?.value || 'it@company.com';
     const startDate   = document.querySelectorAll('#step1 input[type="date"]')[0]?.value || '';
     const endDate     = document.querySelectorAll('#step1 input[type="date"]')[1]?.value || '';
-    const template    = document.querySelector('.template-option.selected .template-option-name')?.textContent || '';
+    const template    = document.querySelector('.template-option.selected .template-option-name')?.textContent || 'IT Password Reset';
 
-    // Step 1 — Create the campaign
+    // Step 1 — Create campaign in YOUR database
     const campaign = await apiFetch('campaigns', 'POST', {
-      name, template, sender_name: senderName,
-      sender_email: senderEmail, start_date: startDate,
-      end_date: endDate, status: 'active'
+      name, template,
+      sender_name:  senderName,
+      sender_email: senderEmail,
+      start_date:   startDate,
+      end_date:     endDate,
+      status:       'draft',
     });
 
     // Step 2 — Upload employees to that campaign
@@ -683,19 +714,22 @@ async function launchCampaign() {
       });
     }
 
+    // Step 3 — Trigger GoPhish to send emails
+    await sendCampaignEmails(campaign.campaign_id, name);
+
     closeModal();
-    showToast(`✅ Campaign "${name}" launched successfully!`, 'success');
+    showToast(`✅ Campaign "${name}" launched!`, 'success');
     await loadCampaigns();
 
   } catch(err) {
-    showToast('❌ Could not launch campaign — check API is running', 'error');
-    console.error(err);
+    showToast(`❌ Could not launch — ${err.message}`, 'error');
+    console.error('❌ launchCampaign error:', err);
     btn.textContent = '🚀 Launch Campaign';
     btn.disabled = false;
   }
 }
 
-// ── CSV Upload handler ──────────────────────────────────────────────────
+// ── CSV Upload ──────────────────────────────────────────────────────────
 function handleCSV(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -707,7 +741,10 @@ function handleCSV(event) {
     const emailIdx = headers.indexOf('email');
     const deptIdx  = headers.indexOf('department');
 
-    if (emailIdx === -1) { showToast('❌ CSV must have an email column', 'error'); return; }
+    if (emailIdx === -1) {
+      showToast('❌ CSV must have an email column', 'error');
+      return;
+    }
 
     uploadedEmployees = [];
     lines.slice(1).forEach(line => {
@@ -728,18 +765,59 @@ function handleCSV(event) {
   reader.readAsText(file);
 }
 
+// ── Drag and drop ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('uploadZone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--accent)';
+  });
+  zone.addEventListener('dragleave', () => {
+    zone.style.borderColor = '';
+  });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file?.name.endsWith('.csv')) {
+      handleCSV({ target: { files: [file] } });
+    } else {
+      showToast('❌ Please drop a valid .csv file', 'error');
+    }
+  });
+});
+
 // ── Modal step logic ────────────────────────────────────────────────────
-function openModal()   { document.getElementById('modalOverlay').classList.add('open'); currentStep = 1; renderStep(); }
-function closeModal()  { document.getElementById('modalOverlay').classList.remove('open'); }
-function closeOnBg(e)  { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  currentStep = 1;
+  renderStep();
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function closeOnBg(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
 
 function renderStep() {
-  for (let i = 1; i <= 3; i++) document.getElementById('step'+i).style.display = i === currentStep ? 'block' : 'none';
-  ['s1','s2','s3'].forEach((id,idx) => {
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('step' + i).style.display = i === currentStep ? 'block' : 'none';
+  }
+  ['s1','s2','s3'].forEach((id, idx) => {
     const el = document.getElementById(id);
-    el.classList.remove('active','done');
-    if (idx+1 < currentStep) { el.classList.add('done'); el.querySelector('.step-circle').innerHTML = '✓'; }
-    else { if (idx+1 === currentStep) el.classList.add('active'); el.querySelector('.step-circle').innerHTML = idx+1; }
+    if (!el) return;
+    el.classList.remove('active', 'done');
+    if (idx + 1 < currentStep) {
+      el.classList.add('done');
+      el.querySelector('.step-circle').innerHTML = '✓';
+    } else {
+      if (idx + 1 === currentStep) el.classList.add('active');
+      el.querySelector('.step-circle').innerHTML = idx + 1;
+    }
   });
   document.getElementById('stepNum').textContent = currentStep;
   document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
@@ -747,39 +825,40 @@ function renderStep() {
 }
 
 async function nextStep() {
-  if (currentStep < 3) { currentStep++; renderStep(); }
-  else { await launchCampaign(); }
+  if (currentStep < 3) {
+    currentStep++;
+    renderStep();
+  } else {
+    await launchCampaign();
+  }
 }
-function prevStep() { if (currentStep > 1) { currentStep--; renderStep(); } }
+
+function prevStep() {
+  if (currentStep > 1) {
+    currentStep--;
+    renderStep();
+  }
+}
 
 function selectTemplate(el) {
   document.querySelectorAll('.template-option').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
 }
+
 function selectSchedule(el) {
   document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
 }
+
 function setTab(el) {
   document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
 }
 
-// ── Drag and drop ───────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const zone = document.getElementById('uploadZone');
-  if (!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor='var(--accent)'; });
-  zone.addEventListener('dragleave', () => { zone.style.borderColor=''; });
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.style.borderColor='';
-    const file = e.dataTransfer.files[0];
-    if (file?.name.endsWith('.csv')) handleCSV({ target: { files: [file] } });
-    else showToast('❌ Please drop a valid .csv file', 'error');
-  });
-});
-
-function logout() { clearSession(); window.location.href = 'login.html'; }
+function logout() {
+  clearSession();
+  window.location.href = 'login.html';
+}
 
 init();
 </script>

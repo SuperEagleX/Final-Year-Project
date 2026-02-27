@@ -1,0 +1,30 @@
+<!--
+  Template: CEO Wire Transfer
+  Category: Executive / BEC
+  Difficulty: Hard
+  Description: Business Email Compromise impersonating CEO to trick finance staff
+-->
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
+  <p>Hi {{.FirstName}},</p>
+  <p>I am currently in a confidential board meeting and cannot take calls right now.
+  I need you to urgently process a wire transfer of <strong>$48,500 USD</strong> to complete
+  a time-sensitive acquisition we are finalising today.</p>
+  <p>Please treat this as <strong>strictly confidential</strong> — do not discuss with other
+  team members until the deal is announced publicly next week.</p>
+  <p>I need this done before close of business today. Click below to confirm the transfer
+  details and I will provide the account information.</p>
+  <p style="text-align:center;margin:30px 0">
+    <a href="{{.URL}}" style="background:#2c3e50;color:#fff;padding:12px 28px;
+    border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block">
+      Confirm Transfer Details
+    </a>
+  </p>
+  <p>I will explain everything after the meeting. Thank you for handling this quickly.</p>
+  <p>Best,<br/>David</p>
+  <p style="font-size:12px;color:#999;margin-top:20px">
+    Sent from my iPhone {{.Tracker}}
+  </p>
+</body>
+</html>

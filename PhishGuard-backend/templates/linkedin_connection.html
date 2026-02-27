@@ -1,0 +1,37 @@
+<!--
+  Template: LinkedIn Connection Request
+  Category: Social Engineering
+  Difficulty: Medium
+  Description: Spoofs LinkedIn notification to steal credentials via fake login page
+-->
+<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">
+  <div style="padding:16px 0;border-bottom:1px solid #ddd;margin-bottom:20px;display:flex;align-items:center">
+    <span style="background:#0a66c2;color:#fff;font-weight:900;font-size:18px;padding:4px 8px;border-radius:4px;margin-right:8px">in</span>
+    <strong style="font-size:18px;color:#0a66c2">LinkedIn</strong>
+  </div>
+  <p>Hi {{.FirstName}},</p>
+  <p>You have <strong>3 new connection requests</strong> including from:</p>
+  <ul style="line-height:2;color:#333">
+    <li>👔 <strong>Sarah Johnson</strong> — Senior Technical Recruiter at Google</li>
+    <li>📊 <strong>Michael Chen</strong> — VP Strategy at McKinsey & Company</li>
+    <li>💼 <strong>Amanda Roberts</strong> — CEO at TechVentures Asia</li>
+  </ul>
+  <p>Don't miss out on these opportunities. View and accept your requests now.</p>
+  <p style="text-align:center;margin:30px 0">
+    <a href="{{.URL}}" style="background:#0a66c2;color:#fff;padding:12px 28px;
+    border-radius:5px;text-decoration:none;font-weight:bold;display:inline-block">
+      View My Connection Requests
+    </a>
+  </p>
+  <p style="color:#666;font-size:14px">
+    You also have <strong>12 people who viewed your profile</strong> this week.
+    Upgrade to Premium to see who they are.
+  </p>
+  <p style="font-size:12px;color:#999;border-top:1px solid #eee;padding-top:12px;margin-top:20px">
+    LinkedIn Corporation · 1000 W Maude Ave, Sunnyvale, CA
+    Manage preferences · Unsubscribe {{.Tracker}}
+  </p>
+</body>
+</html>

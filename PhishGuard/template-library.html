@@ -209,13 +209,16 @@
   <div class="sidebar-section">System</div>
   <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
   <div class="sidebar-footer">
-    <div class="user-chip">
-      <div class="avatar">SA</div>
-      <div style="flex:1">
-        <div class="user-name">Super Admin</div>
-        <div class="user-role">Administrator</div>
-      </div>
-    </div>
+<div class="user-chip">
+  <div class="avatar">SA</div>
+  <div style="flex:1">
+    <div class="user-name">Super Admin</div>
+    <div class="user-role">Administrator</div>
+  </div>
+  <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+  </button>
+</div>
   </div>
 </aside>
 
@@ -227,10 +230,10 @@
       <p>Browse, preview and deploy phishing email templates</p>
     </div>
     <div class="topbar-right">
-      <button class="btn btn-ghost">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Custom Template
-      </button>
+    <button class="btn btn-ghost" onclick="openCreateModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Template
+    </button>
       <button class="btn btn-primary" onclick="openPreview('it')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         Preview Mode
@@ -519,7 +522,7 @@
     </div>
   </div>
 </div>
-
+<script src="config.js"></script>
 <script>
   const templates = {
     it: {
@@ -686,6 +689,137 @@
     el.closest('.filter-group').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
   }
+
+  function logout() { clearSession(); window.location.href = 'login.html'; }
+  
+</script>
+
+<!-- Create Template Modal -->
+<div class="modal-overlay" id="createModalOverlay" onclick="if(event.target===this)closeCreateModal()" style="position:fixed;inset:0;z-index:200;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s" id="createModal">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.4rem 1.6rem;border-bottom:1px solid var(--border)">
+      <div>
+        <h2 style="font-size:1.1rem;font-weight:800;color:#fff">Create New Template</h2>
+        <p style="font-size:0.78rem;color:var(--muted);margin-top:3px">Build a custom phishing simulation email template</p>
+      </div>
+      <button onclick="closeCreateModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:1.6rem;display:flex;flex-direction:column;gap:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Template Name *</label>
+          <input id="ct_name" type="text" placeholder="e.g. Fake Invoice Alert" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sender Display Name *</label>
+          <input id="ct_sender" type="text" placeholder="e.g. Finance Team" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Subject Line *</label>
+        <input id="ct_subject" type="text" placeholder="e.g. Invoice #INV-2026-0089 requires your approval" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Category *</label>
+          <select id="ct_category" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none">
+            <option>IT Support</option>
+            <option>HR</option>
+            <option>Credential Harvest</option>
+            <option>Executive / BEC</option>
+            <option>Delivery</option>
+            <option>Social Engineering</option>
+            <option>Finance</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Difficulty *</label>
+          <select id="ct_difficulty" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none">
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Description</label>
+        <input id="ct_desc" type="text" placeholder="Brief description of this template's scenario" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email HTML Body *</label>
+          <span style="font-size:0.7rem;color:var(--accent)">Use {{.FirstName}} for name, {{.URL}} for tracking link, {{.Tracker}} for pixel</span>
+        </div>
+        <textarea id="ct_html" rows="10" placeholder="Paste your HTML email body here..." style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--text);outline:none;resize:vertical"></textarea>
+      </div>
+    </div>
+    <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end">
+      <button onclick="closeCreateModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="saveTemplate()" class="btn btn-primary" id="saveTemplateBtn">Save Template →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openCreateModal() {
+  const overlay = document.getElementById('createModalOverlay');
+  overlay.style.opacity = '1';
+  overlay.style.pointerEvents = 'all';
+  document.getElementById('createModal').style.transform = 'translateY(0)';
+}
+
+function closeCreateModal() {
+  const overlay = document.getElementById('createModalOverlay');
+  overlay.style.opacity = '0';
+  overlay.style.pointerEvents = 'none';
+  document.getElementById('createModal').style.transform = 'translateY(20px)';
+}
+
+async function saveTemplate() {
+  const btn = document.getElementById('saveTemplateBtn');
+  const name     = document.getElementById('ct_name').value.trim();
+  const subject  = document.getElementById('ct_subject').value.trim();
+  const html     = document.getElementById('ct_html').value.trim();
+  const category = document.getElementById('ct_category').value;
+  const difficulty = document.getElementById('ct_difficulty').value;
+  const description = document.getElementById('ct_desc').value.trim();
+  const senderName  = document.getElementById('ct_sender').value.trim();
+
+  if (!name || !subject || !html) {
+    showToast('❌ Name, subject and HTML body are required', 'error');
+    return;
+  }
+
+  btn.textContent = '⏳ Saving...';
+  btn.disabled = true;
+
+  try {
+    const result = await apiFetch('templates', 'POST', {
+      name, subject, html, category,
+      difficulty, description,
+      sender_name: senderName,
+    });
+
+    showToast(`✅ Template "${name}" saved successfully!`, 'success');
+    closeCreateModal();
+
+    // Clear form
+    ['ct_name','ct_sender','ct_subject','ct_desc','ct_html'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+
+    console.log('✅ Template created:', result);
+
+  } catch(err) {
+    showToast(`❌ Failed to save: ${err.message}`, 'error');
+  }
+
+  btn.textContent = 'Save Template →';
+  btn.disabled = false;
+}
 </script>
 </body>
 </html>
