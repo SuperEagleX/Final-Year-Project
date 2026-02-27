@@ -804,6 +804,63 @@
 
   function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
   function closeBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+// ── Init employee portal ─────────────────────────────────────────────────
+async function initEmployee() {
+  const user = requireAuth('employee');
+  if (!user) return;
+
+  // Update name in hero card and sidebar
+  document.querySelector('.user-name').textContent = user.name;
+  document.querySelector('.hero-left h2').textContent = `👋 Welcome back, ${user.name.split(' ')[0]}`;
+
+  // Update risk score chip
+  const riskNum = document.querySelector('.risk-score-num');
+  if (riskNum) riskNum.textContent = user.risk_score;
+
+  // Load progress from API
+  try {
+    const progress = await apiFetch(`training/progress/${user.id}`);
+    // Update progress bar
+    const progFill = document.getElementById('overallProg');
+    if (progFill) progFill.style.width = progress.completion_pct + '%';
+
+    // Update hero stats
+    const heroNums = document.querySelectorAll('.hero-stat-num');
+    if (heroNums.length >= 2) {
+      heroNums[0].textContent = `${progress.passed_modules}/${progress.total_modules}`;
+      heroNums[1].textContent = progress.badges.length;
+    }
+    console.log('✅ Training progress loaded');
+  } catch(e) {
+    console.warn('⚠️ Could not load training progress');
+  }
+}
+
+// ── Submit quiz result to API ────────────────────────────────────────────
+async function submitQuizResult(moduleId, score, total) {
+  const user = getUser();
+  if (!user) return null;
+
+  try {
+    const result = await apiFetch('quiz/submit', 'POST', {
+      user_id:   user.id,
+      module_id: moduleId,
+      score,
+      total,
+    });
+    console.log('✅ Quiz result saved:', result);
+    return result;
+  } catch(e) {
+    console.warn('⚠️ Could not save quiz result');
+    return null;
+  }
+}
+
+function logout() { clearSession(); window.location.href = 'login.html'; }
+
+initEmployee();
+
 </script>
 </body>
 </html>

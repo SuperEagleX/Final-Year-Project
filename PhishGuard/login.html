@@ -348,6 +348,7 @@
       .form-panel { width: 100%; }
     }
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
 
@@ -482,30 +483,28 @@
   empRadio.addEventListener('change', updatePlaceholder);
 
   // Login handler — demo logic (replace with real API call later)
-  function handleLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const errorMsg = document.getElementById('errorMsg');
-    const isAdmin = adminRadio.checked;
+async function handleLogin(e) {
+  e.preventDefault();
+  const email    = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const errorMsg = document.getElementById('errorMsg');
+  const btn      = document.querySelector('.btn-login');
 
-    // Demo credentials for testing
-    const demoAdmin = { email: 'admin@phishguard.com', password: 'admin123' };
-    const demoEmp   = { email: 'employee@phishguard.com', password: 'emp123' };
+  btn.textContent = 'Signing in...';
+  btn.disabled = true;
 
-    const valid = isAdmin
-      ? (email === demoAdmin.email && password === demoAdmin.password)
-      : (email === demoEmp.email   && password === demoEmp.password);
-
-    if (valid) {
-      errorMsg.classList.remove('show');
-      // TODO: redirect to dashboard
-      window.location.href = isAdmin ? 'admin-dashboard.html' : 'awareness-training.html';
-    } else {
-      errorMsg.classList.add('show');
-      document.getElementById('password').value = '';
-    }
+  try {
+    const data = await apiFetch('login', 'POST', { email, password });
+    saveSession(data);
+    window.location.href = data.user.role === 'admin'
+      ? 'admin-dashboard.html'
+      : 'awareness-training.html';
+  } catch (err) {
+    errorMsg.classList.add('show');
+    btn.textContent = 'Access Portal →';
+    btn.disabled = false;
   }
+}
 </script>
 
 </body>

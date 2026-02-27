@@ -6,6 +6,7 @@
   <title>PhishGuard — Admin Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="config.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -351,13 +352,16 @@
   </a>
 
   <div class="sidebar-footer">
-    <div class="user-chip">
-      <div class="avatar">SA</div>
-      <div class="user-info">
-        <div class="user-name">Super Admin</div>
-        <div class="user-role">Administrator</div>
-      </div>
-    </div>
+<div class="user-chip">
+  <div class="avatar">SA</div>
+  <div style="flex:1">
+    <div class="user-name">Super Admin</div>
+    <div class="user-role">Administrator</div>
+  </div>
+  <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+  </button>
+</div>
   </div>
 </aside>
 
@@ -619,31 +623,84 @@
 </main>
 
 <script>
-  // ── Line Chart ──
+// ── On page load ────────────────────────────────────────────────────────
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+
+  // Show user's name in sidebar
+  document.querySelector('.user-name').textContent = user.name;
+
+  await loadStats();
+  await loadTopRiskEmployees();
+  renderCharts();
+}
+
+// ── Load live stats from your API ───────────────────────────────────────
+async function loadStats() {
+  try {
+    const stats = await apiFetch('dashboard/stats');
+    const nums  = document.querySelectorAll('.stat-card-num');
+    nums[0].textContent = stats.total_sent.toLocaleString();
+    nums[1].textContent = stats.open_rate  + '%';
+    nums[2].textContent = stats.click_rate + '%';
+    nums[3].textContent = stats.total_sent > 0 ? stats.report_rate + '%' : '0';
+    console.log('✅ Stats loaded');
+  } catch(e) {
+    console.warn('⚠️ Stats fallback to demo data');
+  }
+}
+
+// ── Load high risk employees into leaderboard ───────────────────────────
+async function loadTopRiskEmployees() {
+  try {
+    const employees = await apiFetch('employees');
+    const container = document.querySelector('.risk-card');
+    if (!container || employees.length === 0) return;
+
+    // Keep the header, replace the risk items
+    const header = container.querySelector('.risk-card-header');
+    container.innerHTML = '';
+    container.appendChild(header);
+
+    // Show top 5 highest risk employees
+    employees.slice(0, 5).forEach(emp => {
+      const level = emp.risk_score >= 70 ? 'var(--danger)'
+                  : emp.risk_score >= 40 ? 'var(--warn)'
+                  : 'var(--success)';
+      const initials = emp.name.split(' ').map(n => n[0]).join('').slice(0,2);
+      const item = document.createElement('div');
+      item.className = 'risk-item';
+      item.innerHTML = `
+        <div class="risk-avatar" style="background:linear-gradient(135deg,${level},${level}99)">${initials}</div>
+        <div class="risk-info">
+          <div class="risk-name">${emp.name}</div>
+          <div class="risk-dept">${emp.department}</div>
+        </div>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar-bg">
+            <div class="risk-bar" style="width:${emp.risk_score}%;background:${level}"></div>
+          </div>
+        </div>
+        <div class="risk-score" style="color:${level}">${emp.risk_score}</div>`;
+      container.appendChild(item);
+    });
+    console.log('✅ Risk leaderboard loaded');
+  } catch(e) {
+    console.warn('⚠️ Could not load employees');
+  }
+}
+
+// ── Charts (keep existing chart code) ──────────────────────────────────
+function renderCharts() {
   const lineCtx = document.getElementById('lineChart').getContext('2d');
   new Chart(lineCtx, {
     type: 'line',
     data: {
       labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
       datasets: [
-        {
-          label: 'Click Rate',
-          data: [38, 32, 29, 27, 25, 24],
-          borderColor: '#ff4560',
-          backgroundColor: 'rgba(255,69,96,0.08)',
-          tension: 0.4, fill: true,
-          pointBackgroundColor: '#ff4560',
-          pointRadius: 4, pointHoverRadius: 6,
-        },
-        {
-          label: 'Report Rate',
-          data: [12, 18, 22, 26, 29, 31],
-          borderColor: '#00e5a0',
-          backgroundColor: 'rgba(0,229,160,0.08)',
-          tension: 0.4, fill: true,
-          pointBackgroundColor: '#00e5a0',
-          pointRadius: 4, pointHoverRadius: 6,
-        }
+        { label: 'Click Rate',   data: [38,32,29,27,25,24], borderColor: '#ff4560', backgroundColor: 'rgba(255,69,96,0.08)', tension: 0.4, fill: true, pointBackgroundColor: '#ff4560', pointRadius: 4 },
+        { label: 'Report Rate',  data: [12,18,22,26,29,31], borderColor: '#00e5a0', backgroundColor: 'rgba(0,229,160,0.08)', tension: 0.4, fill: true, pointBackgroundColor: '#00e5a0', pointRadius: 4 }
       ]
     },
     options: {
@@ -656,26 +713,25 @@
     }
   });
 
-  // ── Donut Chart ──
   const donutCtx = document.getElementById('donutChart').getContext('2d');
   new Chart(donutCtx, {
     type: 'doughnut',
     data: {
-      labels: ['Opened', 'Clicked', 'Submitted', 'Reported'],
-      datasets: [{
-        data: [586, 207, 63, 312],
-        backgroundColor: ['#0077ff', '#ff4560', '#ffb300', '#00e5a0'],
-        borderColor: '#081a30',
-        borderWidth: 3,
-        hoverOffset: 6,
-      }]
+      labels: ['Opened','Clicked','Submitted','Reported'],
+      datasets: [{ data: [586,207,63,312], backgroundColor: ['#0077ff','#ff4560','#ffb300','#00e5a0'], borderColor: '#081a30', borderWidth: 3 }]
     },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '72%',
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } }
-    }
+    options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } }
   });
+}
+
+function logout() {
+  clearSession();
+  window.location.href = 'login.html';
+}
+
+init();
+
 </script>
+
 </body>
 </html>

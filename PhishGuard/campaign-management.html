@@ -248,6 +248,7 @@
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
 
@@ -582,10 +583,12 @@
       <!-- Step 3: Targets & Launch (hidden) -->
       <div id="step3" style="display:none">
         <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.2rem">Upload your target employee list and configure sending:</p>
-        <div class="upload-zone" style="margin-bottom:1.2rem">
+        <div class="upload-zone" style="margin-bottom:1.2rem" id="uploadZone" onclick="document.getElementById('csvInput').click()">
+          <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSV(event)"/>
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 8px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <p><span>Click to upload</span> or drag & drop your CSV file</p>
+          <p id="uploadLabel"><span>Click to upload</span> or drag & drop your CSV file</p>
           <p style="font-size:0.72rem;margin-top:6px">Columns: name, email, department</p>
+          <div id="uploadPreview" style="margin-top:10px"></div>
         </div>
         <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Sending Schedule</p>
         <div class="schedule-options" style="margin-bottom:1.2rem">
@@ -629,66 +632,156 @@
 </div>
 
 <script>
-  let currentStep = 1;
+let currentStep = 1;
+let uploadedEmployees = [];
 
-  function openModal() {
-    document.getElementById('modalOverlay').classList.add('open');
-    currentStep = 1;
-    renderStep();
-  }
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('open');
-  }
-  function closeOnBg(e) {
-    if (e.target === document.getElementById('modalOverlay')) closeModal();
-  }
+// ── Init ────────────────────────────────────────────────────────────────
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  document.querySelector('.user-name').textContent = user.name;
+  await loadCampaigns();
+}
 
-  function renderStep() {
-    // Show/hide step panels
-    for (let i = 1; i <= 3; i++) {
-      document.getElementById('step' + i).style.display = i === currentStep ? 'block' : 'none';
-    }
-    // Update step circles
-    ['s1','s2','s3'].forEach((id, idx) => {
-      const el = document.getElementById(id);
-      el.classList.remove('active','done');
-      if (idx + 1 < currentStep) el.classList.add('done');
-      if (idx + 1 === currentStep) el.classList.add('active');
+// ── Load real campaigns from API ────────────────────────────────────────
+async function loadCampaigns() {
+  try {
+    const campaigns = await apiFetch('campaigns');
+    console.log(`✅ ${campaigns.length} campaigns loaded`);
+    // You can extend this to dynamically render campaign cards
+  } catch(e) {
+    console.warn('⚠️ Using demo campaigns');
+  }
+}
 
-      // Checkmark for done
-      const circle = el.querySelector('.step-circle');
-      if (idx + 1 < currentStep) circle.innerHTML = '✓';
-      else circle.innerHTML = idx + 1;
+// ── Launch campaign via YOUR API ────────────────────────────────────────
+async function launchCampaign() {
+  const btn = document.getElementById('nextBtn');
+  btn.textContent = '⏳ Launching...';
+  btn.disabled = true;
+
+  try {
+    const name        = document.querySelector('#step1 input[type="text"]').value || 'New Campaign';
+    const senderName  = document.querySelectorAll('#step1 input[type="text"]')[1]?.value || 'IT Support';
+    const senderEmail = document.querySelector('#step1 input[type="email"]')?.value || 'it@company.com';
+    const startDate   = document.querySelectorAll('#step1 input[type="date"]')[0]?.value || '';
+    const endDate     = document.querySelectorAll('#step1 input[type="date"]')[1]?.value || '';
+    const template    = document.querySelector('.template-option.selected .template-option-name')?.textContent || '';
+
+    // Step 1 — Create the campaign
+    const campaign = await apiFetch('campaigns', 'POST', {
+      name, template, sender_name: senderName,
+      sender_email: senderEmail, start_date: startDate,
+      end_date: endDate, status: 'active'
     });
 
-    document.getElementById('stepNum').textContent = currentStep;
-    document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
-    document.getElementById('nextBtn').textContent = currentStep === 3 ? '🚀 Launch Campaign' : 'Next →';
-  }
-
-  function nextStep() {
-    if (currentStep < 3) { currentStep++; renderStep(); }
-    else {
-      closeModal();
-      alert('✅ Campaign created and queued for launch!');
+    // Step 2 — Upload employees to that campaign
+    if (uploadedEmployees.length > 0) {
+      await apiFetch('employees/upload', 'POST', {
+        employees:   uploadedEmployees,
+        campaign_id: campaign.campaign_id,
+      });
     }
-  }
-  function prevStep() {
-    if (currentStep > 1) { currentStep--; renderStep(); }
-  }
 
-  function selectTemplate(el) {
-    document.querySelectorAll('.template-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
+    closeModal();
+    showToast(`✅ Campaign "${name}" launched successfully!`, 'success');
+    await loadCampaigns();
+
+  } catch(err) {
+    showToast('❌ Could not launch campaign — check API is running', 'error');
+    console.error(err);
+    btn.textContent = '🚀 Launch Campaign';
+    btn.disabled = false;
   }
-  function selectSchedule(el) {
-    document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-  }
-  function setTab(el, tab) {
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-  }
+}
+
+// ── CSV Upload handler ──────────────────────────────────────────────────
+function handleCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines   = e.target.result.trim().split('\n');
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    const nameIdx  = headers.indexOf('name');
+    const emailIdx = headers.indexOf('email');
+    const deptIdx  = headers.indexOf('department');
+
+    if (emailIdx === -1) { showToast('❌ CSV must have an email column', 'error'); return; }
+
+    uploadedEmployees = [];
+    lines.slice(1).forEach(line => {
+      const cols = line.split(',').map(c => c.trim());
+      if (cols[emailIdx]) {
+        uploadedEmployees.push({
+          name:       nameIdx !== -1 ? cols[nameIdx] : '',
+          email:      cols[emailIdx],
+          department: deptIdx !== -1 ? cols[deptIdx] : '',
+        });
+      }
+    });
+
+    document.getElementById('uploadLabel').innerHTML =
+      `✅ <strong style="color:var(--success)">${file.name}</strong> — ${uploadedEmployees.length} employees ready`;
+    showToast(`✅ ${uploadedEmployees.length} employees loaded`, 'success');
+  };
+  reader.readAsText(file);
+}
+
+// ── Modal step logic ────────────────────────────────────────────────────
+function openModal()   { document.getElementById('modalOverlay').classList.add('open'); currentStep = 1; renderStep(); }
+function closeModal()  { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeOnBg(e)  { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+function renderStep() {
+  for (let i = 1; i <= 3; i++) document.getElementById('step'+i).style.display = i === currentStep ? 'block' : 'none';
+  ['s1','s2','s3'].forEach((id,idx) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (idx+1 < currentStep) { el.classList.add('done'); el.querySelector('.step-circle').innerHTML = '✓'; }
+    else { if (idx+1 === currentStep) el.classList.add('active'); el.querySelector('.step-circle').innerHTML = idx+1; }
+  });
+  document.getElementById('stepNum').textContent = currentStep;
+  document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
+  document.getElementById('nextBtn').textContent = currentStep === 3 ? '🚀 Launch Campaign' : 'Next →';
+}
+
+async function nextStep() {
+  if (currentStep < 3) { currentStep++; renderStep(); }
+  else { await launchCampaign(); }
+}
+function prevStep() { if (currentStep > 1) { currentStep--; renderStep(); } }
+
+function selectTemplate(el) {
+  document.querySelectorAll('.template-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectSchedule(el) {
+  document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function setTab(el) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Drag and drop ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('uploadZone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor='var(--accent)'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor=''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.style.borderColor='';
+    const file = e.dataTransfer.files[0];
+    if (file?.name.endsWith('.csv')) handleCSV({ target: { files: [file] } });
+    else showToast('❌ Please drop a valid .csv file', 'error');
+  });
+});
+
+function logout() { clearSession(); window.location.href = 'login.html'; }
+
+init();
 </script>
 </body>
 </html>
