@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:    #020b18;
+      --deep:    #040f1f;
+      --panel:   #071628;
+      --border:  #0d2847;
+      --accent:  #00d4ff;
+      --accent2: #0077ff;
+      --danger:  #ff4560;
+      --text:    #cde4f8;
+      --muted:   #4a7090;
+      --success: #00e5a0;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--navy);
+      font-family: 'Syne', sans-serif;
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* ── Animated grid background ── */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridDrift 20s linear infinite;
+      opacity: 0.4;
+    }
+    @keyframes gridDrift { from { background-position: 0 0; } to { background-position: 48px 48px; } }
+
+    .bg-glow {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 50%, #00246b33 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Floating threat particles */
+    .particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .particle {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: float linear infinite;
+      opacity: 0;
+    }
+    @keyframes float {
+      0%   { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.3; }
+      100% { transform: translateY(-10vh) translateX(var(--drift)); opacity: 0; }
+    }
+
+    /* ── Layout ── */
+    .layout {
+      position: relative; z-index: 1;
+      display: flex; height: 100vh;
+    }
+
+    /* Left panel — branding */
+    .brand-panel {
+      flex: 1;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: flex-start;
+      padding: 4rem 5rem;
+      border-right: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-panel::before {
+      content: '';
+      position: absolute; top: -100px; left: -100px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #00d4ff12 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .logo-mark {
+      display: flex; align-items: center; gap: 14px;
+      margin-bottom: 3rem;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .logo-icon {
+      width: 52px; height: 52px;
+      position: relative;
+    }
+    .logo-icon svg { width: 100%; height: 100%; }
+
+    .logo-text {
+      font-size: 1.6rem; font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .logo-text span { color: var(--accent); }
+
+    .brand-headline {
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 800;
+      line-height: 1.15;
+      color: #fff;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.8s 0.1s ease both;
+    }
+    .brand-headline em {
+      font-style: normal;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-sub {
+      font-size: 1rem; color: var(--muted);
+      line-height: 1.7; max-width: 380px;
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+
+    .stat-row {
+      display: flex; gap: 2.5rem;
+      margin-top: 3.5rem;
+      animation: fadeUp 0.8s 0.3s ease both;
+    }
+    .stat { display: flex; flex-direction: column; }
+    .stat-num {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.8rem; color: var(--accent);
+    }
+    .stat-label { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+
+    .scan-line {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      animation: scan 4s ease-in-out infinite;
+    }
+    @keyframes scan { 0%, 100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }
+
+    /* Right panel — form */
+    .form-panel {
+      width: 480px;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 3rem 3.5rem;
+      background: var(--panel);
+      position: relative;
+    }
+
+    .form-panel::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+    }
+
+    .form-header {
+      margin-bottom: 2.5rem;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+    .form-header h2 {
+      font-size: 1.5rem; font-weight: 700; color: #fff;
+    }
+    .form-header p {
+      font-size: 0.85rem; color: var(--muted); margin-top: 6px;
+    }
+
+    /* Role toggle */
+    .role-toggle {
+      display: flex;
+      background: var(--deep);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 5px;
+      margin-bottom: 2rem;
+      position: relative;
+      animation: fadeUp 0.6s 0.3s ease both;
+    }
+
+    .role-toggle input[type="radio"] { display: none; }
+
+    .role-toggle label {
+      flex: 1; text-align: center;
+      padding: 10px 0;
+      font-size: 0.85rem; font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 7px;
+      transition: color 0.3s;
+      position: relative; z-index: 1;
+      letter-spacing: 0.04em;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 5px; left: 5px;
+      width: calc(50% - 5px); height: calc(100% - 10px);
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      border-radius: 7px;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #emp:checked ~ .toggle-slider { transform: translateX(100%); }
+    #admin:checked ~ label[for="admin"],
+    #emp:checked ~ label[for="emp"] { color: #fff; }
+
+    /* Form fields */
+    .field {
+      margin-bottom: 1.2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+    .field:nth-child(1) { animation-delay: 0.4s; }
+    .field:nth-child(2) { animation-delay: 0.5s; }
+
+    .field label {
+      display: block;
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap svg {
+      position: absolute; left: 14px; top: 50%;
+      transform: translateY(-50%);
+      width: 16px; height: 16px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .field input {
+      width: 100%;
+      background: var(--deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 14px 13px 42px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .field input::placeholder { color: var(--muted); opacity: 0.6; }
+    .field input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px #00d4ff18;
+    }
+
+    .field-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .field-row label { margin-bottom: 0; }
+    .forgot {
+      font-size: 0.75rem; color: var(--accent);
+      text-decoration: none; opacity: 0.8;
+      transition: opacity 0.2s;
+    }
+    .forgot:hover { opacity: 1; }
+
+    /* Login button */
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      margin-top: 0.5rem;
+      background: linear-gradient(135deg, var(--accent2) 0%, var(--accent) 100%);
+      border: none; border-radius: 8px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem; font-weight: 700;
+      color: #000;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      position: relative; overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.6s 0.6s ease both;
+    }
+    .btn-login::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, #ffffff30, transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .btn-login:hover { transform: translateY(-2px); box-shadow: 0 8px 24px #00d4ff33; }
+    .btn-login:hover::after { opacity: 1; }
+    .btn-login:active { transform: translateY(0); }
+
+    /* Status badge */
+    .status-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-top: 2rem;
+      padding: 10px 14px;
+      background: var(--deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      animation: fadeUp 0.6s 0.7s ease both;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .status-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.75rem; color: var(--muted);
+    }
+    .status-text span { color: var(--success); }
+
+    /* Error message */
+    .error-msg {
+      display: none;
+      background: #ff456015;
+      border: 1px solid #ff456040;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: var(--danger);
+      margin-bottom: 1rem;
+    }
+    .error-msg.show { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .brand-panel { display: none; }
+      .form-panel { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="bg-glow"></div>
+<div class="particles" id="particles"></div>
+
+<div class="layout">
+
+  <!-- Left branding panel -->
+  <div class="brand-panel">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/>
+          <path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/>
+          <path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">Phish<span>Guard</span></div>
+    </div>
+
+    <h1 class="brand-headline">
+      Defend Against<br/><em>Human Error</em><br/>Before It Happens
+    </h1>
+    <p class="brand-sub">
+      Run intelligent phishing simulations, track employee vulnerability, and build a culture of cybersecurity awareness across your organization.
+    </p>
+
+    <div class="stat-row">
+      <div class="stat">
+        <span class="stat-num">94%</span>
+        <span class="stat-label">Attacks via email</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">3.4s</span>
+        <span class="stat-label">Avg. click time</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">72%</span>
+        <span class="stat-label">Risk reduction</span>
+      </div>
+    </div>
+
+    <div class="scan-line"></div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="form-panel">
+    <div class="form-header">
+      <h2>Secure Access</h2>
+      <p>Sign in to your PhishGuard portal</p>
+    </div>
+
+    <!-- Role toggle -->
+    <div class="role-toggle">
+      <input type="radio" id="admin" name="role" checked/>
+      <input type="radio" id="emp" name="role"/>
+      <div class="toggle-slider"></div>
+      <label for="admin">Admin</label>
+      <label for="emp">Employee</label>
+    </div>
+
+    <!-- Error -->
+    <div class="error-msg" id="errorMsg">
+      ⚠ Invalid credentials. Please try again.
+    </div>
+
+    <!-- Form -->
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <div class="field">
+        <label>Email Address</label>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <input type="email" id="email" placeholder="you@company.com" required/>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-row">
+          <label>Password</label>
+          <a href="#" class="forgot">Forgot password?</a>
+        </div>
+        <div class="input-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          <input type="password" id="password" placeholder="••••••••••" required/>
+        </div>
+      </div>
+
+      <button class="btn-login" type="submit">Access Portal →</button>
+    </form>
+
+    <div class="status-bar">
+      <div class="status-dot"></div>
+      <div class="status-text">System status: <span>All systems operational</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Generate floating particles
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.cssText = `
+      left: ${Math.random() * 100}%;
+      width: ${Math.random() > 0.7 ? 3 : 2}px;
+      height: ${Math.random() > 0.7 ? 3 : 2}px;
+      animation-duration: ${6 + Math.random() * 12}s;
+      animation-delay: ${Math.random() * 10}s;
+      --drift: ${(Math.random() - 0.5) * 120}px;
+      opacity: 0;
+    `;
+    container.appendChild(p);
+  }
+
+  // Role toggle logic — update placeholder text based on role
+  const adminRadio = document.getElementById('admin');
+  const empRadio = document.getElementById('emp');
+  const emailInput = document.getElementById('email');
+
+  function updatePlaceholder() {
+    if (adminRadio.checked) {
+      emailInput.placeholder = 'admin@company.com';
+    } else {
+      emailInput.placeholder = 'employee@company.com';
+    }
+  }
+  adminRadio.addEventListener('change', updatePlaceholder);
+  empRadio.addEventListener('change', updatePlaceholder);
+
+  // Login handler — demo logic (replace with real API call later)
+  function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorMsg = document.getElementById('errorMsg');
+    const isAdmin = adminRadio.checked;
+
+    // Demo credentials for testing
+    const demoAdmin = { email: 'admin@phishguard.com', password: 'admin123' };
+    const demoEmp   = { email: 'employee@phishguard.com', password: 'emp123' };
+
+    const valid = isAdmin
+      ? (email === demoAdmin.email && password === demoAdmin.password)
+      : (email === demoEmp.email   && password === demoEmp.password);
+
+    if (valid) {
+      errorMsg.classList.remove('show');
+      // TODO: redirect to dashboard
+      alert(`✅ Welcome! Redirecting to ${isAdmin ? 'Admin' : 'Employee'} Dashboard...`);
+      // window.location.href = isAdmin ? 'admin-dashboard.html' : 'employee-dashboard.html';
+    } else {
+      errorMsg.classList.add('show');
+      document.getElementById('password').value = '';
+    }
+  }
+</script>
+
+</body>
+</html>
