@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard — Campaign Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #020b18;
+      --deep:   #040f1f;
+      --panel:  #071628;
+      --card:   #081a30;
+      --border: #0d2847;
+      --accent: #00d4ff;
+      --accent2:#0077ff;
+      --danger: #ff4560;
+      --warn:   #ffb300;
+      --success:#00e5a0;
+      --text:   #cde4f8;
+      --muted:  #4a7090;
+      --sidebar-w: 240px;
+    }
+
+    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); overflow: hidden; }
+
+    /* ── Sidebar (same as dashboard) ── */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      z-index: 100;
+    }
+    .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 1.6rem 1.4rem; border-bottom: 1px solid var(--border); }
+    .sidebar-logo svg { width: 36px; height: 36px; }
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .sidebar-logo-text span { color: var(--accent); }
+    .sidebar-section { padding: 1.2rem 1rem 0.4rem; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 1.2rem; margin: 2px 0.6rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .nav-item:hover { background: var(--border); color: var(--text); }
+    .nav-item.active { background: linear-gradient(90deg, #00d4ff18, #0077ff10); color: var(--accent); border-left: 2px solid var(--accent); margin-left: calc(0.6rem - 2px); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+    .sidebar-footer { margin-top: auto; padding: 1rem; border-top: 1px solid var(--border); }
+    .user-chip { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: var(--deep); border: 1px solid var(--border); }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .user-info { flex: 1; overflow: hidden; }
+    .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 0.7rem; color: var(--accent); }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .main::-webkit-scrollbar { width: 5px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Topbar */
+    .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: var(--navy); border-bottom: 1px solid var(--border); }
+    .topbar-left h1 { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .topbar-left p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .topbar-right { display: flex; gap: 0.8rem; align-items: center; }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px #00d4ff30; }
+    .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { background: #ff456015; color: var(--danger); border: 1px solid #ff456030; }
+    .btn-danger:hover { background: #ff456025; }
+
+    /* ── Content ── */
+    .content { padding: 1.8rem 2rem; flex: 1; }
+
+    /* Filter/search bar */
+    .filter-bar {
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.4s ease both;
+    }
+    .search-wrap { position: relative; flex: 1; max-width: 320px; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
+    .search-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 36px; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); }
+
+    .filter-tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+    .filter-tab { padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; color: var(--muted); border: none; background: none; font-family: 'Syne', sans-serif; transition: all 0.2s; }
+    .filter-tab.active { background: var(--border); color: var(--accent); }
+
+    .sort-select { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-family: 'Syne', sans-serif; font-size: 0.8rem; color: var(--text); outline: none; cursor: pointer; }
+
+    /* Campaign cards grid */
+    .campaigns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .campaign-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.4s ease both;
+      position: relative;
+    }
+    .campaign-card:hover { border-color: var(--accent2); transform: translateY(-2px); box-shadow: 0 8px 24px #00d4ff10; }
+
+    .campaign-card-top { padding: 1.2rem 1.2rem 0; display: flex; justify-content: space-between; align-items: flex-start; }
+    .campaign-type-badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; }
+    .type-credential { background: #ff456018; color: var(--danger); }
+    .type-hr         { background: #ffb30018; color: var(--warn); }
+    .type-it         { background: #0077ff18; color: var(--accent2); }
+    .type-exec       { background: #9b59b618; color: #c39bd3; }
+    .type-delivery   { background: #00e5a018; color: var(--success); }
+
+    .campaign-menu-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 4px; transition: color 0.2s; }
+    .campaign-menu-btn:hover { color: var(--text); }
+
+    .campaign-card-body { padding: 0.8rem 1.2rem 1.2rem; }
+    .campaign-name { font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .campaign-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 1rem; font-family: 'Share Tech Mono', monospace; }
+
+    /* Progress bar */
+    .progress-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); margin-bottom: 5px; }
+    .progress-label span { color: var(--text); font-weight: 600; }
+    .progress-bg { height: 5px; background: var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 1rem; }
+    .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+
+    /* Mini stats row */
+    .mini-stats { display: flex; gap: 0; border-top: 1px solid var(--border); margin: 0 -1.2rem -1.2rem; }
+    .mini-stat { flex: 1; padding: 10px 0; text-align: center; border-right: 1px solid var(--border); }
+    .mini-stat:last-child { border-right: none; }
+    .mini-stat-num { font-family: 'Share Tech Mono', monospace; font-size: 0.95rem; color: #fff; }
+    .mini-stat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+    /* Status indicator strip */
+    .status-strip { height: 3px; width: 100%; }
+    .strip-active   { background: linear-gradient(90deg, var(--success), #00c896); }
+    .strip-complete { background: linear-gradient(90deg, var(--accent2), var(--accent)); }
+    .strip-draft    { background: var(--border); }
+    .strip-paused   { background: linear-gradient(90deg, var(--warn), #ff8c00); }
+
+    /* ── Modal Overlay (Create Campaign) ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: #000000cc;
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%; max-width: 620px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(20px);
+      transition: transform 0.3s;
+      position: relative;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal::-webkit-scrollbar { width: 4px; }
+    .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 1.6rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); z-index: 1; }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .modal-header p  { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; transition: color 0.2s; }
+    .modal-close:hover { color: var(--text); }
+
+    .modal-body { padding: 1.6rem; }
+    .modal-footer { padding: 1.2rem 1.6rem; border-top: 1px solid var(--border); display: flex; gap: 0.8rem; justify-content: flex-end; }
+
+    /* Step indicator */
+    .steps { display: flex; align-items: center; gap: 0; margin-bottom: 2rem; }
+    .step { display: flex; align-items: center; flex: 1; }
+    .step-circle { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; border: 2px solid var(--border); color: var(--muted); transition: all 0.3s; }
+    .step.active .step-circle { border-color: var(--accent); color: var(--accent); background: #00d4ff15; }
+    .step.done .step-circle { border-color: var(--success); color: #000; background: var(--success); }
+    .step-label { font-size: 0.72rem; font-weight: 600; color: var(--muted); margin-left: 8px; white-space: nowrap; }
+    .step.active .step-label { color: var(--accent); }
+    .step.done .step-label { color: var(--success); }
+    .step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
+    .step.done + .step .step-line { background: var(--success); }
+
+    /* Form elements inside modal */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.2rem; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.2rem; }
+    .form-group label { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .form-group input, .form-group select, .form-group textarea {
+      background: var(--deep); border: 1px solid var(--border); border-radius: 8px;
+      padding: 11px 14px; font-family: 'Syne', sans-serif; font-size: 0.88rem;
+      color: var(--text); outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: var(--muted); opacity: 0.6; }
+    .form-group select option { background: var(--deep); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    /* Template picker inside modal */
+    .template-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .template-option {
+      padding: 12px; border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .template-option:hover { border-color: var(--accent2); background: #0077ff08; }
+    .template-option.selected { border-color: var(--accent); background: #00d4ff10; }
+    .template-option-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .template-option-name { font-size: 0.8rem; font-weight: 600; color: var(--text); }
+    .template-option-diff { font-size: 0.65rem; color: var(--muted); margin-top: 2px; }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 8px;
+      padding: 2rem; text-align: center;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .upload-zone:hover { border-color: var(--accent2); background: #0077ff08; }
+    .upload-zone svg { color: var(--muted); margin-bottom: 8px; }
+    .upload-zone p { font-size: 0.82rem; color: var(--muted); }
+    .upload-zone span { color: var(--accent); font-weight: 600; }
+
+    /* Sending schedule */
+    .schedule-options { display: flex; gap: 0.6rem; margin-bottom: 1.2rem; }
+    .schedule-opt {
+      flex: 1; padding: 12px; border-radius: 8px;
+      border: 1px solid var(--border); cursor: pointer;
+      text-align: center; transition: all 0.2s;
+      font-size: 0.8rem; font-weight: 600; color: var(--muted);
+    }
+    .schedule-opt:hover { border-color: var(--accent2); color: var(--text); }
+    .schedule-opt.selected { border-color: var(--accent); color: var(--accent); background: #00d4ff10; }
+    .schedule-opt-icon { font-size: 1.4rem; margin-bottom: 6px; display: block; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none">
+      <path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html">>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item active" href="campaign-management.html">>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    Campaigns
+    <span class="nav-badge">3</span>
+  </a>
+  <a class="nav-item" href="template-library.html">>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Templates
+  </a>
+  <a class="nav-item" href="awareness-training.html">>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    Employees
+  </a>
+  <div class="sidebar-section">Reports</div>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Analytics
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+    Reports
+  </a>
+  <div class="sidebar-section">System</div>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+    Settings
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">SA</div>
+      <div class="user-info">
+        <div class="user-name">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Campaign Management</h1>
+      <p>Create, monitor and analyse your phishing simulation campaigns</p>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <button class="btn btn-primary" onclick="openModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Campaign
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="text" placeholder="Search campaigns..."/>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setTab(this,'all')">All</button>
+        <button class="filter-tab" onclick="setTab(this,'active')">Active</button>
+        <button class="filter-tab" onclick="setTab(this,'complete')">Complete</button>
+        <button class="filter-tab" onclick="setTab(this,'draft')">Draft</button>
+      </div>
+      <select class="sort-select">
+        <option>Sort: Newest</option>
+        <option>Sort: Click Rate ↑</option>
+        <option>Sort: Click Rate ↓</option>
+        <option>Sort: Sent Count</option>
+      </select>
+    </div>
+
+    <!-- Campaign cards -->
+    <div class="campaigns-grid">
+
+      <!-- Card 1 — Active -->
+      <div class="campaign-card" style="animation-delay:0.05s">
+        <div class="status-strip strip-active"></div>
+        <div class="campaign-card-top">
+          <span class="campaign-type-badge type-it">IT Support</span>
+          <button class="campaign-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="campaign-card-body">
+          <div class="campaign-name">Q1 IT Helpdesk Reset</div>
+          <div class="campaign-meta">📅 Jan 15 – Feb 28, 2026 &nbsp;·&nbsp; 324 targets</div>
+          <div class="progress-label"><span>Progress</span> 73% sent</div>
+          <div class="progress-bg"><div class="progress-fill" style="width:73%"></div></div>
+          <div class="mini-stats">
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">68%</div><div class="mini-stat-label">Opened</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">31%</div><div class="mini-stat-label">Clicked</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">12%</div><div class="mini-stat-label">Submitted</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">8%</div><div class="mini-stat-label">Reported</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2 — Active -->
+      <div class="campaign-card" style="animation-delay:0.1s">
+        <div class="status-strip strip-active"></div>
+        <div class="campaign-card-top">
+          <span class="campaign-type-badge type-credential">Credential Harvest</span>
+          <button class="campaign-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="campaign-card-body">
+          <div class="campaign-name">Microsoft 365 Login</div>
+          <div class="campaign-meta">📅 Feb 01 – Mar 01, 2026 &nbsp;·&nbsp; 450 targets</div>
+          <div class="progress-label"><span>Progress</span> 55% sent</div>
+          <div class="progress-bg"><div class="progress-fill" style="width:55%"></div></div>
+          <div class="mini-stats">
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">59%</div><div class="mini-stat-label">Opened</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">27%</div><div class="mini-stat-label">Clicked</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">18%</div><div class="mini-stat-label">Submitted</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">5%</div><div class="mini-stat-label">Reported</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3 — Complete -->
+      <div class="campaign-card" style="animation-delay:0.15s">
+        <div class="status-strip strip-complete"></div>
+        <div class="campaign-card-top">
+          <span class="campaign-type-badge type-hr">HR Notice</span>
+          <button class="campaign-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="campaign-card-body">
+          <div class="campaign-name">HR Policy Update 2026</div>
+          <div class="campaign-meta">📅 Dec 01 – Dec 31, 2025 &nbsp;·&nbsp; 210 targets</div>
+          <div class="progress-label"><span>Progress</span> 100% sent</div>
+          <div class="progress-bg"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,var(--accent2),var(--success))"></div></div>
+          <div class="mini-stats">
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">74%</div><div class="mini-stat-label">Opened</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">19%</div><div class="mini-stat-label">Clicked</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">7%</div><div class="mini-stat-label">Submitted</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">22%</div><div class="mini-stat-label">Reported</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4 — Complete -->
+      <div class="campaign-card" style="animation-delay:0.2s">
+        <div class="status-strip strip-complete"></div>
+        <div class="campaign-card-top">
+          <span class="campaign-type-badge type-delivery">Delivery Notice</span>
+          <button class="campaign-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="campaign-card-body">
+          <div class="campaign-name">Package Delivery Alert</div>
+          <div class="campaign-meta">📅 Nov 10 – Nov 30, 2025 &nbsp;·&nbsp; 300 targets</div>
+          <div class="progress-label"><span>Progress</span> 100% sent</div>
+          <div class="progress-bg"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,var(--accent2),var(--success))"></div></div>
+          <div class="mini-stats">
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">61%</div><div class="mini-stat-label">Opened</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">9%</div><div class="mini-stat-label">Clicked</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">3%</div><div class="mini-stat-label">Submitted</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">34%</div><div class="mini-stat-label">Reported</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5 — Paused -->
+      <div class="campaign-card" style="animation-delay:0.25s">
+        <div class="status-strip strip-paused"></div>
+        <div class="campaign-card-top">
+          <span class="campaign-type-badge type-exec">Executive</span>
+          <button class="campaign-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="campaign-card-body">
+          <div class="campaign-name">CEO Wire Transfer Request</div>
+          <div class="campaign-meta">📅 Feb 10 – Feb 25, 2026 &nbsp;·&nbsp; 150 targets</div>
+          <div class="progress-label"><span>Progress</span> 38% sent</div>
+          <div class="progress-bg"><div class="progress-fill" style="width:38%;background:linear-gradient(90deg,var(--warn),#ff8c00)"></div></div>
+          <div class="mini-stats">
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">44%</div><div class="mini-stat-label">Opened</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">22%</div><div class="mini-stat-label">Clicked</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">9%</div><div class="mini-stat-label">Submitted</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">11%</div><div class="mini-stat-label">Reported</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 6 — Draft -->
+      <div class="campaign-card" style="animation-delay:0.3s;opacity:0.75">
+        <div class="status-strip strip-draft"></div>
+        <div class="campaign-card-top">
+          <span class="campaign-type-badge type-credential">Credential Harvest</span>
+          <button class="campaign-menu-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+        </div>
+        <div class="campaign-card-body">
+          <div class="campaign-name">Google Workspace Phish</div>
+          <div class="campaign-meta">📅 Not scheduled yet &nbsp;·&nbsp; — targets</div>
+          <div class="progress-label"><span>Status</span> Draft — not launched</div>
+          <div class="progress-bg"><div class="progress-fill" style="width:0%"></div></div>
+          <div class="mini-stats">
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Opened</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Clicked</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Submitted</div></div>
+            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Reported</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ── Create Campaign Modal ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeOnBg(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <h2>Create New Campaign</h2>
+        <p>Step <span id="stepNum">1</span> of 3</p>
+      </div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step indicator -->
+      <div class="steps">
+        <div class="step active" id="s1"><div class="step-circle">1</div><div class="step-label">Details</div></div>
+        <div class="step-line"></div>
+        <div class="step" id="s2"><div class="step-circle">2</div><div class="step-label">Template</div></div>
+        <div class="step-line"></div>
+        <div class="step" id="s3"><div class="step-circle">3</div><div class="step-label">Targets & Launch</div></div>
+      </div>
+
+      <!-- Step 1: Campaign Details -->
+      <div id="step1">
+        <div class="form-group">
+          <label>Campaign Name</label>
+          <input type="text" placeholder="e.g. Q2 IT Helpdesk Simulation"/>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Start Date</label>
+            <input type="date"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>End Date</label>
+            <input type="date"/>
+          </div>
+        </div>
+        <div style="margin-bottom:1.2rem"></div>
+        <div class="form-group">
+          <label>Sender Name (Display)</label>
+          <input type="text" placeholder="e.g. IT Support Team"/>
+        </div>
+        <div class="form-group">
+          <label>Sender Email (Spoofed)</label>
+          <input type="email" placeholder="e.g. itsupport@company-helpdesk.com"/>
+        </div>
+        <div class="form-group">
+          <label>Campaign Description (Internal)</label>
+          <textarea placeholder="Notes for your team about this campaign's goals..."></textarea>
+        </div>
+      </div>
+
+      <!-- Step 2: Template (hidden) -->
+      <div id="step2" style="display:none">
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.2rem">Choose a phishing email template for this campaign:</p>
+        <div class="template-picker">
+          <div class="template-option selected" onclick="selectTemplate(this)">
+            <div class="template-option-icon" style="background:#0077ff18">🔐</div>
+            <div><div class="template-option-name">IT Password Reset</div><div class="template-option-diff">Difficulty: Medium</div></div>
+          </div>
+          <div class="template-option" onclick="selectTemplate(this)">
+            <div class="template-option-icon" style="background:#ff456018">📋</div>
+            <div><div class="template-option-name">HR Policy Notice</div><div class="template-option-diff">Difficulty: Easy</div></div>
+          </div>
+          <div class="template-option" onclick="selectTemplate(this)">
+            <div class="template-option-icon" style="background:#0077ff18">☁️</div>
+            <div><div class="template-option-name">Microsoft 365 Login</div><div class="template-option-diff">Difficulty: Hard</div></div>
+          </div>
+          <div class="template-option" onclick="selectTemplate(this)">
+            <div class="template-option-icon" style="background:#9b59b618">👔</div>
+            <div><div class="template-option-name">CEO Wire Request</div><div class="template-option-diff">Difficulty: Hard</div></div>
+          </div>
+          <div class="template-option" onclick="selectTemplate(this)">
+            <div class="template-option-icon" style="background:#00e5a018">📦</div>
+            <div><div class="template-option-name">Package Delivery</div><div class="template-option-diff">Difficulty: Easy</div></div>
+          </div>
+          <div class="template-option" onclick="selectTemplate(this)">
+            <div class="template-option-icon" style="background:#0077ff18">🔵</div>
+            <div><div class="template-option-name">Google Workspace</div><div class="template-option-diff">Difficulty: Medium</div></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email Subject Line</label>
+          <input type="text" value="[ACTION REQUIRED] Your password expires in 24 hours"/>
+        </div>
+      </div>
+
+      <!-- Step 3: Targets & Launch (hidden) -->
+      <div id="step3" style="display:none">
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.2rem">Upload your target employee list and configure sending:</p>
+        <div class="upload-zone" style="margin-bottom:1.2rem">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 8px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <p><span>Click to upload</span> or drag & drop your CSV file</p>
+          <p style="font-size:0.72rem;margin-top:6px">Columns: name, email, department</p>
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Sending Schedule</p>
+        <div class="schedule-options" style="margin-bottom:1.2rem">
+          <div class="schedule-opt selected" onclick="selectSchedule(this)">
+            <span class="schedule-opt-icon">⚡</span>
+            Immediate
+          </div>
+          <div class="schedule-opt" onclick="selectSchedule(this)">
+            <span class="schedule-opt-icon">📅</span>
+            Scheduled
+          </div>
+          <div class="schedule-opt" onclick="selectSchedule(this)">
+            <span class="schedule-opt-icon">🔀</span>
+            Randomised
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Landing Page (after click)</label>
+          <select>
+            <option>Awareness Training Page</option>
+            <option>Generic Warning Page</option>
+            <option>Blank (silent tracking)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notify Admin when employee reports phish?</label>
+          <select>
+            <option>Yes — send email alert</option>
+            <option>No — track silently</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="backBtn" onclick="prevStep()" style="display:none">← Back</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentStep = 1;
+
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('open');
+    currentStep = 1;
+    renderStep();
+  }
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+  function closeOnBg(e) {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  }
+
+  function renderStep() {
+    // Show/hide step panels
+    for (let i = 1; i <= 3; i++) {
+      document.getElementById('step' + i).style.display = i === currentStep ? 'block' : 'none';
+    }
+    // Update step circles
+    ['s1','s2','s3'].forEach((id, idx) => {
+      const el = document.getElementById(id);
+      el.classList.remove('active','done');
+      if (idx + 1 < currentStep) el.classList.add('done');
+      if (idx + 1 === currentStep) el.classList.add('active');
+
+      // Checkmark for done
+      const circle = el.querySelector('.step-circle');
+      if (idx + 1 < currentStep) circle.innerHTML = '✓';
+      else circle.innerHTML = idx + 1;
+    });
+
+    document.getElementById('stepNum').textContent = currentStep;
+    document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
+    document.getElementById('nextBtn').textContent = currentStep === 3 ? '🚀 Launch Campaign' : 'Next →';
+  }
+
+  function nextStep() {
+    if (currentStep < 3) { currentStep++; renderStep(); }
+    else {
+      closeModal();
+      alert('✅ Campaign created and queued for launch!');
+    }
+  }
+  function prevStep() {
+    if (currentStep > 1) { currentStep--; renderStep(); }
+  }
+
+  function selectTemplate(el) {
+    document.querySelectorAll('.template-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  function selectSchedule(el) {
+    document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+  function setTab(el, tab) {
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>

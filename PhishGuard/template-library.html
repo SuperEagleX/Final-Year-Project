@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard — Template Library</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #020b18; --deep:   #040f1f; --panel:  #071628; --card:   #081a30;
+      --border: #0d2847; --accent: #00d4ff; --accent2:#0077ff; --danger: #ff4560;
+      --warn:   #ffb300; --success:#00e5a0; --text:   #cde4f8; --muted:  #4a7090;
+      --sidebar-w: 240px;
+    }
+    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 1.6rem 1.4rem; border-bottom: 1px solid var(--border); }
+    .sidebar-logo svg { width: 36px; height: 36px; }
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .sidebar-logo-text span { color: var(--accent); }
+    .sidebar-section { padding: 1.2rem 1rem 0.4rem; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 1.2rem; margin: 2px 0.6rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .nav-item:hover { background: var(--border); color: var(--text); }
+    .nav-item.active { background: linear-gradient(90deg, #00d4ff18, #0077ff10); color: var(--accent); border-left: 2px solid var(--accent); margin-left: calc(0.6rem - 2px); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+    .sidebar-footer { margin-top: auto; padding: 1rem; border-top: 1px solid var(--border); }
+    .user-chip { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: var(--deep); border: 1px solid var(--border); }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; }
+    .user-role { font-size: 0.7rem; color: var(--accent); }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .main::-webkit-scrollbar { width: 5px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Topbar */
+    .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: var(--navy); border-bottom: 1px solid var(--border); }
+    .topbar-left h1 { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .topbar-left p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .topbar-right { display: flex; gap: 0.8rem; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px #00d4ff30; }
+    .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Content ── */
+    .content { padding: 1.8rem 2rem; flex: 1; }
+
+    /* Stats strip */
+    .stats-strip { display: flex; gap: 1rem; margin-bottom: 1.8rem; animation: fadeUp 0.4s ease both; }
+    .strip-stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1.3rem; display: flex; align-items: center; gap: 12px; flex: 1; }
+    .strip-stat-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .strip-stat-num { font-family: 'Share Tech Mono', monospace; font-size: 1.3rem; color: #fff; }
+    .strip-stat-label { font-size: 0.72rem; color: var(--muted); }
+
+    /* Filter bar */
+    .filter-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; animation: fadeUp 0.4s 0.05s ease both; }
+    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 300px; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
+    .search-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 36px; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); }
+
+    .filter-group { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+    .filter-chip { padding: 6px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 600; cursor: pointer; color: var(--muted); border: none; background: none; font-family: 'Syne', sans-serif; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip.active { background: var(--border); color: var(--accent); }
+
+    .view-toggle { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+    .view-btn { padding: 7px 10px; border-radius: 6px; border: none; background: none; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+    .view-btn.active { background: var(--border); color: var(--accent); }
+    .view-btn svg { width: 15px; height: 15px; display: block; }
+
+    /* Section heading */
+    .section-heading { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.9rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+    /* Template grid */
+    .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+
+    .template-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      overflow: hidden; cursor: pointer; transition: all 0.25s;
+      animation: fadeUp 0.4s ease both;
+      position: relative;
+    }
+    .template-card:hover { border-color: var(--accent2); transform: translateY(-3px); box-shadow: 0 10px 30px #00d4ff12; }
+
+    /* Email preview mockup inside card */
+    .email-preview {
+      background: var(--deep); border-bottom: 1px solid var(--border);
+      padding: 14px 16px; position: relative; overflow: hidden;
+      height: 160px;
+    }
+    .ep-topbar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+    .ep-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .ep-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ep-avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: #fff; }
+    .ep-meta { flex: 1; }
+    .ep-from { font-size: 0.65rem; color: var(--text); font-family: 'Share Tech Mono', monospace; }
+    .ep-to   { font-size: 0.6rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+    .ep-subject { font-size: 0.75rem; font-weight: 700; color: #fff; margin-bottom: 8px; line-height: 1.3; }
+    .ep-body { font-size: 0.65rem; color: var(--muted); line-height: 1.6; }
+    .ep-body span { color: var(--accent); text-decoration: underline; }
+    .ep-btn { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; color: #fff; }
+
+    /* Difficulty badge overlay */
+    .diff-badge { position: absolute; top: 10px; right: 10px; font-size: 0.65rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .diff-easy   { background: #00e5a020; color: var(--success); border: 1px solid #00e5a040; }
+    .diff-medium { background: #ffb30020; color: var(--warn);    border: 1px solid #ffb30040; }
+    .diff-hard   { background: #ff456020; color: var(--danger);  border: 1px solid #ff456040; }
+
+    /* Card body */
+    .template-card-body { padding: 1rem 1.1rem; }
+    .template-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .template-name { font-size: 0.92rem; font-weight: 700; color: #fff; }
+    .template-cat-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+    .cat-it       { background: #0077ff18; color: var(--accent2); }
+    .cat-hr       { background: #ffb30018; color: var(--warn); }
+    .cat-cred     { background: #ff456018; color: var(--danger); }
+    .cat-exec     { background: #9b59b618; color: #c39bd3; }
+    .cat-delivery { background: #00e5a018; color: var(--success); }
+    .cat-social   { background: #1da1f218; color: #1da1f2; }
+
+    .template-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.6; margin-bottom: 0.9rem; }
+
+    .template-stats { display: flex; gap: 1rem; margin-bottom: 0.9rem; }
+    .tstat { display: flex; flex-direction: column; }
+    .tstat-num { font-family: 'Share Tech Mono', monospace; font-size: 0.88rem; }
+    .tstat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .template-card-footer { display: flex; gap: 0.5rem; }
+    .t-btn { flex: 1; padding: 7px; border-radius: 7px; font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-align: center; }
+    .t-btn-preview { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .t-btn-preview:hover { border-color: var(--accent); color: var(--accent); }
+    .t-btn-use { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; }
+    .t-btn-use:hover { box-shadow: 0 4px 14px #00d4ff30; }
+
+    /* ── Preview Modal ── */
+    .modal-overlay { position: fixed; inset: 0; z-index: 200; background: #000000cc; backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.3s; display: flex; flex-direction: column; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal::-webkit-scrollbar { width: 4px; }
+    .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.4rem 1.6rem; border-bottom: 1px solid var(--border); }
+    .modal-header h2 { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .modal-header p  { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; transition: color 0.2s; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 1.6rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+
+    /* Full email preview in modal */
+    .full-email-preview {
+      background: #fff; border-radius: 10px; overflow: hidden;
+      font-family: Arial, sans-serif; font-size: 13px; color: #222;
+    }
+    .fep-topbar { background: #f1f3f4; padding: 10px 14px; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 8px; }
+    .fep-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .fep-header { padding: 14px 16px; border-bottom: 1px solid #eee; }
+    .fep-subject { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 8px; }
+    .fep-from { font-size: 12px; color: #666; }
+    .fep-body { padding: 16px; line-height: 1.7; color: #333; font-size: 13px; }
+    .fep-body .fep-cta { display: inline-block; margin: 12px 0; padding: 10px 22px; background: #0052cc; color: #fff; border-radius: 5px; text-decoration: none; font-weight: 700; font-size: 13px; }
+    .fep-body .fep-warning { font-size: 11px; color: #999; margin-top: 14px; border-top: 1px solid #eee; padding-top: 12px; }
+    .fep-footer { background: #f8f9fa; padding: 12px 16px; font-size: 11px; color: #999; border-top: 1px solid #eee; }
+
+    /* Red flags panel */
+    .red-flags-panel { display: flex; flex-direction: column; gap: 0.8rem; }
+    .red-flags-panel h3 { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+    .red-flag-item { background: #ff456010; border: 1px solid #ff456030; border-radius: 8px; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+    .red-flag-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .red-flag-text { font-size: 0.78rem; color: var(--text); line-height: 1.5; }
+    .red-flag-text strong { color: var(--danger); }
+
+    .template-info-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .info-pill { font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: var(--deep); border: 1px solid var(--border); color: var(--muted); }
+
+    .modal-footer { padding: 1.2rem 1.6rem; border-top: 1px solid var(--border); display: flex; gap: 0.8rem; justify-content: flex-end; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none">
+      <path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a class="nav-item" href="campaign-management.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns<span class="nav-badge">3</span></a>
+  <a class="nav-item active" href="template-library.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Templates</a>
+  <a class="nav-item" href="awareness-training.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <div class="sidebar-section">Reports</div>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Reports</a>
+  <div class="sidebar-section">System</div>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">SA</div>
+      <div style="flex:1">
+        <div class="user-name">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Template Library</h1>
+      <p>Browse, preview and deploy phishing email templates</p>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Custom Template
+      </button>
+      <button class="btn btn-primary" onclick="openPreview('it')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview Mode
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Stats strip -->
+    <div class="stats-strip">
+      <div class="strip-stat">
+        <div class="strip-stat-icon" style="background:#00d4ff15">📧</div>
+        <div><div class="strip-stat-num" style="color:var(--accent)">12</div><div class="strip-stat-label">Total Templates</div></div>
+      </div>
+      <div class="strip-stat">
+        <div class="strip-stat-icon" style="background:#00e5a015">✅</div>
+        <div><div class="strip-stat-num" style="color:var(--success)">6</div><div class="strip-stat-label">Categories</div></div>
+      </div>
+      <div class="strip-stat">
+        <div class="strip-stat-icon" style="background:#ff456015">🎯</div>
+        <div><div class="strip-stat-num" style="color:var(--danger)">31.2%</div><div class="strip-stat-label">Avg. Click Rate</div></div>
+      </div>
+      <div class="strip-stat">
+        <div class="strip-stat-icon" style="background:#ffb30015">⚠️</div>
+        <div><div class="strip-stat-num" style="color:var(--warn)">4</div><div class="strip-stat-label">High Risk Templates</div></div>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="text" placeholder="Search templates..."/>
+      </div>
+      <div class="filter-group">
+        <button class="filter-chip active" onclick="setChip(this)">All</button>
+        <button class="filter-chip" onclick="setChip(this)">IT Support</button>
+        <button class="filter-chip" onclick="setChip(this)">HR</button>
+        <button class="filter-chip" onclick="setChip(this)">Credential</button>
+        <button class="filter-chip" onclick="setChip(this)">Executive</button>
+        <button class="filter-chip" onclick="setChip(this)">Delivery</button>
+        <button class="filter-chip" onclick="setChip(this)">Social</button>
+      </div>
+      <div class="filter-group" style="margin-left:auto">
+        <button class="filter-chip active" onclick="setChip(this)">All Levels</button>
+        <button class="filter-chip" onclick="setChip(this)">Easy</button>
+        <button class="filter-chip" onclick="setChip(this)">Medium</button>
+        <button class="filter-chip" onclick="setChip(this)">Hard</button>
+      </div>
+    </div>
+
+    <!-- Templates grid -->
+    <div class="section-heading">All Templates (12)</div>
+    <div class="template-grid">
+
+      <!-- 1. IT Password Reset -->
+      <div class="template-card" style="animation-delay:0.05s">
+        <div class="email-preview">
+          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
+          <div class="ep-header">
+            <div class="ep-avatar" style="background:#0077ff">IT</div>
+            <div class="ep-meta">
+              <div class="ep-from">itsupport@company-helpdesk.net</div>
+              <div class="ep-to">To: you@company.com</div>
+            </div>
+          </div>
+          <div class="ep-subject">[ACTION REQUIRED] Your password expires in 24 hours</div>
+          <div class="ep-body">Your account password will expire soon. Click below to reset immediately or risk losing access...<br/><span>→ Reset Password Now</span></div>
+          <div class="diff-badge diff-medium">Medium</div>
+        </div>
+        <div class="template-card-body">
+          <div class="template-card-top">
+            <div class="template-name">IT Password Reset</div>
+            <span class="template-cat-badge cat-it">IT Support</span>
+          </div>
+          <div class="template-desc">Impersonates the IT helpdesk urging employees to reset their expiring password via a fake portal link.</div>
+          <div class="template-stats">
+            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">34%</div><div class="tstat-label">Click Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">18%</div><div class="tstat-label">Submit Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">8x</div><div class="tstat-label">Used</div></div>
+          </div>
+          <div class="template-card-footer">
+            <button class="t-btn t-btn-preview" onclick="openPreview('it')">👁 Preview</button>
+            <button class="t-btn t-btn-use">Use Template →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. HR Policy -->
+      <div class="template-card" style="animation-delay:0.1s">
+        <div class="email-preview">
+          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
+          <div class="ep-header">
+            <div class="ep-avatar" style="background:#ffb300">HR</div>
+            <div class="ep-meta">
+              <div class="ep-from">hr-noreply@company-hr.org</div>
+              <div class="ep-to">To: all-staff@company.com</div>
+            </div>
+          </div>
+          <div class="ep-subject">Important: Updated Employee Policy — Sign by Friday</div>
+          <div class="ep-body">Please review and acknowledge our updated workplace policy. Failure to sign by EOD Friday may affect your employment status...<br/><span>→ Review & Sign Document</span></div>
+          <div class="diff-badge diff-easy">Easy</div>
+        </div>
+        <div class="template-card-body">
+          <div class="template-card-top">
+            <div class="template-name">HR Policy Update</div>
+            <span class="template-cat-badge cat-hr">HR</span>
+          </div>
+          <div class="template-desc">Mimics an urgent HR policy notice requiring employees to review and sign a document before a deadline.</div>
+          <div class="template-stats">
+            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">41%</div><div class="tstat-label">Click Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">22%</div><div class="tstat-label">Submit Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">5x</div><div class="tstat-label">Used</div></div>
+          </div>
+          <div class="template-card-footer">
+            <button class="t-btn t-btn-preview" onclick="openPreview('hr')">👁 Preview</button>
+            <button class="t-btn t-btn-use">Use Template →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Microsoft 365 -->
+      <div class="template-card" style="animation-delay:0.15s">
+        <div class="email-preview">
+          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
+          <div class="ep-header">
+            <div class="ep-avatar" style="background:#00a4ef">M</div>
+            <div class="ep-meta">
+              <div class="ep-from">no-reply@microsoft-accounts.net</div>
+              <div class="ep-to">To: you@company.com</div>
+            </div>
+          </div>
+          <div class="ep-subject">Your Microsoft account has been suspended</div>
+          <div class="ep-body">Unusual sign-in activity detected. Your Microsoft 365 account has been temporarily suspended. Verify identity now to restore access...<br/><span>→ Verify My Account</span></div>
+          <div class="diff-badge diff-hard">Hard</div>
+        </div>
+        <div class="template-card-body">
+          <div class="template-card-top">
+            <div class="template-name">Microsoft 365 Suspension</div>
+            <span class="template-cat-badge cat-cred">Credential</span>
+          </div>
+          <div class="template-desc">Highly convincing Microsoft branding impersonation claiming account suspension to steal Office 365 credentials.</div>
+          <div class="template-stats">
+            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">28%</div><div class="tstat-label">Click Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">19%</div><div class="tstat-label">Submit Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">6x</div><div class="tstat-label">Used</div></div>
+          </div>
+          <div class="template-card-footer">
+            <button class="t-btn t-btn-preview" onclick="openPreview('ms')">👁 Preview</button>
+            <button class="t-btn t-btn-use">Use Template →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. CEO Wire -->
+      <div class="template-card" style="animation-delay:0.2s">
+        <div class="email-preview">
+          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
+          <div class="ep-header">
+            <div class="ep-avatar" style="background:#8e44ad">CEO</div>
+            <div class="ep-meta">
+              <div class="ep-from">ceo@company-executive.com</div>
+              <div class="ep-to">To: finance@company.com</div>
+            </div>
+          </div>
+          <div class="ep-subject">Confidential: Urgent Wire Transfer Required</div>
+          <div class="ep-body">I need you to process an urgent wire transfer of $48,500 for a confidential acquisition. Please handle this immediately and discreetly...<br/><span>→ Confirm & Proceed</span></div>
+          <div class="diff-badge diff-hard">Hard</div>
+        </div>
+        <div class="template-card-body">
+          <div class="template-card-top">
+            <div class="template-name">CEO Wire Transfer</div>
+            <span class="template-cat-badge cat-exec">Executive</span>
+          </div>
+          <div class="template-desc">Business Email Compromise (BEC) style attack impersonating the CEO to trick finance staff into transferring funds.</div>
+          <div class="template-stats">
+            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">22%</div><div class="tstat-label">Click Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">9%</div><div class="tstat-label">Submit Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">3x</div><div class="tstat-label">Used</div></div>
+          </div>
+          <div class="template-card-footer">
+            <button class="t-btn t-btn-preview" onclick="openPreview('ceo')">👁 Preview</button>
+            <button class="t-btn t-btn-use">Use Template →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Package Delivery -->
+      <div class="template-card" style="animation-delay:0.25s">
+        <div class="email-preview">
+          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
+          <div class="ep-header">
+            <div class="ep-avatar" style="background:#00e5a0;color:#000">📦</div>
+            <div class="ep-meta">
+              <div class="ep-from">delivery@fedex-tracking-portal.com</div>
+              <div class="ep-to">To: you@company.com</div>
+            </div>
+          </div>
+          <div class="ep-subject">Your package could not be delivered — action needed</div>
+          <div class="ep-body">We attempted to deliver your package but no one was available. Pay a small redelivery fee of $2.99 to reschedule...<br/><span>→ Reschedule Delivery</span></div>
+          <div class="diff-badge diff-easy">Easy</div>
+        </div>
+        <div class="template-card-body">
+          <div class="template-card-top">
+            <div class="template-name">Package Delivery Alert</div>
+            <span class="template-cat-badge cat-delivery">Delivery</span>
+          </div>
+          <div class="template-desc">Fake delivery notification from a spoofed courier requesting payment or personal info to reschedule delivery.</div>
+          <div class="template-stats">
+            <div class="tstat"><div class="tstat-num" style="color:var(--success)">9%</div><div class="tstat-label">Click Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">3%</div><div class="tstat-label">Submit Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">4x</div><div class="tstat-label">Used</div></div>
+          </div>
+          <div class="template-card-footer">
+            <button class="t-btn t-btn-preview" onclick="openPreview('delivery')">👁 Preview</button>
+            <button class="t-btn t-btn-use">Use Template →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. LinkedIn -->
+      <div class="template-card" style="animation-delay:0.3s">
+        <div class="email-preview">
+          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
+          <div class="ep-header">
+            <div class="ep-avatar" style="background:#0a66c2">in</div>
+            <div class="ep-meta">
+              <div class="ep-from">messages-noreply@linkedln-mail.com</div>
+              <div class="ep-to">To: you@company.com</div>
+            </div>
+          </div>
+          <div class="ep-subject">You have 3 new connection requests waiting</div>
+          <div class="ep-body">3 people want to connect with you on LinkedIn including a recruiter from Google. View and accept your requests now...<br/><span>→ View Requests</span></div>
+          <div class="diff-badge diff-medium">Medium</div>
+        </div>
+        <div class="template-card-body">
+          <div class="template-card-top">
+            <div class="template-name">LinkedIn Connection</div>
+            <span class="template-cat-badge cat-social">Social</span>
+          </div>
+          <div class="template-desc">Spoofs a LinkedIn notification about pending connection requests to lure employees into entering their credentials.</div>
+          <div class="template-stats">
+            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">36%</div><div class="tstat-label">Click Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">21%</div><div class="tstat-label">Submit Rate</div></div>
+            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">2x</div><div class="tstat-label">Used</div></div>
+          </div>
+          <div class="template-card-footer">
+            <button class="t-btn t-btn-preview" onclick="openPreview('linkedin')">👁 Preview</button>
+            <button class="t-btn t-btn-use">Use Template →</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ── Preview Modal ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeBg(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="modalTitle">Template Preview</h2>
+        <p id="modalSubtitle">Full email view with red flag annotations</p>
+      </div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Full email preview -->
+      <div>
+        <div class="template-info-row" id="modalPills"></div>
+        <div class="full-email-preview" id="modalEmail"></div>
+      </div>
+      <!-- Red flags -->
+      <div class="red-flags-panel">
+        <h3>🚩 Red Flags to Spot</h3>
+        <div id="modalFlags"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary">Use This Template →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const templates = {
+    it: {
+      title: 'IT Password Reset',
+      pills: ['IT Support', 'Medium Difficulty', '34% Click Rate'],
+      email: `
+        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
+        <div class="fep-header">
+          <div class="fep-subject">[ACTION REQUIRED] Your password expires in 24 hours</div>
+          <div class="fep-from">From: IT Support Team &lt;itsupport@company-helpdesk.net&gt;<br/>To: you@company.com</div>
+        </div>
+        <div class="fep-body">
+          Dear Employee,<br/><br/>
+          Our security systems have detected that your account password is set to expire in the next <strong>24 hours</strong>. To avoid being locked out of critical company systems including email, Slack, and the HR portal, you must reset your password immediately.<br/><br/>
+          <a class="fep-cta">Reset My Password Now</a><br/><br/>
+          If you do not reset your password before the deadline, your account will be suspended and IT will need to manually re-enable access, which can take up to 5 business days.<br/>
+          <div class="fep-warning">This is an automated message from the IT Security team. Do not reply to this email. If you believe you received this in error, contact helpdesk@company.com</div>
+        </div>
+        <div class="fep-footer">© 2026 Company IT Department · Helpdesk Portal · Unsubscribe</div>`,
+      flags: [
+        { icon: '🔗', text: '<strong>Suspicious sender domain:</strong> "company-helpdesk.net" is NOT the real company domain. Real IT emails come from @company.com.' },
+        { icon: '⏰', text: '<strong>Artificial urgency:</strong> "24 hours" and "5 business days" are pressure tactics to make you act before thinking.' },
+        { icon: '🖱️', text: '<strong>Vague call-to-action:</strong> Hover over the button before clicking — the real URL would not match the company domain.' },
+        { icon: '⚠️', text: '<strong>Threat of consequences:</strong> Legitimate IT teams do not threaten account suspension with such short notice via email alone.' },
+      ]
+    },
+    hr: {
+      title: 'HR Policy Update',
+      pills: ['HR', 'Easy Difficulty', '41% Click Rate'],
+      email: `
+        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
+        <div class="fep-header">
+          <div class="fep-subject">Important: Updated Employee Policy — Sign by Friday</div>
+          <div class="fep-from">From: HR Department &lt;hr-noreply@company-hr.org&gt;<br/>To: all-staff@company.com</div>
+        </div>
+        <div class="fep-body">
+          Dear Team Member,<br/><br/>
+          As part of our annual compliance review, all employees are required to read and electronically sign the updated <strong>2026 Employee Code of Conduct and Remote Work Policy</strong> by this Friday, 28 February 2026.<br/><br/>
+          Failure to acknowledge the updated policy may result in your employment file being flagged and could impact your upcoming performance review.<br/><br/>
+          <a class="fep-cta">Review & Sign Document</a><br/>
+          <div class="fep-warning">This message was sent to all company employees. For questions contact hr@company.com. Do not share this link.</div>
+        </div>
+        <div class="fep-footer">© 2026 Human Resources · company-hr.org · Compliance Portal</div>`,
+      flags: [
+        { icon: '🌐', text: '<strong>Wrong domain:</strong> "company-hr.org" is not the official company domain. HR always emails from @company.com.' },
+        { icon: '😨', text: '<strong>Employment threat:</strong> Threatening impact on performance reviews is a manipulation tactic to bypass critical thinking.' },
+        { icon: '📧', text: '<strong>"Do not share this link":</strong> Legitimate HR documents use secure portals with individual logins, not shareable links.' },
+        { icon: '📅', text: '<strong>Tight deadline:</strong> Real policy updates are announced weeks in advance, not a few days before the deadline.' },
+      ]
+    },
+    ms: {
+      title: 'Microsoft 365 Suspension',
+      pills: ['Credential Harvest', 'Hard Difficulty', '28% Click Rate'],
+      email: `
+        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
+        <div class="fep-header">
+          <div class="fep-subject">Your Microsoft account has been suspended</div>
+          <div class="fep-from">From: Microsoft Account Team &lt;no-reply@microsoft-accounts.net&gt;<br/>To: you@company.com</div>
+        </div>
+        <div class="fep-body">
+          <strong style="color:#00a4ef">Microsoft</strong><br/><br/>
+          We detected unusual sign-in activity on your Microsoft account. To protect your account, we have <strong>temporarily suspended your access</strong> to Microsoft 365, Teams, SharePoint, and OneDrive.<br/><br/>
+          To restore access, you must verify your identity within the next 2 hours.<br/><br/>
+          <a class="fep-cta" style="background:#0052cc">Verify My Identity</a><br/>
+          <div class="fep-warning">If you don't verify within 2 hours your account will be permanently deactivated. Microsoft will never ask for your password. Reference: MS-SEC-20260227</div>
+        </div>
+        <div class="fep-footer">Microsoft Corporation · One Microsoft Way · Redmond WA · microsoft-accounts.net</div>`,
+      flags: [
+        { icon: '🔗', text: '<strong>Fake Microsoft domain:</strong> Real Microsoft emails come from @microsoft.com, not "microsoft-accounts.net".' },
+        { icon: '🕐', text: '<strong>"2 hours" countdown:</strong> Extreme urgency is the hallmark of phishing. Microsoft gives much longer windows for security actions.' },
+        { icon: '💀', text: '<strong>"Permanently deactivated":</strong> This is a scare tactic. Microsoft never permanently deletes corporate accounts over one missed verification.' },
+        { icon: '🔢', text: '<strong>Fake reference number:</strong> "MS-SEC-20260227" looks official but is fabricated to appear legitimate.' },
+      ]
+    },
+    ceo: {
+      title: 'CEO Wire Transfer (BEC)',
+      pills: ['Executive / BEC', 'Hard Difficulty', '22% Click Rate'],
+      email: `
+        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
+        <div class="fep-header">
+          <div class="fep-subject">Confidential: Urgent Wire Transfer Required</div>
+          <div class="fep-from">From: David Chen, CEO &lt;ceo@company-executive.com&gt;<br/>To: finance@company.com</div>
+        </div>
+        <div class="fep-body">
+          Hi Sarah,<br/><br/>
+          I'm currently in a confidential board meeting and cannot take calls. I need you to urgently process a wire transfer of <strong>$48,500 USD</strong> to complete a time-sensitive acquisition we are finalising today.<br/><br/>
+          Please treat this as strictly confidential — do not discuss with other team members until the deal is announced. I'll explain everything after the meeting.<br/><br/>
+          <a class="fep-cta" style="background:#2c3e50">Confirm Transfer Details</a><br/>
+          <div class="fep-warning">Please action immediately. I am not reachable by phone right now. — David</div>
+        </div>
+        <div class="fep-footer">Sent from my iPhone · company-executive.com</div>`,
+      flags: [
+        { icon: '📵', text: '<strong>"Cannot take calls":</strong> Isolating you from verbal verification is the core BEC tactic. Always call to verify wire requests.' },
+        { icon: '🤫', text: '<strong>"Do not discuss with others":</strong> Secrecy requests are a massive red flag designed to prevent you from getting a second opinion.' },
+        { icon: '📱', text: '<strong>"Sent from my iPhone":</strong> Attackers add this to make it feel casual and personal, reducing your guard.' },
+        { icon: '🏦', text: '<strong>No internal process followed:</strong> Real wire transfers require multi-step approval workflows, not a single email click.' },
+      ]
+    },
+    delivery: {
+      title: 'Package Delivery Alert',
+      pills: ['Delivery', 'Easy Difficulty', '9% Click Rate'],
+      email: `
+        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
+        <div class="fep-header">
+          <div class="fep-subject">Your package could not be delivered — action needed</div>
+          <div class="fep-from">From: FedEx Delivery &lt;delivery@fedex-tracking-portal.com&gt;<br/>To: you@company.com</div>
+        </div>
+        <div class="fep-body">
+          Dear Customer,<br/><br/>
+          We attempted to deliver your package today (Tracking: FX-2840-9912-KL) but no one was available to receive it. Your package will be returned to the sender in <strong>48 hours</strong> unless you take action.<br/><br/>
+          To reschedule your delivery, a small redelivery processing fee of <strong>$2.99</strong> is required.<br/><br/>
+          <a class="fep-cta" style="background:#4d148c">Reschedule My Delivery — $2.99</a><br/>
+          <div class="fep-warning">Failure to pay within 48 hours will result in your package being returned. FedEx Tracking Portal · fedex-tracking-portal.com</div>
+        </div>
+        <div class="fep-footer">© 2026 FedEx · fedex-tracking-portal.com · Customer Care</div>`,
+      flags: [
+        { icon: '💳', text: '<strong>Payment request:</strong> Real couriers like FedEx, DHL, or UPS never charge redelivery fees via email payment links.' },
+        { icon: '🔗', text: '<strong>Fake domain:</strong> "fedex-tracking-portal.com" is not FedEx. Official emails come from @fedex.com.' },
+        { icon: '📦', text: '<strong>Unexpected package:</strong> If you didn\'t order anything, a delivery notification is almost certainly a scam.' },
+        { icon: '💰', text: '<strong>Small fee = low guard:</strong> The $2.99 amount is deliberately small so you don\'t question entering your card details.' },
+      ]
+    },
+    linkedin: {
+      title: 'LinkedIn Connection Request',
+      pills: ['Social Engineering', 'Medium Difficulty', '36% Click Rate'],
+      email: `
+        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
+        <div class="fep-header">
+          <div class="fep-subject">You have 3 new connection requests waiting</div>
+          <div class="fep-from">From: LinkedIn &lt;messages-noreply@linkedln-mail.com&gt;<br/>To: you@company.com</div>
+        </div>
+        <div class="fep-body">
+          <strong style="color:#0a66c2">in</strong> <strong>LinkedIn</strong><br/><br/>
+          You have <strong>3 new connection requests</strong> including from a Senior Recruiter at Google and a VP at McKinsey & Company. Don't miss out on these opportunities!<br/><br/>
+          <a class="fep-cta" style="background:#0a66c2">View My Connection Requests</a><br/><br/>
+          You also have <strong>12 people who viewed your profile</strong> this week. Upgrade to Premium to see who they are.<br/>
+          <div class="fep-warning">You are receiving this because you have a LinkedIn account. Manage preferences · Unsubscribe · linkedln-mail.com</div>
+        </div>
+        <div class="fep-footer">LinkedIn Corporation · 1000 W Maude Ave, Sunnyvale, CA · linkedln-mail.com</div>`,
+      flags: [
+        { icon: '🔤', text: '<strong>Typosquatting domain:</strong> "linkedln-mail.com" — note the "ln" instead of "in". Real LinkedIn emails come from @linkedin.com.' },
+        { icon: '🎯', text: '<strong>High-value bait:</strong> Mentioning Google and McKinsey recruiters is designed to excite and cloud your judgement.' },
+        { icon: '💼', text: '<strong>Profile view count:</strong> The "12 people viewed your profile" is fabricated to add further temptation to click.' },
+        { icon: '🔒', text: '<strong>Credential target:</strong> Clicking leads to a fake LinkedIn login page designed to steal your username and password.' },
+      ]
+    }
+  };
+
+  function openPreview(id) {
+    const t = templates[id];
+    document.getElementById('modalTitle').textContent = t.title;
+    document.getElementById('modalPills').innerHTML = t.pills.map(p => `<span class="info-pill">${p}</span>`).join('');
+    document.getElementById('modalEmail').innerHTML = t.email;
+    document.getElementById('modalFlags').innerHTML = t.flags.map(f => `
+      <div class="red-flag-item">
+        <div class="red-flag-icon">${f.icon}</div>
+        <div class="red-flag-text">${f.text}</div>
+      </div>`).join('');
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+  function closeBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+  function setChip(el) {
+    el.closest('.filter-group').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>

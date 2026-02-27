@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard — Awareness Training</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #020b18; --deep:   #040f1f; --panel:  #071628; --card:   #081a30;
+      --border: #0d2847; --accent: #00d4ff; --accent2:#0077ff; --danger: #ff4560;
+      --warn:   #ffb300; --success:#00e5a0; --text:   #cde4f8; --muted:  #4a7090;
+      --sidebar-w: 240px;
+    }
+    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 1.6rem 1.4rem; border-bottom: 1px solid var(--border); }
+    .sidebar-logo svg { width: 36px; height: 36px; }
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .sidebar-logo-text span { color: var(--accent); }
+    .sidebar-section { padding: 1.2rem 1rem 0.4rem; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 1.2rem; margin: 2px 0.6rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .nav-item:hover { background: var(--border); color: var(--text); }
+    .nav-item.active { background: linear-gradient(90deg, #00d4ff18, #0077ff10); color: var(--accent); border-left: 2px solid var(--accent); margin-left: calc(0.6rem - 2px); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: 1rem; border-top: 1px solid var(--border); }
+    .user-chip { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: var(--deep); border: 1px solid var(--border); }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #00c896, var(--success)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; }
+    .user-role { font-size: 0.7rem; color: var(--success); }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .main::-webkit-scrollbar { width: 5px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Topbar */
+    .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: var(--navy); border-bottom: 1px solid var(--border); }
+    .topbar-left h1 { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .topbar-left p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .risk-chip { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 6px 16px; font-size: 0.8rem; }
+    .risk-score-num { font-family: 'Share Tech Mono', monospace; font-size: 1rem; font-weight: 700; }
+
+    /* ── Content ── */
+    .content { padding: 1.8rem 2rem; flex: 1; }
+
+    /* Hero welcome card */
+    .hero-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.8rem 2rem; margin-bottom: 1.6rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 2rem;
+      position: relative; overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+    }
+    .hero-card::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 250px; height: 250px;
+      background: radial-gradient(circle, #00d4ff0a 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-left h2 { font-size: 1.3rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .hero-left p  { font-size: 0.85rem; color: var(--muted); line-height: 1.7; max-width: 480px; }
+    .hero-stats { display: flex; gap: 2rem; flex-shrink: 0; }
+    .hero-stat { text-align: center; }
+    .hero-stat-num { font-family: 'Share Tech Mono', monospace; font-size: 1.8rem; color: var(--accent); }
+    .hero-stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 2px; }
+
+    /* Progress bar */
+    .overall-progress { margin-bottom: 1.6rem; animation: fadeUp 0.4s 0.05s ease both; }
+    .prog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .prog-header h3 { font-size: 0.82rem; font-weight: 700; color: #fff; }
+    .prog-header span { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--accent); }
+    .prog-bg { height: 8px; background: var(--border); border-radius: 10px; overflow: hidden; }
+    .prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 10px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); width: 0; }
+
+    /* Two-col layout */
+    .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 1.4rem; }
+
+    /* Module list */
+    .modules-section h3 { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+    .module-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 0.8rem; overflow: hidden; cursor: pointer;
+      transition: all 0.25s; animation: fadeUp 0.4s ease both;
+    }
+    .module-card:hover { border-color: var(--accent2); transform: translateX(4px); }
+    .module-card.locked { opacity: 0.5; cursor: not-allowed; }
+    .module-card.locked:hover { transform: none; border-color: var(--border); }
+
+    .module-inner { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; }
+    .module-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+    .module-info { flex: 1; }
+    .module-title { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 3px; }
+    .module-meta  { font-size: 0.72rem; color: var(--muted); display: flex; gap: 1rem; }
+    .module-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .module-status { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+    .status-done     { background: #00e5a018; color: var(--success); }
+    .status-inprog   { background: #ffb30018; color: var(--warn); }
+    .status-todo     { background: #0077ff18; color: var(--accent2); }
+    .status-locked   { background: #ffffff08; color: var(--muted); }
+    .module-score    { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--success); }
+
+    /* Mini progress inside card */
+    .module-prog-bg { height: 3px; background: var(--border); border-radius: 10px; overflow: hidden; margin-top: 6px; }
+    .module-prog-fill { height: 100%; border-radius: 10px; }
+
+    /* Right column */
+    .right-col { display: flex; flex-direction: column; gap: 1rem; }
+
+    /* Badges panel */
+    .panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; animation: fadeUp 0.4s 0.1s ease both; }
+    .panel-card h3 { font-size: 0.82rem; font-weight: 700; color: #fff; margin-bottom: 1rem; }
+
+    .badges-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+    .badge-item { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--deep); transition: all 0.2s; }
+    .badge-item.earned { border-color: #ffb30050; background: #ffb30008; }
+    .badge-item.earned:hover { border-color: var(--warn); transform: translateY(-2px); }
+    .badge-icon { font-size: 1.6rem; }
+    .badge-name { font-size: 0.62rem; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.3; }
+    .badge-item.earned .badge-name { color: var(--warn); }
+    .badge-locked-overlay { font-size: 0.8rem; }
+
+    /* Leaderboard */
+    .leaderboard-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #0d284740; }
+    .leaderboard-item:last-child { border-bottom: none; }
+    .lb-rank { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--muted); width: 20px; flex-shrink: 0; }
+    .lb-rank.gold   { color: #ffd700; }
+    .lb-rank.silver { color: #c0c0c0; }
+    .lb-rank.bronze { color: #cd7f32; }
+    .lb-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .lb-name { flex: 1; font-size: 0.8rem; font-weight: 600; color: var(--text); }
+    .lb-score { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--accent); }
+    .lb-you { font-size: 0.62rem; color: var(--accent); background: #00d4ff15; padding: 1px 7px; border-radius: 10px; }
+
+    /* ── Quiz Modal ── */
+    .modal-overlay { position: fixed; inset: 0; z-index: 200; background: #000000d0; backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal::-webkit-scrollbar { width: 4px; }
+    .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Module reader */
+    .module-reader { padding: 0; }
+    .reader-header { padding: 1.4rem 1.6rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .reader-header h2 { font-size: 1.05rem; font-weight: 800; color: #fff; }
+    .reader-header p  { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; }
+    .modal-close:hover { color: var(--text); }
+
+    .reader-body { padding: 1.6rem; }
+    .reader-section { margin-bottom: 1.4rem; }
+    .reader-section h3 { font-size: 0.88rem; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+    .reader-section p  { font-size: 0.84rem; color: var(--text); line-height: 1.8; }
+    .reader-section ul { padding-left: 1.2rem; }
+    .reader-section li { font-size: 0.84rem; color: var(--text); line-height: 1.9; }
+    .reader-section li::marker { color: var(--accent); }
+
+    .highlight-box { background: #00d4ff0a; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 1rem 0; font-size: 0.82rem; color: var(--text); line-height: 1.7; }
+
+    /* Quiz */
+    .quiz-header { padding: 1.4rem 1.6rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .quiz-header h2 { font-size: 1.05rem; font-weight: 800; color: #fff; }
+    .quiz-progress { font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--muted); }
+    .quiz-body { padding: 1.6rem; }
+    .quiz-q { font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 1.2rem; line-height: 1.5; }
+    .quiz-options { display: flex; flex-direction: column; gap: 0.6rem; }
+    .quiz-opt {
+      padding: 13px 16px; border-radius: 9px;
+      border: 1px solid var(--border); background: var(--deep);
+      font-size: 0.85rem; color: var(--text); cursor: pointer;
+      transition: all 0.2s; text-align: left; font-family: 'Syne', sans-serif;
+    }
+    .quiz-opt:hover:not(.selected):not(.correct):not(.wrong) { border-color: var(--accent2); background: #0077ff08; }
+    .quiz-opt.selected { border-color: var(--accent2); background: #0077ff15; color: var(--accent); }
+    .quiz-opt.correct  { border-color: var(--success); background: #00e5a015; color: var(--success); }
+    .quiz-opt.wrong    { border-color: var(--danger);  background: #ff456015; color: var(--danger); }
+    .quiz-explanation { margin-top: 1rem; padding: 12px 14px; border-radius: 8px; font-size: 0.8rem; line-height: 1.7; display: none; }
+    .quiz-explanation.show { display: block; }
+    .quiz-explanation.correct-exp { background: #00e5a010; border: 1px solid #00e5a030; color: var(--success); }
+    .quiz-explanation.wrong-exp   { background: #ff456010; border: 1px solid #ff456030; color: var(--danger); }
+    .quiz-footer { padding: 1.2rem 1.6rem; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; }
+    .btn-primary:hover { box-shadow: 0 4px 16px #00d4ff30; }
+    .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Score result */
+    .score-result { padding: 2rem 1.6rem; text-align: center; }
+    .score-circle { width: 110px; height: 110px; border-radius: 50%; border: 4px solid var(--success); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 1.2rem; }
+    .score-num { font-family: 'Share Tech Mono', monospace; font-size: 2rem; color: var(--success); }
+    .score-label { font-size: 0.65rem; color: var(--muted); }
+    .score-title { font-size: 1.2rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .score-sub   { font-size: 0.82rem; color: var(--muted); }
+    .badge-earned { margin: 1.2rem auto; width: fit-content; background: #ffb30015; border: 1px solid #ffb30040; border-radius: 12px; padding: 12px 24px; display: flex; align-items: center; gap: 12px; }
+    .badge-earned-icon { font-size: 2rem; }
+    .badge-earned-text { font-size: 0.82rem; font-weight: 700; color: var(--warn); }
+    .badge-earned-sub  { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes popIn  { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar (Employee view) ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none">
+      <path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Employee Portal</div>  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    My Dashboard
+  </a>
+  <a class="nav-item active" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+    Training Modules
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+    My Badges
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    My Progress
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Report Phishing
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">JL</div>
+      <div>
+        <div class="user-name">James Lim</div>
+        <div class="user-role">Employee · Finance</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Security Awareness Training</h1>
+      <p>Complete modules to reduce your risk score and earn badges</p>
+    </div>
+    <div class="risk-chip">
+      <span style="font-size:0.75rem;color:var(--muted)">Your Risk Score</span>
+      <span class="risk-score-num" style="color:var(--danger)">91</span>
+      <span style="font-size:0.7rem;color:var(--danger);background:#ff456015;padding:2px 8px;border-radius:10px">High</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Hero -->
+    <div class="hero-card">
+      <div class="hero-left">
+        <h2>👋 Welcome back, James</h2>
+        <p>You recently interacted with a simulated phishing email during the <strong style="color:var(--accent)">Q1 IT Helpdesk Reset</strong> campaign. Complete the training modules below to improve your awareness and lower your risk score from <strong style="color:var(--danger)">91</strong> to green.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="hero-stat-num">2/6</div>
+          <div class="hero-stat-label">Modules Done</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num" style="color:var(--success)">3</div>
+          <div class="hero-stat-label">Badges Earned</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num" style="color:var(--warn)">87%</div>
+          <div class="hero-stat-label">Quiz Average</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overall progress -->
+    <div class="overall-progress">
+      <div class="prog-header">
+        <h3>Overall Training Progress</h3>
+        <span>33% complete</span>
+      </div>
+      <div class="prog-bg"><div class="prog-fill" id="overallProg" style="width:33%"></div></div>
+    </div>
+
+    <!-- Two-col -->
+    <div class="two-col">
+
+      <!-- Modules -->
+      <div class="modules-section">
+        <h3>Training Modules (6)</h3>
+
+        <!-- Module 1 — Done -->
+        <div class="module-card" onclick="openModule(1)">
+          <div class="module-inner">
+            <div class="module-icon" style="background:#00d4ff15;font-size:1.4rem">🎣</div>
+            <div class="module-info">
+              <div class="module-title">What is Phishing?</div>
+              <div class="module-meta">
+                <span>⏱ 5 min</span>
+                <span>📝 5 questions</span>
+                <span>🔰 Beginner</span>
+              </div>
+              <div class="module-prog-bg"><div class="module-prog-fill" style="width:100%;background:var(--success)"></div></div>
+            </div>
+            <div class="module-right">
+              <span class="module-status status-done">✓ Complete</span>
+              <span class="module-score">Score: 100%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 2 — Done -->
+        <div class="module-card" onclick="openModule(2)" style="animation-delay:0.05s">
+          <div class="module-inner">
+            <div class="module-icon" style="background:#00e5a015;font-size:1.4rem">🔗</div>
+            <div class="module-info">
+              <div class="module-title">Spotting Suspicious Links & Domains</div>
+              <div class="module-meta">
+                <span>⏱ 7 min</span>
+                <span>📝 5 questions</span>
+                <span>🔰 Beginner</span>
+              </div>
+              <div class="module-prog-bg"><div class="module-prog-fill" style="width:100%;background:var(--success)"></div></div>
+            </div>
+            <div class="module-right">
+              <span class="module-status status-done">✓ Complete</span>
+              <span class="module-score">Score: 75%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 3 — In Progress -->
+        <div class="module-card" onclick="openModule(3)" style="animation-delay:0.1s">
+          <div class="module-inner">
+            <div class="module-icon" style="background:#ffb30015;font-size:1.4rem">⚡</div>
+            <div class="module-info">
+              <div class="module-title">Urgency & Social Engineering Tactics</div>
+              <div class="module-meta">
+                <span>⏱ 8 min</span>
+                <span>📝 5 questions</span>
+                <span>⚙️ Intermediate</span>
+              </div>
+              <div class="module-prog-bg"><div class="module-prog-fill" style="width:50%;background:var(--warn)"></div></div>
+            </div>
+            <div class="module-right">
+              <span class="module-status status-inprog">⏳ In Progress</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 4 — To Do -->
+        <div class="module-card" onclick="openModule(4)" style="animation-delay:0.15s">
+          <div class="module-inner">
+            <div class="module-icon" style="background:#0077ff15;font-size:1.4rem">📧</div>
+            <div class="module-info">
+              <div class="module-title">Analysing Email Headers & Sender Info</div>
+              <div class="module-meta">
+                <span>⏱ 10 min</span>
+                <span>📝 5 questions</span>
+                <span>⚙️ Intermediate</span>
+              </div>
+              <div class="module-prog-bg"><div class="module-prog-fill" style="width:0%;background:var(--accent2)"></div></div>
+            </div>
+            <div class="module-right">
+              <span class="module-status status-todo">▶ Start</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 5 — Locked -->
+        <div class="module-card locked" style="animation-delay:0.2s">
+          <div class="module-inner">
+            <div class="module-icon" style="background:#ffffff08;font-size:1.4rem">🏢</div>
+            <div class="module-info">
+              <div class="module-title">Business Email Compromise (BEC)</div>
+              <div class="module-meta">
+                <span>⏱ 12 min</span>
+                <span>📝 5 questions</span>
+                <span>🔴 Advanced</span>
+              </div>
+              <div class="module-prog-bg"><div class="module-prog-fill" style="width:0%;background:var(--muted)"></div></div>
+            </div>
+            <div class="module-right">
+              <span class="module-status status-locked">🔒 Locked</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module 6 — Locked -->
+        <div class="module-card locked" style="animation-delay:0.25s">
+          <div class="module-inner">
+            <div class="module-icon" style="background:#ffffff08;font-size:1.4rem">🛡️</div>
+            <div class="module-info">
+              <div class="module-title">What To Do When You're Phished</div>
+              <div class="module-meta">
+                <span>⏱ 6 min</span>
+                <span>📝 5 questions</span>
+                <span>🔰 Beginner</span>
+              </div>
+              <div class="module-prog-bg"><div class="module-prog-fill" style="width:0%;background:var(--muted)"></div></div>
+            </div>
+            <div class="module-right">
+              <span class="module-status status-locked">🔒 Locked</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div class="right-col">
+
+        <!-- Badges -->
+        <div class="panel-card">
+          <h3>🏅 Badges Earned</h3>
+          <div class="badges-grid">
+            <div class="badge-item earned">
+              <div class="badge-icon">🎣</div>
+              <div class="badge-name">Phish Aware</div>
+            </div>
+            <div class="badge-item earned">
+              <div class="badge-icon">🔍</div>
+              <div class="badge-name">Link Detective</div>
+            </div>
+            <div class="badge-item earned">
+              <div class="badge-icon">⭐</div>
+              <div class="badge-name">Fast Learner</div>
+            </div>
+            <div class="badge-item">
+              <div class="badge-icon" style="filter:grayscale(1);opacity:0.4">⚡</div>
+              <div class="badge-name" style="color:var(--muted)">Pressure Pro</div>
+            </div>
+            <div class="badge-item">
+              <div class="badge-icon" style="filter:grayscale(1);opacity:0.4">📧</div>
+              <div class="badge-name" style="color:var(--muted)">Header Hero</div>
+            </div>
+            <div class="badge-item">
+              <div class="badge-icon" style="filter:grayscale(1);opacity:0.4">🛡️</div>
+              <div class="badge-name" style="color:var(--muted)">Cyber Shield</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="panel-card">
+          <h3>🏆 Department Leaderboard</h3>
+          <div class="leaderboard-item">
+            <div class="lb-rank gold">1</div>
+            <div class="lb-avatar" style="background:linear-gradient(135deg,#ffd700,#ffb300)">PW</div>
+            <div class="lb-name">Peter Wong</div>
+            <div class="lb-score">980pts</div>
+          </div>
+          <div class="leaderboard-item">
+            <div class="lb-rank silver">2</div>
+            <div class="lb-avatar" style="background:linear-gradient(135deg,#c0c0c0,#a0a0a0)">RK</div>
+            <div class="lb-name">Rita Krishnan</div>
+            <div class="lb-score">860pts</div>
+          </div>
+          <div class="leaderboard-item">
+            <div class="lb-rank bronze">3</div>
+            <div class="lb-avatar" style="background:linear-gradient(135deg,#cd7f32,#a0522d)">SM</div>
+            <div class="lb-name">Sarah Malik</div>
+            <div class="lb-score">740pts</div>
+          </div>
+          <div class="leaderboard-item" style="background:#00d4ff08;border-radius:6px;padding:8px;margin:0 -4px">
+            <div class="lb-rank" style="color:var(--muted)">8</div>
+            <div class="lb-avatar" style="background:linear-gradient(135deg,var(--accent2),var(--accent))">JL</div>
+            <div class="lb-name">James Lim <span class="lb-you">You</span></div>
+            <div class="lb-score" style="color:var(--muted)">320pts</div>
+          </div>
+          <div class="leaderboard-item">
+            <div class="lb-rank" style="color:var(--muted)">9</div>
+            <div class="lb-avatar" style="background:linear-gradient(135deg,#e74c3c,#c0392b)">DT</div>
+            <div class="lb-name">Daniel Tan</div>
+            <div class="lb-score" style="color:var(--muted)">290pts</div>
+          </div>
+        </div>
+
+        <!-- Tip of the day -->
+        <div class="panel-card" style="background:linear-gradient(135deg,#00d4ff0a,#0077ff08);border-color:#00d4ff25">
+          <h3 style="color:var(--accent)">💡 Security Tip of the Day</h3>
+          <p style="font-size:0.82rem;color:var(--text);line-height:1.8;margin-top:0.5rem">
+            Always hover over links before clicking. If the URL shown in your browser's status bar doesn't match the company or service mentioned in the email — <strong style="color:var(--accent)">don't click it.</strong>
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ── Module Modal ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeBg(event)">
+  <div class="modal" id="modal">
+    <!-- Content injected by JS -->
+  </div>
+</div>
+
+<script>
+  // ── Module content data ──
+  const modules = {
+    3: {
+      title: 'Urgency & Social Engineering Tactics',
+      duration: '8 min · 5 questions',
+      content: `
+        <div class="reader-body">
+          <div class="reader-section">
+            <h3>What is Social Engineering?</h3>
+            <p>Social engineering is the psychological manipulation of people into performing actions or divulging confidential information. Unlike hacking software, attackers hack <em>humans</em> — exploiting emotions like fear, urgency, curiosity, and greed.</p>
+          </div>
+          <div class="reader-section">
+            <h3>The 6 Weapons of Influence Used in Phishing</h3>
+            <ul>
+              <li><strong>Urgency</strong> — "Your account will be deleted in 2 hours!" Forces hasty decisions without thinking.</li>
+              <li><strong>Authority</strong> — Pretending to be the CEO, IT, or HR to gain instant trust.</li>
+              <li><strong>Fear</strong> — "Your computer is infected — call immediately!" Panic bypasses logic.</li>
+              <li><strong>Scarcity</strong> — "Only 1 action left before permanent lockout." Triggers loss aversion.</li>
+              <li><strong>Social Proof</strong> — "All your colleagues have already signed this document."</li>
+              <li><strong>Reciprocity</strong> — Offering something first (like a free gift) to make you feel obligated.</li>
+            </ul>
+          </div>
+          <div class="highlight-box">
+            🛑 <strong>The Golden Rule:</strong> Any email that makes you feel you must act RIGHT NOW without thinking is almost certainly a phishing attempt. Slow down. Verify. Then act.
+          </div>
+          <div class="reader-section">
+            <h3>Real-World Red Flags</h3>
+            <ul>
+              <li>Countdown timers or deadlines shorter than 24 hours</li>
+              <li>Requests that bypass your normal approval workflow</li>
+              <li>"Don't tell anyone about this" — secrecy is a manipulation tactic</li>
+              <li>Threats of job consequences for not acting immediately</li>
+              <li>Emails from senior leadership sent outside of business hours</li>
+            </ul>
+          </div>
+          <div class="reader-section">
+            <h3>What Should You Do?</h3>
+            <p>Pause. Verify through a separate channel (call the person directly using a number from the company directory — never from the email). Report suspicious emails using the PhishGuard report button. You will never get in trouble for verifying.</p>
+          </div>
+        </div>`,
+      quiz: [
+        {
+          q: 'An email from your "CEO" asks you to urgently transfer $15,000 and says "Don\'t tell anyone yet." What should you do?',
+          opts: ['Transfer the money immediately — it came from the CEO', 'Verify by calling the CEO directly using a known number', 'Reply to the email asking for more details', 'Forward it to a colleague to check'],
+          correct: 1,
+          exp: '✅ Correct! Always verify urgent financial requests by calling the person directly using a number from the official company directory — never use contact info from the suspicious email itself.'
+        },
+        {
+          q: 'Which of the following is the strongest sign that an email is using social engineering?',
+          opts: ['It has the company logo', 'It creates extreme urgency and threatens consequences', 'It was sent during working hours', 'It contains a PDF attachment'],
+          correct: 1,
+          exp: '✅ Correct! Artificial urgency combined with threats is the hallmark of social engineering. Logos and timing can be faked easily.'
+        },
+        {
+          q: '"Your Microsoft 365 account will be permanently deleted in 2 hours unless you verify now." This is an example of which tactic?',
+          opts: ['Reciprocity', 'Social Proof', 'Urgency combined with Fear', 'Authority alone'],
+          correct: 2,
+          exp: '✅ Correct! The 2-hour countdown (urgency) combined with "permanently deleted" (fear) are classic social engineering pressure techniques used together.'
+        },
+        {
+          q: 'You receive an email saying all your colleagues have already signed a new HR policy, and you\'re the last one. This exploits which influence weapon?',
+          opts: ['Scarcity', 'Social Proof', 'Authority', 'Reciprocity'],
+          correct: 1,
+          exp: '✅ Correct! "Everyone else has done it" is Social Proof — making you feel you\'ll be excluded or judged if you don\'t comply quickly.'
+        },
+        {
+          q: 'What is the BEST first action when you receive a suspicious but urgent-looking email from IT?',
+          opts: ['Click the link quickly before your account is locked', 'Delete it immediately without reporting', 'Call the IT department directly using the company directory number', 'Reply to the email to confirm it is real'],
+          correct: 2,
+          exp: '✅ Correct! Verifying through a separate, trusted channel (calling IT using a number you already know) is the gold standard response to any suspicious urgent request.'
+        }
+      ]
+    },
+    4: {
+      title: 'Analysing Email Headers & Sender Info',
+      duration: '10 min · 5 questions',
+      content: `
+        <div class="reader-body">
+          <div class="reader-section">
+            <h3>Why Email Headers Matter</h3>
+            <p>The "From" name you see in your inbox is just a display name — it can say anything the sender wants. The real sender information is hidden in the email headers. Learning to read these is one of the most powerful phishing detection skills.</p>
+          </div>
+          <div class="reader-section">
+            <h3>Key Things to Check</h3>
+            <ul>
+              <li><strong>Display Name vs. Actual Email:</strong> "IT Support" &lt;itsupport@company-helpdesk.net&gt; — the display name looks right but the domain is wrong.</li>
+              <li><strong>Domain Spelling:</strong> Look for typosquatting — microsoft.com vs microsoft-accounts.net vs mıcrosoft.com (note the dotless i).</li>
+              <li><strong>Reply-To Address:</strong> Sometimes different from the From address — replies go to the attacker.</li>
+              <li><strong>SPF/DKIM/DMARC:</strong> Email authentication checks. Most email clients show a warning if these fail.</li>
+            </ul>
+          </div>
+          <div class="highlight-box">
+            💡 <strong>Quick Check:</strong> In Gmail, click the three-dot menu → "Show original" to see full headers. In Outlook, go to File → Properties to view headers.
+          </div>
+          <div class="reader-section">
+            <h3>Common Domain Spoofing Tricks</h3>
+            <ul>
+              <li>Adding words: microsoft-support.com, paypal-security.net</li>
+              <li>Swapping TLD: company.net instead of company.com</li>
+              <li>Homograph attacks: using similar-looking Unicode characters</li>
+              <li>Subdomain tricks: paypal.com.phisher.net (the real domain is phisher.net)</li>
+            </ul>
+          </div>
+        </div>`,
+      quiz: [
+        {
+          q: 'An email displays "From: Microsoft Support" but the actual email address is no-reply@microsoft-accounts.net. What is this an example of?',
+          opts: ['A legitimate Microsoft email', 'Display name spoofing', 'An SPF failure', 'A DMARC pass'],
+          correct: 1,
+          exp: '✅ Correct! Display name spoofing lets attackers show any name they want while the real sending address (the domain) reveals their true identity.'
+        },
+        {
+          q: 'Which of these email domains is most suspicious if you receive an email claiming to be from PayPal?',
+          opts: ['paypal.com', 'accounts.paypal.com', 'paypal.com.account-verify.net', 'service.paypal.com'],
+          correct: 2,
+          exp: '✅ Correct! "paypal.com.account-verify.net" looks like it starts with paypal.com but the real domain is actually "account-verify.net" — everything before the last dot-com is just a subdomain.'
+        },
+        {
+          q: 'What does it mean if an email fails SPF and DKIM checks?',
+          opts: ['The email is 100% definitely phishing', 'The email may not have come from who it claims', 'The email is safe to open', 'The email attachment is infected'],
+          correct: 1,
+          exp: '✅ Correct! SPF and DKIM failures mean the email may not have originated from the claimed domain. It\'s a strong warning sign but not 100% conclusive on its own.'
+        },
+        {
+          q: 'You hover over a link in an email from "your bank" and the status bar shows: bank.com.login-secure.ru. What should you do?',
+          opts: ['Click — it starts with bank.com so it must be safe', 'Do not click — the real domain is login-secure.ru', 'Click only if you are on a secure WiFi network', 'Forward to a colleague to check'],
+          correct: 1,
+          exp: '✅ Correct! The real domain is always the last part before the path. "login-secure.ru" is the actual domain here — the "bank.com" part is just a subdomain of a Russian server.'
+        },
+        {
+          q: 'Where can you find the full email headers in Gmail to verify a suspicious message?',
+          opts: ['Settings → Privacy', 'Three-dot menu → Show original', 'File → Properties', 'Right-click → View Source'],
+          correct: 1,
+          exp: '✅ Correct! In Gmail, clicking the three-dot menu on an email and selecting "Show original" reveals the full raw headers including SPF, DKIM, and DMARC results.'
+        }
+      ]
+    }
+  };
+
+  // Simple module viewer for done modules
+  const simpleModules = {
+    1: { title: 'What is Phishing?', msg: 'You\'ve already completed this module with a perfect score of 100%! 🎉' },
+    2: { title: 'Spotting Suspicious Links & Domains', msg: 'You\'ve already completed this module with a score of 75%. You can retake it to improve your score.' }
+  };
+
+  let quizState = { questions: [], current: 0, score: 0, answered: false, moduleId: 0 };
+
+  function openModule(id) {
+    if (id === 5 || id === 6) return; // locked
+
+    const overlay = document.getElementById('modalOverlay');
+    const modal = document.getElementById('modal');
+
+    if (simpleModules[id]) {
+      modal.innerHTML = `
+        <div class="reader-header">
+          <div><h2>${simpleModules[id].title}</h2><p>Already completed</p></div>
+          <button class="modal-close" onclick="closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="reader-body" style="padding:2rem;text-align:center">
+          <div style="font-size:3rem;margin-bottom:1rem">✅</div>
+          <p style="font-size:0.9rem;color:var(--text);line-height:1.7">${simpleModules[id].msg}</p>
+          <button class="btn btn-primary" style="margin-top:1.5rem" onclick="closeModal()">Close</button>
+        </div>`;
+      overlay.classList.add('open');
+      return;
+    }
+
+    const mod = modules[id];
+    if (!mod) return;
+
+    quizState = { questions: mod.quiz, current: 0, score: 0, answered: false, moduleId: id };
+
+    modal.innerHTML = `
+      <div class="module-reader">
+        <div class="reader-header">
+          <div><h2>${mod.title}</h2><p>${mod.duration}</p></div>
+          <button class="modal-close" onclick="closeModal()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        ${mod.content}
+        <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.8rem">
+          <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+          <button class="btn btn-primary" onclick="startQuiz(${id})">Take Quiz →</button>
+        </div>
+      </div>`;
+    overlay.classList.add('open');
+  }
+
+  function startQuiz(id) {
+    quizState = { questions: modules[id].quiz, current: 0, score: 0, answered: false, moduleId: id };
+    renderQuiz();
+  }
+
+  function renderQuiz() {
+    const modal = document.getElementById('modal');
+    const q = quizState.questions[quizState.current];
+    const total = quizState.questions.length;
+    const num = quizState.current + 1;
+
+    modal.innerHTML = `
+      <div class="quiz-header">
+        <div><h2>Knowledge Check</h2></div>
+        <div class="quiz-progress">Question ${num} of ${total}</div>
+      </div>
+      <div class="quiz-body">
+        <div class="quiz-q">${num}. ${q.q}</div>
+        <div class="quiz-options">
+          ${q.opts.map((o, i) => `<button class="quiz-opt" id="opt${i}" onclick="selectOpt(${i})">${o}</button>`).join('')}
+        </div>
+        <div class="quiz-explanation" id="quizExp"></div>
+      </div>
+      <div class="quiz-footer">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--muted)">Score: ${quizState.score}/${quizState.current}</div>
+        <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>Next →</button>
+      </div>`;
+  }
+
+  function selectOpt(idx) {
+    if (quizState.answered) return;
+    quizState.answered = true;
+
+    const q = quizState.questions[quizState.current];
+    const opts = document.querySelectorAll('.quiz-opt');
+    const exp = document.getElementById('quizExp');
+    const nextBtn = document.getElementById('nextBtn');
+
+    opts.forEach((o, i) => {
+      o.disabled = true;
+      if (i === q.correct) o.classList.add('correct');
+      if (i === idx && idx !== q.correct) o.classList.add('wrong');
+    });
+
+    if (idx === q.correct) {
+      quizState.score++;
+      exp.className = 'quiz-explanation show correct-exp';
+      exp.textContent = q.exp;
+    } else {
+      exp.className = 'quiz-explanation show wrong-exp';
+      exp.textContent = `❌ Not quite. ${q.exp.replace('✅ Correct! ', '')}`;
+    }
+    nextBtn.disabled = false;
+    if (quizState.current === quizState.questions.length - 1) nextBtn.textContent = 'Finish ✓';
+  }
+
+  function nextQuestion() {
+    quizState.current++;
+    quizState.answered = false;
+    if (quizState.current >= quizState.questions.length) {
+      showResult();
+    } else {
+      renderQuiz();
+    }
+  }
+
+  function showResult() {
+    const modal = document.getElementById('modal');
+    const pct = Math.round((quizState.score / quizState.questions.length) * 100);
+    const passed = pct >= 60;
+    const scoreColor = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warn)' : 'var(--danger)';
+
+    modal.innerHTML = `
+      <div class="quiz-header">
+        <div><h2>Module Complete!</h2></div>
+      </div>
+      <div class="score-result">
+        <div class="score-circle" style="border-color:${scoreColor};animation:popIn 0.5s ease both">
+          <div class="score-num" style="color:${scoreColor}">${pct}%</div>
+          <div class="score-label">Score</div>
+        </div>
+        <div class="score-title">${pct === 100 ? '🎉 Perfect Score!' : pct >= 80 ? '⭐ Excellent Work!' : pct >= 60 ? '👍 Good Job!' : '📚 Keep Learning'}</div>
+        <div class="score-sub">You answered ${quizState.score} out of ${quizState.questions.length} questions correctly.</div>
+        ${passed ? `
+        <div class="badge-earned" style="animation:popIn 0.5s 0.3s ease both;opacity:0;animation-fill-mode:forwards">
+          <div class="badge-earned-icon">⚡</div>
+          <div>
+            <div class="badge-earned-text">Badge Unlocked: Pressure Pro!</div>
+            <div class="badge-earned-sub">You completed the Urgency & Social Engineering module</div>
+          </div>
+        </div>` : ''}
+        <p style="font-size:0.8rem;color:var(--muted);margin-top:1rem;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.7">
+          ${passed ? 'Great work! Your risk score has been updated. Continue to the next module to keep improving.' : 'You need 60% to pass. Review the module content and try again — you\'ve got this!'}
+        </p>
+      </div>
+      <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:center">
+        ${!passed ? `<button class="btn btn-ghost" onclick="startQuiz(${quizState.moduleId})">Retry Quiz</button>` : ''}
+        <button class="btn btn-primary" onclick="closeModal()">Back to Training</button>
+      </div>`;
+  }
+
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+  function closeBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+</script>
+</body>
+</html>
