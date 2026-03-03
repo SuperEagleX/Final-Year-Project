@@ -75,5 +75,16 @@
     "description": "test run",
     "sender_name": "test run",
     "avg_click_rate": 0
+  },
+  {
+    "id": 8,
+    "name": "Fake Invoice Alert",
+    "file": "fake_invoice_alert.html",
+    "subject": "Fake Invoice Alert",
+    "category": "Finance",
+    "difficulty": "Medium",
+    "description": "Fake Invoice Alert",
+    "sender_name": "Finance",
+    "avg_click_rate": 0
   }
 ]

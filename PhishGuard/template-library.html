@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PhishGuard — Template Library</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="config.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -60,8 +61,10 @@
     .strip-stat-label { font-size: 0.72rem; color: var(--muted); }
 
     /* Filter bar */
-    .filter-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; animation: fadeUp 0.4s 0.05s ease both; }
-    .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 300px; }
+    .filter-bar { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.5rem; flex-wrap: nowrap; overflow-x: auto; animation: fadeUp 0.4s 0.05s ease both; padding-bottom: 4px; }
+    .filter-bar::-webkit-scrollbar { height: 3px; }
+    .filter-bar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    .search-wrap { position: relative; min-width: 180px; max-width: 220px; flex-shrink: 0; }
     .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
     .search-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 36px; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; color: var(--text); outline: none; transition: border-color 0.2s; }
     .search-input::placeholder { color: var(--muted); }
@@ -114,8 +117,9 @@
     .diff-medium { background: #ffb30020; color: var(--warn);    border: 1px solid #ffb30040; }
     .diff-hard   { background: #ff456020; color: var(--danger);  border: 1px solid #ff456040; }
 
-    /* Card body */
-    .template-card-body { padding: 1rem 1.1rem; }
+    /* Card body — flex column so footer always sticks to bottom */
+    .template-card { display: flex; flex-direction: column; }
+    .template-card-body { padding: 1rem 1.1rem; display: flex; flex-direction: column; flex: 1; }
     .template-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
     .template-name { font-size: 0.92rem; font-weight: 700; color: #fff; }
     .template-cat-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -125,15 +129,15 @@
     .cat-exec     { background: #9b59b618; color: #c39bd3; }
     .cat-delivery { background: #00e5a018; color: var(--success); }
     .cat-social   { background: #1da1f218; color: #1da1f2; }
+    .cat-sales    { background: #2ecc7118; color: #2ecc71; }
 
     .template-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.6; margin-bottom: 0.9rem; }
-
-    .template-stats { display: flex; gap: 1rem; margin-bottom: 0.9rem; }
+    .template-stats { display: flex; gap: 1rem; margin-bottom: 0; }
     .tstat { display: flex; flex-direction: column; }
     .tstat-num { font-family: 'Share Tech Mono', monospace; font-size: 0.88rem; }
     .tstat-label { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
-    .template-card-footer { display: flex; gap: 0.5rem; }
+    .template-card-footer { display: flex; gap: 0.5rem; padding-top: 0.8rem; border-top: 1px solid var(--border); margin-top: 0.6rem; }
     .t-btn { flex: 1; padding: 7px; border-radius: 7px; font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; text-align: center; }
     .t-btn-preview { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
     .t-btn-preview:hover { border-color: var(--accent); color: var(--accent); }
@@ -199,26 +203,26 @@
     <div class="sidebar-logo-text">Phish<span>Guard</span></div>
   </div>
   <div class="sidebar-section">Main Menu</div>
-  <a class="nav-item" href="admin-dashboard.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
-  <a class="nav-item" href="campaign-management.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns<span class="nav-badge">3</span></a>
-  <a class="nav-item active" href="template-library.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Templates</a>
-  <a class="nav-item" href="awareness-training.html">><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a class="nav-item" href="campaign-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns<span class="nav-badge">3</span></a>
+  <a class="nav-item active" href="template-library.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Templates</a>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
   <div class="sidebar-section">Reports</div>
-  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
-  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Reports</a>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>Reports</a>
   <div class="sidebar-section">System</div>
   <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
   <div class="sidebar-footer">
-<div class="user-chip">
-  <div class="avatar">SA</div>
-  <div style="flex:1">
-    <div class="user-name">Super Admin</div>
-    <div class="user-role">Administrator</div>
-  </div>
-  <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-  </button>
-</div>
+    <div class="user-chip">
+      <div class="avatar">SA</div>
+      <div style="flex:1">
+        <div class="user-name">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+      <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
   </div>
 </aside>
 
@@ -230,13 +234,13 @@
       <p>Browse, preview and deploy phishing email templates</p>
     </div>
     <div class="topbar-right">
-    <button class="btn btn-ghost" onclick="openCreateModal()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Template
-    </button>
-      <button class="btn btn-primary" onclick="openPreview('it')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        Preview Mode
+      <button class="btn btn-ghost" onclick="openCreateModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Template
+      </button>
+      <button class="btn btn-primary" onclick="openImportModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import Template
       </button>
     </div>
   </div>
@@ -267,227 +271,40 @@
     <div class="filter-bar">
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input class="search-input" type="text" placeholder="Search templates..."/>
+        <input class="search-input" id="searchInput" type="text" placeholder="Search templates..." oninput="applyFilters()"/>
       </div>
-      <div class="filter-group">
-        <button class="filter-chip active" onclick="setChip(this)">All</button>
-        <button class="filter-chip" onclick="setChip(this)">IT Support</button>
-        <button class="filter-chip" onclick="setChip(this)">HR</button>
-        <button class="filter-chip" onclick="setChip(this)">Credential</button>
-        <button class="filter-chip" onclick="setChip(this)">Executive</button>
-        <button class="filter-chip" onclick="setChip(this)">Delivery</button>
-        <button class="filter-chip" onclick="setChip(this)">Social</button>
+      <div class="filter-group" id="categoryFilter">
+        <button class="filter-chip active" onclick="setChip(this,'category')">All</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">IT Support</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">HR</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">Credential Harvest</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">Executive / BEC</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">Delivery</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">Social Engineering</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">Sales</button>
+        <button class="filter-chip" onclick="setChip(this,'category')">Other</button>
       </div>
-      <div class="filter-group" style="margin-left:auto">
-        <button class="filter-chip active" onclick="setChip(this)">All Levels</button>
-        <button class="filter-chip" onclick="setChip(this)">Easy</button>
-        <button class="filter-chip" onclick="setChip(this)">Medium</button>
-        <button class="filter-chip" onclick="setChip(this)">Hard</button>
+      <div class="filter-group" id="levelFilter" style="margin-left:auto">
+        <button class="filter-chip active" onclick="setChip(this,'level')">All Levels</button>
+        <button class="filter-chip" onclick="setChip(this,'level')">Easy</button>
+        <button class="filter-chip" onclick="setChip(this,'level')">Medium</button>
+        <button class="filter-chip" onclick="setChip(this,'level')">Hard</button>
       </div>
     </div>
 
-    <!-- Templates grid -->
-    <div class="section-heading">All Templates (12)</div>
-    <div class="template-grid">
-
-      <!-- 1. IT Password Reset -->
-      <div class="template-card" style="animation-delay:0.05s">
-        <div class="email-preview">
-          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
-          <div class="ep-header">
-            <div class="ep-avatar" style="background:#0077ff">IT</div>
-            <div class="ep-meta">
-              <div class="ep-from">itsupport@company-helpdesk.net</div>
-              <div class="ep-to">To: you@company.com</div>
-            </div>
-          </div>
-          <div class="ep-subject">[ACTION REQUIRED] Your password expires in 24 hours</div>
-          <div class="ep-body">Your account password will expire soon. Click below to reset immediately or risk losing access...<br/><span>→ Reset Password Now</span></div>
-          <div class="diff-badge diff-medium">Medium</div>
-        </div>
-        <div class="template-card-body">
-          <div class="template-card-top">
-            <div class="template-name">IT Password Reset</div>
-            <span class="template-cat-badge cat-it">IT Support</span>
-          </div>
-          <div class="template-desc">Impersonates the IT helpdesk urging employees to reset their expiring password via a fake portal link.</div>
-          <div class="template-stats">
-            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">34%</div><div class="tstat-label">Click Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">18%</div><div class="tstat-label">Submit Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">8x</div><div class="tstat-label">Used</div></div>
-          </div>
-          <div class="template-card-footer">
-            <button class="t-btn t-btn-preview" onclick="openPreview('it')">👁 Preview</button>
-            <button class="t-btn t-btn-use">Use Template →</button>
-          </div>
-        </div>
+    <!-- Templates grid — dynamically rendered from API -->
+    <div class="section-heading" id="gridHeading">Loading templates...</div>
+    <div class="template-grid" id="templateGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)">
+        <div style="font-size:2rem;margin-bottom:12px">⏳</div>
+        <div>Loading templates from server...</div>
       </div>
-
-      <!-- 2. HR Policy -->
-      <div class="template-card" style="animation-delay:0.1s">
-        <div class="email-preview">
-          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
-          <div class="ep-header">
-            <div class="ep-avatar" style="background:#ffb300">HR</div>
-            <div class="ep-meta">
-              <div class="ep-from">hr-noreply@company-hr.org</div>
-              <div class="ep-to">To: all-staff@company.com</div>
-            </div>
-          </div>
-          <div class="ep-subject">Important: Updated Employee Policy — Sign by Friday</div>
-          <div class="ep-body">Please review and acknowledge our updated workplace policy. Failure to sign by EOD Friday may affect your employment status...<br/><span>→ Review & Sign Document</span></div>
-          <div class="diff-badge diff-easy">Easy</div>
-        </div>
-        <div class="template-card-body">
-          <div class="template-card-top">
-            <div class="template-name">HR Policy Update</div>
-            <span class="template-cat-badge cat-hr">HR</span>
-          </div>
-          <div class="template-desc">Mimics an urgent HR policy notice requiring employees to review and sign a document before a deadline.</div>
-          <div class="template-stats">
-            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">41%</div><div class="tstat-label">Click Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">22%</div><div class="tstat-label">Submit Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">5x</div><div class="tstat-label">Used</div></div>
-          </div>
-          <div class="template-card-footer">
-            <button class="t-btn t-btn-preview" onclick="openPreview('hr')">👁 Preview</button>
-            <button class="t-btn t-btn-use">Use Template →</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Microsoft 365 -->
-      <div class="template-card" style="animation-delay:0.15s">
-        <div class="email-preview">
-          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
-          <div class="ep-header">
-            <div class="ep-avatar" style="background:#00a4ef">M</div>
-            <div class="ep-meta">
-              <div class="ep-from">no-reply@microsoft-accounts.net</div>
-              <div class="ep-to">To: you@company.com</div>
-            </div>
-          </div>
-          <div class="ep-subject">Your Microsoft account has been suspended</div>
-          <div class="ep-body">Unusual sign-in activity detected. Your Microsoft 365 account has been temporarily suspended. Verify identity now to restore access...<br/><span>→ Verify My Account</span></div>
-          <div class="diff-badge diff-hard">Hard</div>
-        </div>
-        <div class="template-card-body">
-          <div class="template-card-top">
-            <div class="template-name">Microsoft 365 Suspension</div>
-            <span class="template-cat-badge cat-cred">Credential</span>
-          </div>
-          <div class="template-desc">Highly convincing Microsoft branding impersonation claiming account suspension to steal Office 365 credentials.</div>
-          <div class="template-stats">
-            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">28%</div><div class="tstat-label">Click Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">19%</div><div class="tstat-label">Submit Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">6x</div><div class="tstat-label">Used</div></div>
-          </div>
-          <div class="template-card-footer">
-            <button class="t-btn t-btn-preview" onclick="openPreview('ms')">👁 Preview</button>
-            <button class="t-btn t-btn-use">Use Template →</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. CEO Wire -->
-      <div class="template-card" style="animation-delay:0.2s">
-        <div class="email-preview">
-          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
-          <div class="ep-header">
-            <div class="ep-avatar" style="background:#8e44ad">CEO</div>
-            <div class="ep-meta">
-              <div class="ep-from">ceo@company-executive.com</div>
-              <div class="ep-to">To: finance@company.com</div>
-            </div>
-          </div>
-          <div class="ep-subject">Confidential: Urgent Wire Transfer Required</div>
-          <div class="ep-body">I need you to process an urgent wire transfer of $48,500 for a confidential acquisition. Please handle this immediately and discreetly...<br/><span>→ Confirm & Proceed</span></div>
-          <div class="diff-badge diff-hard">Hard</div>
-        </div>
-        <div class="template-card-body">
-          <div class="template-card-top">
-            <div class="template-name">CEO Wire Transfer</div>
-            <span class="template-cat-badge cat-exec">Executive</span>
-          </div>
-          <div class="template-desc">Business Email Compromise (BEC) style attack impersonating the CEO to trick finance staff into transferring funds.</div>
-          <div class="template-stats">
-            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">22%</div><div class="tstat-label">Click Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">9%</div><div class="tstat-label">Submit Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">3x</div><div class="tstat-label">Used</div></div>
-          </div>
-          <div class="template-card-footer">
-            <button class="t-btn t-btn-preview" onclick="openPreview('ceo')">👁 Preview</button>
-            <button class="t-btn t-btn-use">Use Template →</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 5. Package Delivery -->
-      <div class="template-card" style="animation-delay:0.25s">
-        <div class="email-preview">
-          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
-          <div class="ep-header">
-            <div class="ep-avatar" style="background:#00e5a0;color:#000">📦</div>
-            <div class="ep-meta">
-              <div class="ep-from">delivery@fedex-tracking-portal.com</div>
-              <div class="ep-to">To: you@company.com</div>
-            </div>
-          </div>
-          <div class="ep-subject">Your package could not be delivered — action needed</div>
-          <div class="ep-body">We attempted to deliver your package but no one was available. Pay a small redelivery fee of $2.99 to reschedule...<br/><span>→ Reschedule Delivery</span></div>
-          <div class="diff-badge diff-easy">Easy</div>
-        </div>
-        <div class="template-card-body">
-          <div class="template-card-top">
-            <div class="template-name">Package Delivery Alert</div>
-            <span class="template-cat-badge cat-delivery">Delivery</span>
-          </div>
-          <div class="template-desc">Fake delivery notification from a spoofed courier requesting payment or personal info to reschedule delivery.</div>
-          <div class="template-stats">
-            <div class="tstat"><div class="tstat-num" style="color:var(--success)">9%</div><div class="tstat-label">Click Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">3%</div><div class="tstat-label">Submit Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">4x</div><div class="tstat-label">Used</div></div>
-          </div>
-          <div class="template-card-footer">
-            <button class="t-btn t-btn-preview" onclick="openPreview('delivery')">👁 Preview</button>
-            <button class="t-btn t-btn-use">Use Template →</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 6. LinkedIn -->
-      <div class="template-card" style="animation-delay:0.3s">
-        <div class="email-preview">
-          <div class="ep-topbar"><div class="ep-dot" style="background:#ff5f57"></div><div class="ep-dot" style="background:#ffbd2e"></div><div class="ep-dot" style="background:#28c840"></div></div>
-          <div class="ep-header">
-            <div class="ep-avatar" style="background:#0a66c2">in</div>
-            <div class="ep-meta">
-              <div class="ep-from">messages-noreply@linkedln-mail.com</div>
-              <div class="ep-to">To: you@company.com</div>
-            </div>
-          </div>
-          <div class="ep-subject">You have 3 new connection requests waiting</div>
-          <div class="ep-body">3 people want to connect with you on LinkedIn including a recruiter from Google. View and accept your requests now...<br/><span>→ View Requests</span></div>
-          <div class="diff-badge diff-medium">Medium</div>
-        </div>
-        <div class="template-card-body">
-          <div class="template-card-top">
-            <div class="template-name">LinkedIn Connection</div>
-            <span class="template-cat-badge cat-social">Social</span>
-          </div>
-          <div class="template-desc">Spoofs a LinkedIn notification about pending connection requests to lure employees into entering their credentials.</div>
-          <div class="template-stats">
-            <div class="tstat"><div class="tstat-num" style="color:var(--danger)">36%</div><div class="tstat-label">Click Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--warn)">21%</div><div class="tstat-label">Submit Rate</div></div>
-            <div class="tstat"><div class="tstat-num" style="color:var(--accent)">2x</div><div class="tstat-label">Used</div></div>
-          </div>
-          <div class="template-card-footer">
-            <button class="t-btn t-btn-preview" onclick="openPreview('linkedin')">👁 Preview</button>
-            <button class="t-btn t-btn-use">Use Template →</button>
-          </div>
-        </div>
-      </div>
-
+    </div>
+    <!-- Empty state -->
+    <div id="emptyState" style="display:none;text-align:center;padding:4rem 2rem;color:var(--muted)">
+      <div style="font-size:3rem;margin-bottom:16px">🔍</div>
+      <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:8px">No templates found</div>
+      <div style="font-size:0.82rem">Try adjusting your search or filter</div>
     </div>
   </div>
 </main>
@@ -522,187 +339,385 @@
     </div>
   </div>
 </div>
-<script src="config.js"></script>
-<script>
-  const templates = {
-    it: {
-      title: 'IT Password Reset',
-      pills: ['IT Support', 'Medium Difficulty', '34% Click Rate'],
-      email: `
-        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
-        <div class="fep-header">
-          <div class="fep-subject">[ACTION REQUIRED] Your password expires in 24 hours</div>
-          <div class="fep-from">From: IT Support Team &lt;itsupport@company-helpdesk.net&gt;<br/>To: you@company.com</div>
-        </div>
-        <div class="fep-body">
-          Dear Employee,<br/><br/>
-          Our security systems have detected that your account password is set to expire in the next <strong>24 hours</strong>. To avoid being locked out of critical company systems including email, Slack, and the HR portal, you must reset your password immediately.<br/><br/>
-          <a class="fep-cta">Reset My Password Now</a><br/><br/>
-          If you do not reset your password before the deadline, your account will be suspended and IT will need to manually re-enable access, which can take up to 5 business days.<br/>
-          <div class="fep-warning">This is an automated message from the IT Security team. Do not reply to this email. If you believe you received this in error, contact helpdesk@company.com</div>
-        </div>
-        <div class="fep-footer">© 2026 Company IT Department · Helpdesk Portal · Unsubscribe</div>`,
-      flags: [
-        { icon: '🔗', text: '<strong>Suspicious sender domain:</strong> "company-helpdesk.net" is NOT the real company domain. Real IT emails come from @company.com.' },
-        { icon: '⏰', text: '<strong>Artificial urgency:</strong> "24 hours" and "5 business days" are pressure tactics to make you act before thinking.' },
-        { icon: '🖱️', text: '<strong>Vague call-to-action:</strong> Hover over the button before clicking — the real URL would not match the company domain.' },
-        { icon: '⚠️', text: '<strong>Threat of consequences:</strong> Legitimate IT teams do not threaten account suspension with such short notice via email alone.' },
-      ]
-    },
-    hr: {
-      title: 'HR Policy Update',
-      pills: ['HR', 'Easy Difficulty', '41% Click Rate'],
-      email: `
-        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
-        <div class="fep-header">
-          <div class="fep-subject">Important: Updated Employee Policy — Sign by Friday</div>
-          <div class="fep-from">From: HR Department &lt;hr-noreply@company-hr.org&gt;<br/>To: all-staff@company.com</div>
-        </div>
-        <div class="fep-body">
-          Dear Team Member,<br/><br/>
-          As part of our annual compliance review, all employees are required to read and electronically sign the updated <strong>2026 Employee Code of Conduct and Remote Work Policy</strong> by this Friday, 28 February 2026.<br/><br/>
-          Failure to acknowledge the updated policy may result in your employment file being flagged and could impact your upcoming performance review.<br/><br/>
-          <a class="fep-cta">Review & Sign Document</a><br/>
-          <div class="fep-warning">This message was sent to all company employees. For questions contact hr@company.com. Do not share this link.</div>
-        </div>
-        <div class="fep-footer">© 2026 Human Resources · company-hr.org · Compliance Portal</div>`,
-      flags: [
-        { icon: '🌐', text: '<strong>Wrong domain:</strong> "company-hr.org" is not the official company domain. HR always emails from @company.com.' },
-        { icon: '😨', text: '<strong>Employment threat:</strong> Threatening impact on performance reviews is a manipulation tactic to bypass critical thinking.' },
-        { icon: '📧', text: '<strong>"Do not share this link":</strong> Legitimate HR documents use secure portals with individual logins, not shareable links.' },
-        { icon: '📅', text: '<strong>Tight deadline:</strong> Real policy updates are announced weeks in advance, not a few days before the deadline.' },
-      ]
-    },
-    ms: {
-      title: 'Microsoft 365 Suspension',
-      pills: ['Credential Harvest', 'Hard Difficulty', '28% Click Rate'],
-      email: `
-        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
-        <div class="fep-header">
-          <div class="fep-subject">Your Microsoft account has been suspended</div>
-          <div class="fep-from">From: Microsoft Account Team &lt;no-reply@microsoft-accounts.net&gt;<br/>To: you@company.com</div>
-        </div>
-        <div class="fep-body">
-          <strong style="color:#00a4ef">Microsoft</strong><br/><br/>
-          We detected unusual sign-in activity on your Microsoft account. To protect your account, we have <strong>temporarily suspended your access</strong> to Microsoft 365, Teams, SharePoint, and OneDrive.<br/><br/>
-          To restore access, you must verify your identity within the next 2 hours.<br/><br/>
-          <a class="fep-cta" style="background:#0052cc">Verify My Identity</a><br/>
-          <div class="fep-warning">If you don't verify within 2 hours your account will be permanently deactivated. Microsoft will never ask for your password. Reference: MS-SEC-20260227</div>
-        </div>
-        <div class="fep-footer">Microsoft Corporation · One Microsoft Way · Redmond WA · microsoft-accounts.net</div>`,
-      flags: [
-        { icon: '🔗', text: '<strong>Fake Microsoft domain:</strong> Real Microsoft emails come from @microsoft.com, not "microsoft-accounts.net".' },
-        { icon: '🕐', text: '<strong>"2 hours" countdown:</strong> Extreme urgency is the hallmark of phishing. Microsoft gives much longer windows for security actions.' },
-        { icon: '💀', text: '<strong>"Permanently deactivated":</strong> This is a scare tactic. Microsoft never permanently deletes corporate accounts over one missed verification.' },
-        { icon: '🔢', text: '<strong>Fake reference number:</strong> "MS-SEC-20260227" looks official but is fabricated to appear legitimate.' },
-      ]
-    },
-    ceo: {
-      title: 'CEO Wire Transfer (BEC)',
-      pills: ['Executive / BEC', 'Hard Difficulty', '22% Click Rate'],
-      email: `
-        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
-        <div class="fep-header">
-          <div class="fep-subject">Confidential: Urgent Wire Transfer Required</div>
-          <div class="fep-from">From: David Chen, CEO &lt;ceo@company-executive.com&gt;<br/>To: finance@company.com</div>
-        </div>
-        <div class="fep-body">
-          Hi Sarah,<br/><br/>
-          I'm currently in a confidential board meeting and cannot take calls. I need you to urgently process a wire transfer of <strong>$48,500 USD</strong> to complete a time-sensitive acquisition we are finalising today.<br/><br/>
-          Please treat this as strictly confidential — do not discuss with other team members until the deal is announced. I'll explain everything after the meeting.<br/><br/>
-          <a class="fep-cta" style="background:#2c3e50">Confirm Transfer Details</a><br/>
-          <div class="fep-warning">Please action immediately. I am not reachable by phone right now. — David</div>
-        </div>
-        <div class="fep-footer">Sent from my iPhone · company-executive.com</div>`,
-      flags: [
-        { icon: '📵', text: '<strong>"Cannot take calls":</strong> Isolating you from verbal verification is the core BEC tactic. Always call to verify wire requests.' },
-        { icon: '🤫', text: '<strong>"Do not discuss with others":</strong> Secrecy requests are a massive red flag designed to prevent you from getting a second opinion.' },
-        { icon: '📱', text: '<strong>"Sent from my iPhone":</strong> Attackers add this to make it feel casual and personal, reducing your guard.' },
-        { icon: '🏦', text: '<strong>No internal process followed:</strong> Real wire transfers require multi-step approval workflows, not a single email click.' },
-      ]
-    },
-    delivery: {
-      title: 'Package Delivery Alert',
-      pills: ['Delivery', 'Easy Difficulty', '9% Click Rate'],
-      email: `
-        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
-        <div class="fep-header">
-          <div class="fep-subject">Your package could not be delivered — action needed</div>
-          <div class="fep-from">From: FedEx Delivery &lt;delivery@fedex-tracking-portal.com&gt;<br/>To: you@company.com</div>
-        </div>
-        <div class="fep-body">
-          Dear Customer,<br/><br/>
-          We attempted to deliver your package today (Tracking: FX-2840-9912-KL) but no one was available to receive it. Your package will be returned to the sender in <strong>48 hours</strong> unless you take action.<br/><br/>
-          To reschedule your delivery, a small redelivery processing fee of <strong>$2.99</strong> is required.<br/><br/>
-          <a class="fep-cta" style="background:#4d148c">Reschedule My Delivery — $2.99</a><br/>
-          <div class="fep-warning">Failure to pay within 48 hours will result in your package being returned. FedEx Tracking Portal · fedex-tracking-portal.com</div>
-        </div>
-        <div class="fep-footer">© 2026 FedEx · fedex-tracking-portal.com · Customer Care</div>`,
-      flags: [
-        { icon: '💳', text: '<strong>Payment request:</strong> Real couriers like FedEx, DHL, or UPS never charge redelivery fees via email payment links.' },
-        { icon: '🔗', text: '<strong>Fake domain:</strong> "fedex-tracking-portal.com" is not FedEx. Official emails come from @fedex.com.' },
-        { icon: '📦', text: '<strong>Unexpected package:</strong> If you didn\'t order anything, a delivery notification is almost certainly a scam.' },
-        { icon: '💰', text: '<strong>Small fee = low guard:</strong> The $2.99 amount is deliberately small so you don\'t question entering your card details.' },
-      ]
-    },
-    linkedin: {
-      title: 'LinkedIn Connection Request',
-      pills: ['Social Engineering', 'Medium Difficulty', '36% Click Rate'],
-      email: `
-        <div class="fep-topbar"><div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div></div>
-        <div class="fep-header">
-          <div class="fep-subject">You have 3 new connection requests waiting</div>
-          <div class="fep-from">From: LinkedIn &lt;messages-noreply@linkedln-mail.com&gt;<br/>To: you@company.com</div>
-        </div>
-        <div class="fep-body">
-          <strong style="color:#0a66c2">in</strong> <strong>LinkedIn</strong><br/><br/>
-          You have <strong>3 new connection requests</strong> including from a Senior Recruiter at Google and a VP at McKinsey & Company. Don't miss out on these opportunities!<br/><br/>
-          <a class="fep-cta" style="background:#0a66c2">View My Connection Requests</a><br/><br/>
-          You also have <strong>12 people who viewed your profile</strong> this week. Upgrade to Premium to see who they are.<br/>
-          <div class="fep-warning">You are receiving this because you have a LinkedIn account. Manage preferences · Unsubscribe · linkedln-mail.com</div>
-        </div>
-        <div class="fep-footer">LinkedIn Corporation · 1000 W Maude Ave, Sunnyvale, CA · linkedln-mail.com</div>`,
-      flags: [
-        { icon: '🔤', text: '<strong>Typosquatting domain:</strong> "linkedln-mail.com" — note the "ln" instead of "in". Real LinkedIn emails come from @linkedin.com.' },
-        { icon: '🎯', text: '<strong>High-value bait:</strong> Mentioning Google and McKinsey recruiters is designed to excite and cloud your judgement.' },
-        { icon: '💼', text: '<strong>Profile view count:</strong> The "12 people viewed your profile" is fabricated to add further temptation to click.' },
-        { icon: '🔒', text: '<strong>Credential target:</strong> Clicking leads to a fake LinkedIn login page designed to steal your username and password.' },
-      ]
-    }
-  };
 
-  function openPreview(id) {
-    const t = templates[id];
-    document.getElementById('modalTitle').textContent = t.title;
-    document.getElementById('modalPills').innerHTML = t.pills.map(p => `<span class="info-pill">${p}</span>`).join('');
-    document.getElementById('modalEmail').innerHTML = t.email;
-    document.getElementById('modalFlags').innerHTML = t.flags.map(f => `
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+let allTemplates  = [];   // raw data from API
+let activePreview = null; // currently open template in modal
+
+// ── Category → CSS class map ──────────────────────────────────────────────
+const CAT_CLASS = {
+  'IT Support':         'cat-it',
+  'HR':                 'cat-hr',
+  'Credential Harvest': 'cat-cred',
+  'Executive / BEC':    'cat-exec',
+  'Delivery':           'cat-delivery',
+  'Social Engineering': 'cat-social',
+  'Finance':            'cat-exec',
+  'Sales':             'cat-sales',
+  'Other':              'cat-it',
+};
+
+// Category → avatar colour + initials
+const CAT_AVATAR = {
+  'IT Support':         { bg:'#0077ff', initials:'IT' },
+  'HR':                 { bg:'#ffb300', initials:'HR' },
+  'Credential Harvest': { bg:'#00a4ef', initials:'M'  },
+  'Executive / BEC':    { bg:'#8e44ad', initials:'CEO'},
+  'Delivery':           { bg:'#00e5a0', initials:'📦' },
+  'Social Engineering': { bg:'#0a66c2', initials:'in' },
+  'Finance':            { bg:'#27ae60', initials:'$'  },
+  'Sales':             { bg:'#2ecc71', initials:'$'  },
+  'Other':              { bg:'#4a7090', initials:'?'  },
+};
+
+// ── Colour helpers ────────────────────────────────────────────────────────
+function clickColour(rate) {
+  if (rate >= 30) return 'var(--danger)';
+  if (rate >= 15) return 'var(--warn)';
+  return 'var(--success)';
+}
+
+function diffClass(diff) {
+  const d = (diff || '').toLowerCase();
+  if (d === 'easy')   return 'diff-easy';
+  if (d === 'hard')   return 'diff-hard';
+  return 'diff-medium';
+}
+
+// ── Build a card HTML string from API template data ───────────────────────
+function buildCard(t, index) {
+  const av     = CAT_AVATAR[t.category] || CAT_AVATAR['Other'];
+  const catCls = CAT_CLASS[t.category]  || 'cat-it';
+  const rate   = t.avg_click_rate || 0;
+  const delay  = (index * 0.05).toFixed(2);
+
+  return `
+  <div class="template-card" style="animation-delay:${delay}s"
+       data-id="${t.id}"
+       data-name="${(t.name||'').toLowerCase()}"
+       data-category="${(t.category||'').toLowerCase()}"
+       data-difficulty="${(t.difficulty||'').toLowerCase()}"
+       data-desc="${(t.description||'').toLowerCase()}">
+    <div class="email-preview">
+      <div class="ep-topbar">
+        <div class="ep-dot" style="background:#ff5f57"></div>
+        <div class="ep-dot" style="background:#ffbd2e"></div>
+        <div class="ep-dot" style="background:#28c840"></div>
+      </div>
+      <div class="ep-header">
+        <div class="ep-avatar" style="background:${av.bg};color:${av.bg==='#ffb300'||av.bg==='#00e5a0'?'#000':'#fff'}">${av.initials}</div>
+        <div class="ep-meta">
+          <div class="ep-from">${t.sender_name || 'Unknown Sender'}</div>
+          <div class="ep-to">To: employee@company.com</div>
+        </div>
+      </div>
+      <div class="ep-subject">${t.subject || '(No subject)'}</div>
+      <div class="ep-body">${(t.description||'Phishing simulation email template')}<br/><span>→ Click Here</span></div>
+      <div class="diff-badge ${diffClass(t.difficulty)}">${t.difficulty || 'Medium'}</div>
+    </div>
+    <div class="template-card-body">
+      <div class="template-card-top">
+        <div class="template-name">${t.name}</div>
+        <span class="template-cat-badge ${catCls}">${t.category}</span>
+      </div>
+      <div class="template-desc">${t.description || 'No description available.'}</div>
+      <div style="margin-top:auto">
+        <div class="template-stats">
+          <div class="tstat">
+            <div class="tstat-num" style="color:${clickColour(rate)}">${rate}%</div>
+            <div class="tstat-label">Click Rate</div>
+          </div>
+          <div class="tstat">
+            <div class="tstat-num" style="color:var(--accent)">${t.id}</div>
+            <div class="tstat-label">Template ID</div>
+          </div>
+        </div>
+        <div class="template-card-footer">
+          <button class="t-btn t-btn-preview" onclick="openPreview(${t.id})">👁 Preview</button>
+          <button class="t-btn t-btn-use" onclick="useTemplate(${t.id}, '${t.name.replace(/'/g,"\\'")}')">Use Template →</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Render filtered list ──────────────────────────────────────────────────
+function renderGrid(filtered) {
+  const grid    = document.getElementById('templateGrid');
+  const empty   = document.getElementById('emptyState');
+  const heading = document.getElementById('gridHeading');
+
+  if (filtered.length === 0) {
+    grid.style.display  = 'none';
+    empty.style.display = 'block';
+    heading.textContent = 'No templates match your filters';
+    return;
+  }
+
+  grid.style.display  = 'grid';
+  empty.style.display = 'none';
+  heading.textContent = `All Templates (${filtered.length})`;
+  grid.innerHTML      = filtered.map((t, i) => buildCard(t, i)).join('');
+}
+
+// ── Apply search + category + level filters ───────────────────────────────
+function applyFilters() {
+  const query    = document.getElementById('searchInput').value.toLowerCase().trim();
+  const catBtn   = document.querySelector('#categoryFilter .filter-chip.active');
+  const lvlBtn   = document.querySelector('#levelFilter .filter-chip.active');
+  const category = catBtn  ? catBtn.textContent.trim().toLowerCase()  : 'all';
+  const level    = lvlBtn  ? lvlBtn.textContent.trim().toLowerCase()  : 'all levels';
+
+  const filtered = allTemplates.filter(t => {
+    const matchSearch = !query
+      || (t.name        || '').toLowerCase().includes(query)
+      || (t.description || '').toLowerCase().includes(query)
+      || (t.category    || '').toLowerCase().includes(query)
+      || (t.subject     || '').toLowerCase().includes(query);
+
+    const matchCat = category === 'all'
+      || (t.category || '').toLowerCase().includes(category);
+
+    const matchLevel = level === 'all levels'
+      || (t.difficulty || '').toLowerCase() === level;
+
+    return matchSearch && matchCat && matchLevel;
+  });
+
+  renderGrid(filtered);
+}
+
+// ── Filter chip click ─────────────────────────────────────────────────────
+function setChip(el, group) {
+  const parent = el.closest('.filter-group');
+  parent.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+// ── Preview modal — open with live data from API ──────────────────────────
+async function openPreview(templateId) {
+  try {
+    // Fetch full template including HTML from API
+    const t = await apiFetch(`templates/${templateId}`);
+    activePreview = t;
+
+    // Title and pills
+    document.getElementById('modalTitle').textContent = t.name;
+    document.getElementById('modalPills').innerHTML = [
+      t.category, t.difficulty, `${t.avg_click_rate || 0}% Click Rate`
+    ].map(p => `<span class="info-pill">${p}</span>`).join('');
+
+    // Extract body content for preview
+    let bodyContent = t.html || '';
+    const bodyMatch = bodyContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch) bodyContent = bodyMatch[1];
+    bodyContent = bodyContent
+      .replace(/\{\{\.FirstName\}\}/g, 'Sarah')
+      .replace(/\{\{\.URL\}\}/g,       '#')
+      .replace(/\{\{\.Tracker\}\}/g,   '')
+      .replace(/\{\{\.RId\}\}/g,       'SIM-0001');
+
+    // Build preview using DOM methods to safely handle unicode/emoji in templates
+    const emailEl = document.getElementById('modalEmail');
+    emailEl.innerHTML = '';
+
+    // Topbar
+    const topbar = document.createElement('div');
+    topbar.className = 'fep-topbar';
+    topbar.innerHTML = '<div class="fep-dot" style="background:#ff5f57"></div><div class="fep-dot" style="background:#ffbd2e;margin:0 4px"></div><div class="fep-dot" style="background:#28c840"></div>';
+    emailEl.appendChild(topbar);
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'fep-header';
+    const subjEl = document.createElement('div');
+    subjEl.className = 'fep-subject';
+    subjEl.textContent = t.subject;
+    const fromEl = document.createElement('div');
+    fromEl.className = 'fep-from';
+    fromEl.textContent = 'From: ' + t.sender_name + ' <noreply@phish-simulation.com>';
+    header.appendChild(subjEl);
+    header.appendChild(fromEl);
+    emailEl.appendChild(header);
+
+    // Body — use innerHTML here so HTML renders correctly
+    const bodyEl = document.createElement('div');
+    bodyEl.className = 'fep-body';
+    bodyEl.innerHTML = bodyContent;
+    emailEl.appendChild(bodyEl);
+
+    // Auto-generate red flags based on template properties
+    const flags = generateRedFlags(t);
+    document.getElementById('modalFlags').innerHTML = flags.map(f => `
       <div class="red-flag-item">
         <div class="red-flag-icon">${f.icon}</div>
         <div class="red-flag-text">${f.text}</div>
       </div>`).join('');
+
     document.getElementById('modalOverlay').classList.add('open');
+  } catch(e) {
+    showToast('❌ Could not load template preview', 'error');
+    console.error(e);
   }
-  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-  function closeBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
-  function setChip(el) {
-    el.closest('.filter-group').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
+}
+
+// ── Auto-generate red flags from template metadata ────────────────────────
+function generateRedFlags(t) {
+  const flags = [];
+  const cat = (t.category || '').toLowerCase();
+  const subj = (t.subject  || '').toLowerCase();
+
+  // Generic flags always shown
+  flags.push({ icon:'🔗', text:'<strong>Suspicious sender domain:</strong> The From address does not match the real organisation\'s domain.' });
+
+  if (subj.includes('urgent') || subj.includes('expire') || subj.includes('suspend') || subj.includes('action required'))
+    flags.push({ icon:'⏰', text:'<strong>Artificial urgency:</strong> Pressure words like "urgent", "expires", or "suspended" are designed to bypass critical thinking.' });
+
+  if (cat.includes('credential') || cat.includes('it support'))
+    flags.push({ icon:'🔐', text:'<strong>Credential harvesting:</strong> The link leads to a fake login page designed to steal your username and password.' });
+
+  if (cat.includes('bec') || cat.includes('executive'))
+    flags.push({ icon:'📵', text:'<strong>Verbal verification blocked:</strong> Real executives asking for urgent transfers always accept a verification call.' });
+
+  if (cat.includes('delivery'))
+    flags.push({ icon:'💳', text:'<strong>Unexpected payment request:</strong> Legitimate couriers never ask for payment via email links.' });
+
+  if (cat.includes('social'))
+    flags.push({ icon:'🎯', text:'<strong>High-value bait:</strong> Mentioning prestigious companies or opportunities is designed to excite and lower your guard.' });
+
+  if (cat.includes('hr'))
+    flags.push({ icon:'😨', text:'<strong>Employment threat:</strong> Threatening your job or performance review is a manipulation tactic to force compliance.' });
+
+  // Always add this last
+  flags.push({ icon:'🖱️', text:'<strong>Always hover before clicking:</strong> Check the real URL before clicking any link. If it doesn\'t match the official domain, do not click.' });
+
+  return flags.slice(0, 4); // show max 4 flags
+}
+
+// ── Use template (redirect to campaign page) ──────────────────────────────
+function useTemplate(id, name) {
+  // Store selected template in sessionStorage and redirect
+  sessionStorage.setItem('selectedTemplate', name);
+  showToast(`✅ Template "${name}" selected — redirecting to campaigns`, 'success');
+  setTimeout(() => window.location.href = 'campaign-management.html', 1200);
+}
+
+// ── Load all templates from API on page load ──────────────────────────────
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  document.querySelector('.user-name').textContent = user.name;
+
+  try {
+    allTemplates = await apiFetch('templates');
+
+    // Update stats strip
+    const categories = [...new Set(allTemplates.map(t => t.category))].length;
+    const avgRate    = allTemplates.length
+      ? Math.round(allTemplates.reduce((s, t) => s + (t.avg_click_rate || 0), 0) / allTemplates.length)
+      : 0;
+    const highRisk   = allTemplates.filter(t => (t.avg_click_rate || 0) >= 30).length;
+
+    const nums = document.querySelectorAll('.strip-stat-num');
+    if (nums[0]) nums[0].textContent = allTemplates.length;
+    if (nums[1]) nums[1].textContent = categories;
+    if (nums[2]) nums[2].textContent = avgRate + '%';
+    if (nums[3]) nums[3].textContent = highRisk;
+
+    renderGrid(allTemplates);
+    console.log(`✅ ${allTemplates.length} templates loaded from API`);
+
+  } catch(e) {
+    console.error('❌ Could not load templates:', e);
+    document.getElementById('gridHeading').textContent = 'Could not load templates — is the API running?';
+    document.getElementById('templateGrid').innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--danger)">
+        <div style="font-size:2rem;margin-bottom:12px">❌</div>
+        <div>API not reachable. Make sure <code>python app.py</code> is running.</div>
+      </div>`;
+  }
+}
+
+// ── Preview modal close ───────────────────────────────────────────────────
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeBg(e)   { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+// ── Create Template Modal ─────────────────────────────────────────────────
+function openCreateModal() {
+  const o = document.getElementById('createOverlay');
+  const m = document.getElementById('createModal');
+  o.style.opacity = '1'; o.style.pointerEvents = 'all';
+  m.style.transform = 'translateY(0)';
+}
+
+function closeCreateModal() {
+  const o = document.getElementById('createOverlay');
+  const m = document.getElementById('createModal');
+  o.style.opacity = '0'; o.style.pointerEvents = 'none';
+  m.style.transform = 'translateY(20px)';
+}
+
+async function saveTemplate() {
+  const btn         = document.getElementById('saveTemplateBtn');
+  const name        = document.getElementById('ct_name').value.trim();
+  const subject     = document.getElementById('ct_subject').value.trim();
+  const rawHtml     = document.getElementById('ct_html').value.trim();
+  const category    = document.getElementById('ct_category').value;
+  const difficulty  = document.getElementById('ct_difficulty').value;
+  const description = document.getElementById('ct_desc').value.trim();
+  const senderName  = document.getElementById('ct_sender').value.trim();
+
+  if (!name || !subject || !rawHtml) {
+    showToast('\u274C Name, subject and HTML body are required', 'error');
+    return;
   }
 
-  function logout() { clearSession(); window.location.href = 'login.html'; }
-  
+  // Build formatted HTML using string concat to avoid template literal issues
+  const formattedHtml = '<!--\n  Template: ' + name + '\n  Category: ' + category +
+    '\n  Difficulty: ' + difficulty + '\n  Description: ' + description +
+    '\n-->\n<!DOCTYPE html>\n<html>\n<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">\n' +
+    rawHtml + '\n</body>\n</html>';
+
+  btn.textContent = '\u23F3 Saving...';
+  btn.disabled = true;
+
+  try {
+    const result = await apiFetch('templates', 'POST', {
+      name, subject, category, difficulty, description,
+      sender_name: senderName,
+      html: formattedHtml,
+    });
+    showToast('\u2705 Template "' + name + '" saved!', 'success');
+    closeCreateModal();
+    ['ct_name','ct_sender','ct_subject','ct_desc','ct_html'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    allTemplates = await apiFetch('templates');
+    renderGrid(allTemplates);
+  } catch(err) {
+    showToast('\u274C Failed to save: ' + err.message, 'error');
+  }
+
+  btn.textContent = 'Save Template \u2192';
+  btn.disabled = false;
+}
+
+function logout() { clearSession(); window.location.href = 'login.html'; }
+
+init();
 </script>
 
-<!-- Create Template Modal -->
-<div class="modal-overlay" id="createModalOverlay" onclick="if(event.target===this)closeCreateModal()" style="position:fixed;inset:0;z-index:200;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s">
-  <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s" id="createModal">
+<!-- ── Create Template Modal ── -->
+<div id="createOverlay" onclick="if(event.target===this)closeCreateModal()" style="position:fixed;inset:0;z-index:300;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s">
+  <div id="createModal" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.4rem 1.6rem;border-bottom:1px solid var(--border)">
       <div>
         <h2 style="font-size:1.1rem;font-weight:800;color:#fff">Create New Template</h2>
         <p style="font-size:0.78rem;color:var(--muted);margin-top:3px">Build a custom phishing simulation email template</p>
       </div>
-      <button onclick="closeCreateModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px">
+      <button onclick="closeCreateModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -710,116 +725,238 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div style="display:flex;flex-direction:column;gap:6px">
           <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Template Name *</label>
-          <input id="ct_name" type="text" placeholder="e.g. Fake Invoice Alert" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+          <input id="ct_name" type="text" placeholder="e.g. Fake Invoice Alert" class="form-input"/>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sender Display Name *</label>
-          <input id="ct_sender" type="text" placeholder="e.g. Finance Team" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+          <input id="ct_sender" type="text" placeholder="e.g. Finance Team" class="form-input"/>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Subject Line *</label>
-        <input id="ct_subject" type="text" placeholder="e.g. Invoice #INV-2026-0089 requires your approval" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+        <input id="ct_subject" type="text" placeholder="e.g. Invoice #INV-2026-0089 requires your approval" class="form-input"/>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div style="display:flex;flex-direction:column;gap:6px">
           <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Category *</label>
-          <select id="ct_category" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none">
-            <option>IT Support</option>
-            <option>HR</option>
-            <option>Credential Harvest</option>
-            <option>Executive / BEC</option>
-            <option>Delivery</option>
-            <option>Social Engineering</option>
-            <option>Finance</option>
-            <option>Other</option>
+          <select id="ct_category" class="form-input">
+            <option>IT Support</option><option>HR</option>
+            <option>Credential Harvest</option><option>Executive / BEC</option>
+            <option>Delivery</option><option>Social Engineering</option>
+            <option>Finance</option><option>Sales</option><option>Other</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Difficulty *</label>
-          <select id="ct_difficulty" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none">
-            <option>Easy</option>
-            <option>Medium</option>
-            <option>Hard</option>
+          <select id="ct_difficulty" class="form-input">
+            <option>Easy</option><option>Medium</option><option>Hard</option>
           </select>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Description</label>
-        <input id="ct_desc" type="text" placeholder="Brief description of this template's scenario" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.88rem;color:var(--text);outline:none"/>
+        <input id="ct_desc" type="text" placeholder="Brief description of this template's scenario" class="form-input"/>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email HTML Body *</label>
-          <span style="font-size:0.7rem;color:var(--accent)">Use {{.FirstName}} for name, {{.URL}} for tracking link, {{.Tracker}} for pixel</span>
+          <span style="font-size:0.68rem;color:var(--accent)">Use {{.FirstName}} &middot; {{.URL}} &middot; {{.Tracker}}</span>
         </div>
-        <textarea id="ct_html" rows="10" placeholder="Paste your HTML email body here..." style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--text);outline:none;resize:vertical"></textarea>
+        <textarea id="ct_html" rows="10" placeholder="Paste your email HTML body content here..." class="form-input" style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;resize:vertical"></textarea>
       </div>
     </div>
     <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end">
       <button onclick="closeCreateModal()" class="btn btn-ghost">Cancel</button>
-      <button onclick="saveTemplate()" class="btn btn-primary" id="saveTemplateBtn">Save Template →</button>
+      <button onclick="saveTemplate()" class="btn btn-primary" id="saveTemplateBtn">Save Template &rarr;</button>
     </div>
   </div>
 </div>
 
+<!-- ── Import Template Modal ── -->
+<div id="importOverlay" onclick="if(event.target===this)closeImportModal()" style="position:fixed;inset:0;z-index:300;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s">
+  <div id="importModal" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:560px;transform:translateY(20px);transition:transform 0.3s">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.4rem 1.6rem;border-bottom:1px solid var(--border)">
+      <div>
+        <h2 style="font-size:1.1rem;font-weight:800;color:#fff">Import Template</h2>
+        <p style="font-size:0.78rem;color:var(--muted);margin-top:3px">Drag and drop an HTML file to import as a phishing template</p>
+      </div>
+      <button onclick="closeImportModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="padding:1.6rem;display:flex;flex-direction:column;gap:1rem">
+      <div id="importDropZone" style="border:2px dashed var(--border);border-radius:12px;padding:3rem 2rem;text-align:center;cursor:pointer;transition:all 0.2s" onclick="document.getElementById('importFileInput').click()">
+        <input type="file" id="importFileInput" accept=".html" style="display:none" onchange="handleImportFile(this.files[0])"/>
+        <div id="importDropIcon" style="font-size:2.5rem;margin-bottom:12px">&#128194;</div>
+        <div id="importDropText" style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px">Drop your HTML file here</div>
+        <div style="font-size:0.75rem;color:var(--muted)">or click to browse &mdash; .html files only</div>
+      </div>
+      <div id="importFileInfo" style="display:none;background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:12px 16px;align-items:center;gap:12px">
+        <div style="font-size:1.4rem">&#9989;</div>
+        <div style="flex:1">
+          <div id="importFileName" style="font-size:0.85rem;font-weight:700;color:#fff"></div>
+          <div id="importFileSize" style="font-size:0.72rem;color:var(--muted)"></div>
+        </div>
+        <button onclick="clearImportFile()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem">&times;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Template Name *</label>
+          <input id="imp_name" type="text" placeholder="e.g. Imported Invoice Alert" class="form-input"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sender Display Name</label>
+          <input id="imp_sender" type="text" placeholder="e.g. Finance Team" class="form-input"/>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Subject Line *</label>
+        <input id="imp_subject" type="text" placeholder="e.g. Invoice requires your approval" class="form-input"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Category</label>
+          <select id="imp_category" class="form-input">
+            <option>IT Support</option><option>HR</option>
+            <option>Credential Harvest</option><option>Executive / BEC</option>
+            <option>Delivery</option><option>Social Engineering</option>
+            <option>Finance</option><option>Sales</option><option>Other</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Difficulty</label>
+          <select id="imp_difficulty" class="form-input">
+            <option>Easy</option><option>Medium</option><option>Hard</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end">
+      <button onclick="closeImportModal()" class="btn btn-ghost">Cancel</button>
+      <button onclick="submitImport()" class="btn btn-primary" id="importSubmitBtn" disabled style="opacity:0.5;cursor:not-allowed">Import Template</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.form-input {
+  background: var(--deep); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; font-family: 'Syne', sans-serif; font-size: 0.88rem;
+  color: var(--text); outline: none; width: 100%; transition: border-color 0.2s;
+}
+.form-input:focus { border-color: var(--accent); }
+</style>
+
 <script>
-function openCreateModal() {
-  const overlay = document.getElementById('createModalOverlay');
-  overlay.style.opacity = '1';
-  overlay.style.pointerEvents = 'all';
-  document.getElementById('createModal').style.transform = 'translateY(0)';
+// ── Import Modal ──────────────────────────────────────────────────────────
+let importedFileContent = null;
+
+function openImportModal() {
+  document.getElementById('importOverlay').style.opacity = '1';
+  document.getElementById('importOverlay').style.pointerEvents = 'all';
+  document.getElementById('importModal').style.transform = 'translateY(0)';
 }
 
-function closeCreateModal() {
-  const overlay = document.getElementById('createModalOverlay');
-  overlay.style.opacity = '0';
-  overlay.style.pointerEvents = 'none';
-  document.getElementById('createModal').style.transform = 'translateY(20px)';
+function closeImportModal() {
+  document.getElementById('importOverlay').style.opacity = '0';
+  document.getElementById('importOverlay').style.pointerEvents = 'none';
+  document.getElementById('importModal').style.transform = 'translateY(20px)';
+  clearImportFile();
 }
 
-async function saveTemplate() {
-  const btn = document.getElementById('saveTemplateBtn');
-  const name     = document.getElementById('ct_name').value.trim();
-  const subject  = document.getElementById('ct_subject').value.trim();
-  const html     = document.getElementById('ct_html').value.trim();
-  const category = document.getElementById('ct_category').value;
-  const difficulty = document.getElementById('ct_difficulty').value;
-  const description = document.getElementById('ct_desc').value.trim();
-  const senderName  = document.getElementById('ct_sender').value.trim();
+function clearImportFile() {
+  importedFileContent = null;
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('importFileInfo').style.display  = 'none';
+  document.getElementById('importDropZone').style.borderColor = 'var(--border)';
+  document.getElementById('importDropIcon').textContent = String.fromCodePoint(128194);
+  document.getElementById('importDropText').textContent = 'Drop your HTML file here';
+  var btn = document.getElementById('importSubmitBtn');
+  btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed';
+}
 
-  if (!name || !subject || !html) {
-    showToast('❌ Name, subject and HTML body are required', 'error');
+function handleImportFile(file) {
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.html') && !file.name.toLowerCase().endsWith('.htm')) {
+    showToast('Only .html files are supported', 'error');
     return;
   }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    importedFileContent = e.target.result;
+    var info = document.getElementById('importFileInfo');
+    info.style.display = 'flex';
+    document.getElementById('importFileName').textContent = file.name;
+    document.getElementById('importFileSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    document.getElementById('importDropZone').style.borderColor = 'var(--success)';
+    document.getElementById('importDropIcon').textContent = String.fromCodePoint(9989);
+    document.getElementById('importDropText').textContent = file.name + ' loaded';
+    var autoName = file.name.replace(/\.html?$/i,'').replace(/[_-]/g,' ');
+    autoName = autoName.charAt(0).toUpperCase() + autoName.slice(1);
+    if (!document.getElementById('imp_name').value)
+      document.getElementById('imp_name').value = autoName;
+    var btn = document.getElementById('importSubmitBtn');
+    btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+  };
+  reader.readAsText(file);
+}
 
-  btn.textContent = '⏳ Saving...';
-  btn.disabled = true;
+document.addEventListener('DOMContentLoaded', function() {
+  var zone = document.getElementById('importDropZone');
+  if (!zone) return;
+  zone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--accent)';
+    zone.style.background  = 'var(--border)';
+  });
+  zone.addEventListener('dragleave', function() {
+    zone.style.borderColor = importedFileContent ? 'var(--success)' : 'var(--border)';
+    zone.style.background  = '';
+  });
+  zone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    zone.style.background = '';
+    var file = e.dataTransfer.files[0];
+    if (file) handleImportFile(file);
+  });
+});
 
-  try {
-    const result = await apiFetch('templates', 'POST', {
-      name, subject, html, category,
-      difficulty, description,
-      sender_name: senderName,
-    });
-
-    showToast(`✅ Template "${name}" saved successfully!`, 'success');
-    closeCreateModal();
-
-    // Clear form
-    ['ct_name','ct_sender','ct_subject','ct_desc','ct_html'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
-
-    console.log('✅ Template created:', result);
-
-  } catch(err) {
-    showToast(`❌ Failed to save: ${err.message}`, 'error');
+async function submitImport() {
+  if (!importedFileContent) {
+    showToast('Please select an HTML file first', 'error');
+    return;
   }
-
-  btn.textContent = 'Save Template →';
-  btn.disabled = false;
+  var name    = document.getElementById('imp_name').value.trim();
+  var subject = document.getElementById('imp_subject').value.trim();
+  if (!name || !subject) {
+    showToast('Template name and subject are required', 'error');
+    return;
+  }
+  var btn = document.getElementById('importSubmitBtn');
+  btn.textContent = 'Importing...';
+  btn.disabled = true;
+  try {
+    await apiFetch('templates', 'POST', {
+      name:        name,
+      subject:     subject,
+      category:    document.getElementById('imp_category').value,
+      difficulty:  document.getElementById('imp_difficulty').value,
+      sender_name: document.getElementById('imp_sender').value.trim() || 'Unknown Sender',
+      description: 'Imported template',
+      html:        importedFileContent,
+    });
+    showToast('Template "' + name + '" imported!', 'success');
+    closeImportModal();
+    allTemplates = await apiFetch('templates');
+    renderGrid(allTemplates);
+  } catch(err) {
+    showToast('Import failed: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = 'Import Template';
+  }
 }
 </script>
+
 </body>
 </html>
