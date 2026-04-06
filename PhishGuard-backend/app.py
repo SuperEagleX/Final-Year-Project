@@ -4,8 +4,8 @@ PhishGuard Backend API
 A RESTful API built with Python Flask for the PhishGuard phishing
 simulation and security awareness platform.
 
-Author: [Savakroth Leav]
-Student ID: [2023174]
+Author: [Your Name]
+Student ID: [Your ID]
 Final Year Project — Cybersecurity
 """
 
@@ -19,42 +19,14 @@ import csv
 import io
 import json
 from datetime import datetime, timedelta
-import os
 
 # ── App Setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app)  # Allow frontend to talk to this API
 
 DB_PATH    = 'phishguard.db'
 SECRET_KEY = 'phishguard-secret-key-change-in-production'
 
-# ── GoPhish Integration (email delivery only) ──────────────────────────────
-GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = '60c9139f8f97f3fbe25e6bbd878ee6498803a0605b46e5b9de044fcc9ae11b97'  # From GoPhish dashboard settings
-
-# ── Template loader ────────────────────────────────────────────────────────
-TEMPLATES_DIR  = os.path.join(os.path.dirname(__file__), 'templates')
-TEMPLATES_META = os.path.join(TEMPLATES_DIR, 'templates.json')
-
-import urllib.request
-import ssl
-
-def gophish_request(endpoint, method='GET', data=None):
-    """
-    Make an authenticated request to the GoPhish API.
-    GoPhish uses a self-signed cert so we disable SSL verification for local dev.
-    """
-    url     = f'{GOPHISH_URL}/api/{endpoint}/?api_key={GOPHISH_API_KEY}'
-    headers = {'Content-Type': 'application/json'}
-    body    = json.dumps(data).encode() if data else None
-
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode    = ssl.CERT_NONE
-
-    req      = urllib.request.Request(url, data=body, headers=headers, method=method)
-    response = urllib.request.urlopen(req, context=ctx)
-    return json.loads(response.read().decode())
 
 # ── Database Setup ─────────────────────────────────────────────────────────
 def get_db():
@@ -414,105 +386,6 @@ def get_campaigns():
     conn.close()
     return jsonify(result)
 
-def load_templates():
-    """Load all template metadata from templates.json."""
-    with open(TEMPLATES_META, 'r') as f:
-        return json.load(f)
-
-def load_template_html(filename):
-    """Load HTML content of a specific template file."""
-    path = os.path.join(TEMPLATES_DIR, filename)
-    if not os.path.exists(path):
-        raise FileNotFoundError(f'Template file not found: {filename}')
-    with open(path, 'r') as f:
-        return f.read()
-
-def get_template_by_name(name):
-    """Find a template by name and return its metadata + HTML."""
-    templates = load_templates()
-    for t in templates:
-        if t['name'] == name:
-            t['html'] = load_template_html(t['file'])
-            return t
-    # Default to first template if not found
-    t = templates[0]
-    t['html'] = load_template_html(t['file'])
-    return t
-
-
-@app.route('/api/campaigns/<int:campaign_id>/send', methods=['POST'])
-def send_campaign_emails(campaign_id):
-    """
-    POST /api/campaigns/<id>/send
-    Triggers GoPhish to send phishing emails for this campaign.
-    Your backend stores results, GoPhish handles delivery.
-    """
-    conn     = get_db()
-    campaign = conn.execute(
-        'SELECT * FROM campaigns WHERE id=?', (campaign_id,)
-    ).fetchone()
-    targets  = conn.execute(
-        'SELECT * FROM campaign_targets WHERE campaign_id=?', (campaign_id,)
-    ).fetchall()
-    conn.close()
-
-    if not campaign:
-        return jsonify({'error': 'Campaign not found'}), 404
-    if not targets:
-        return jsonify({'error': 'No targets found — upload employees first'}), 400
-
-    try:
-        # Step 1 — Make sure GoPhish has the target group
-        group_payload = {
-            'name': f'PG_Campaign_{campaign_id}',
-            'targets': [{
-                'first_name': t['name'].split(' ')[0],
-                'last_name':  ' '.join(t['name'].split(' ')[1:]),
-                'email':      t['email'],
-                'position':   t['department'],
-            } for t in targets]
-        }
-        group = gophish_request('groups', 'POST', group_payload)
-
-        # Step 2 — Create campaign in GoPhish
-        gophish_campaign = {
-            'name':        f'PG_{campaign["name"]}_{campaign_id}',
-            'template':    {'name': campaign['template'] or 'IT Password Reset'},
-            'page':        {'name': 'Awareness Page'},
-            'smtp':        {'name': 'Mailgun SMTP'},
-            'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}',
-            'launch_date': datetime.now().strftime('%Y-%m-%dT%H:%M:%S+00:00'),
-            'groups':      [{'name': group['name']}],
-        }
-        result = gophish_request('campaigns', 'POST', gophish_campaign)
-
-        # Step 3 — Update campaign status in YOUR database
-        conn = get_db()
-        conn.execute(
-            "UPDATE campaigns SET status='active' WHERE id=?",
-            (campaign_id,)
-        )
-        # Store GoPhish campaign ID for later result syncing
-        conn.execute(
-            "UPDATE campaigns SET template=? WHERE id=?",
-            (campaign['template'], campaign_id)
-        )
-        conn.commit()
-        conn.close()
-
-        print(f'✅ Campaign "{campaign["name"]}" launched via GoPhish. ID: {result["id"]}')
-
-        return jsonify({
-            'success':       True,
-            'gophish_id':    result['id'],
-            'targets':       len(targets),
-            'message':       f'Campaign launched — {len(targets)} phishing emails queued via GoPhish'
-        })
-
-    except Exception as e:
-        print(f'❌ GoPhish error: {e}')
-        return jsonify({'error': f'GoPhish error: {str(e)}'}), 500
-
 
 @app.route('/api/campaigns', methods=['POST'])
 def create_campaign():
@@ -659,7 +532,12 @@ def track_open():
 
 @app.route('/api/track/click', methods=['GET'])
 def track_click():
-    campaign_id = request.args.get('campaign_id')
+    """
+    GET /api/track/click?campaign_id=X&email=Y
+    Called when an employee clicks the phishing link.
+    Logs the click event then redirects to the phishing landing page.
+    """
+    campaign_id = request.args.get('campaign_id', '')
     email       = request.args.get('email', '')
 
     if campaign_id and email:
@@ -674,7 +552,45 @@ def track_click():
         print(f'🎣 Click tracked: {email} in campaign {campaign_id}')
 
     from flask import redirect
-    return redirect(f'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign={campaign_id}')
+    # Redirect to phishing landing page — passes campaign_id and email so
+    # the landing page can log a submission if the user enters credentials
+    return redirect(
+        f'http://127.0.0.1:8080/phishing-landing.html'
+        f'?campaign_id={campaign_id}&email={email}'
+    )
+
+
+@app.route('/api/track/submit', methods=['POST'])
+def track_submit():
+    """
+    POST /api/track/submit
+    Called when an employee submits credentials on the phishing landing page.
+    Body: { campaign_id, email }
+    This is the highest-risk event — employee both clicked AND entered credentials.
+    """
+    data        = request.get_json()
+    campaign_id = data.get('campaign_id')
+    email       = data.get('email', '')
+
+    if not campaign_id or not email:
+        return jsonify({'error': 'campaign_id and email required'}), 400
+
+    conn = get_db()
+    conn.execute('''
+        INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
+        VALUES (?, ?, 'submitted', ?, ?)
+    ''', (campaign_id, email, request.remote_addr, request.user_agent.string))
+    conn.commit()
+    conn.close()
+
+    new_score = update_risk_score(email)
+    print(f'🚨 Credentials submitted: {email} in campaign {campaign_id} | New risk score: {new_score}')
+
+    return jsonify({
+        'success':       True,
+        'new_risk_score': new_score,
+        'redirect':       f'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign_id={campaign_id}'
+    })
 
 
 @app.route('/api/track/report', methods=['POST'])
@@ -860,18 +776,84 @@ def get_risk_score(user_id):
     })
 
 
+import os
+import urllib.request
+import ssl
+
+# ── GoPhish Integration ────────────────────────────────────────────────────
+GOPHISH_URL     = 'https://127.0.0.1:3333'
+GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
+
+def gophish_request(endpoint, method='GET', data=None):
+    """Make an authenticated request to the GoPhish API."""
+    url     = f'{GOPHISH_URL}/api/{endpoint}/?api_key={GOPHISH_API_KEY}'
+    headers = {'Content-Type': 'application/json'}
+    body    = json.dumps(data).encode() if data else None
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode    = ssl.CERT_NONE
+    req      = urllib.request.Request(url, data=body, headers=headers, method=method)
+    response = urllib.request.urlopen(req, context=ctx)
+    return json.loads(response.read().decode())
 
 
-# ── Health Check ───────────────────────────────────────────────────────────
-@app.route('/api/health', methods=['GET'])
-def health():
-    """GET /api/health — Check if the API is running."""
-    return jsonify({
-        'status':  'ok',
-        'message': 'PhishGuard API is running',
-        'version': '1.0.0',
-        'time':    datetime.now().isoformat(),
-    })
+# ── Template File Loader ───────────────────────────────────────────────────
+TEMPLATES_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+TEMPLATES_META = os.path.join(TEMPLATES_DIR, 'templates.json')
+
+def load_templates():
+    """Load all template metadata from templates.json."""
+    with open(TEMPLATES_META, 'r') as f:
+        return json.load(f)
+
+def load_template_html(filename):
+    """Load HTML content of a specific template file."""
+    path = os.path.join(TEMPLATES_DIR, filename)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f'Template file not found: {filename}')
+    with open(path, 'r') as f:
+        return f.read()
+
+def get_template_by_name(name):
+    """Find a template by name and return its metadata + HTML."""
+    templates = load_templates()
+    for t in templates:
+        if t['name'] == name:
+            t['html'] = load_template_html(t['file'])
+            return t
+    # Default to first template if not found
+    t = templates[0]
+    t['html'] = load_template_html(t['file'])
+    return t
+
+
+# ── Awareness Landing Page ─────────────────────────────────────────────────
+AWARENESS_PAGE_HTML = """<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;text-align:center;padding:60px 20px;background:#020b18;color:#cde4f8">
+  <div style="max-width:500px;margin:0 auto;background:#071628;border:1px solid #0d2847;border-radius:16px;padding:40px">
+    <div style="font-size:4rem;margin-bottom:20px">🎣</div>
+    <h1 style="color:#ff4560;margin-bottom:16px">You have been phished!</h1>
+    <p style="color:#cde4f8;line-height:1.8;margin-bottom:24px">
+      This was a <strong style="color:#00d4ff">simulated phishing test</strong> run by
+      your company IT Security team.
+    </p>
+    <div style="background:#0d2847;border-radius:10px;padding:20px;text-align:left;margin-bottom:24px">
+      <p style="color:#ffb300;font-weight:700;margin-bottom:12px">Red flags you missed:</p>
+      <ul style="color:#cde4f8;line-height:2;padding-left:20px">
+        <li>The sender domain was not the real company domain</li>
+        <li>The email created artificial urgency</li>
+        <li>It threatened consequences for not acting immediately</li>
+      </ul>
+    </div>
+    <a href="http://127.0.0.1:8080/awareness-training.html"
+       style="background:linear-gradient(135deg,#0077ff,#00d4ff);color:#000;
+       padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:800">
+      Start Security Training
+    </a>
+  </div>
+</body></html>"""
+
 
 # ── Template Routes ────────────────────────────────────────────────────────
 @app.route('/api/templates', methods=['GET'])
@@ -901,8 +883,7 @@ def get_template(template_id):
 @app.route('/api/templates', methods=['POST'])
 def create_template():
     """
-    POST /api/templates
-    Admin creates a new phishing template.
+    POST /api/templates — Admin creates a new phishing template.
     Body: { name, subject, category, difficulty, description, sender_name, html }
     """
     data = request.get_json()
@@ -910,38 +891,28 @@ def create_template():
     for field in required:
         if not data.get(field):
             return jsonify({'error': f'Missing required field: {field}'}), 400
-
     try:
         templates = load_templates()
-
-        # Generate filename from template name
-        filename = data['name'].lower().replace(' ', '_').replace('/', '_') + '.html'
-        filepath = os.path.join(TEMPLATES_DIR, filename)
+        filename  = data['name'].lower().replace(' ', '_').replace('/', '_') + '.html'
+        filepath  = os.path.join(TEMPLATES_DIR, filename)
 
         # Save HTML file
         with open(filepath, 'w') as f:
-            f.write(f"""<!--
-  Template: {data['name']}
-  Category: {data['category']}
-  Difficulty: {data['difficulty']}
-  Description: {data.get('description', '')}
--->
-{data['html']}""")
+            f.write(f"<!--\n  Template: {data['name']}\n  Category: {data['category']}\n  Difficulty: {data['difficulty']}\n-->\n{data['html']}")
 
         # Add to templates.json
         new_template = {
-            'id':            max(t['id'] for t in templates) + 1 if templates else 1,
-            'name':          data['name'],
-            'file':          filename,
-            'subject':       data['subject'],
-            'category':      data['category'],
-            'difficulty':    data['difficulty'],
-            'description':   data.get('description', ''),
-            'sender_name':   data.get('sender_name', 'IT Support'),
+            'id':             max(t['id'] for t in templates) + 1 if templates else 1,
+            'name':           data['name'],
+            'file':           filename,
+            'subject':        data['subject'],
+            'category':       data['category'],
+            'difficulty':     data['difficulty'],
+            'description':    data.get('description', ''),
+            'sender_name':    data.get('sender_name', 'IT Support'),
             'avg_click_rate': 0,
         }
         templates.append(new_template)
-
         with open(TEMPLATES_META, 'w') as f:
             json.dump(templates, f, indent=2)
 
@@ -960,21 +931,143 @@ def delete_template(template_id):
         template  = next((t for t in templates if t['id'] == template_id), None)
         if not template:
             return jsonify({'error': 'Template not found'}), 404
-
-        # Remove HTML file
         filepath = os.path.join(TEMPLATES_DIR, template['file'])
         if os.path.exists(filepath):
             os.remove(filepath)
-
-        # Remove from templates.json
         templates = [t for t in templates if t['id'] != template_id]
         with open(TEMPLATES_META, 'w') as f:
             json.dump(templates, f, indent=2)
-
         return jsonify({'success': True, 'message': f'Template "{template["name"]}" deleted'})
-
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ── Campaign Send Route ────────────────────────────────────────────────────
+@app.route('/api/campaigns/<int:campaign_id>/send', methods=['POST'])
+def send_campaign_emails(campaign_id):
+    """
+    POST /api/campaigns/<id>/send
+    Pushes campaign from PhishGuard into GoPhish and triggers email delivery.
+    Templates come from YOUR backend — GoPhish only handles sending.
+    """
+    conn     = get_db()
+    campaign = conn.execute(
+        'SELECT * FROM campaigns WHERE id=?', (campaign_id,)
+    ).fetchone()
+    targets  = conn.execute(
+        'SELECT * FROM campaign_targets WHERE campaign_id=?', (campaign_id,)
+    ).fetchall()
+    conn.close()
+
+    if not campaign:
+        return jsonify({'error': 'Campaign not found'}), 404
+    if not targets:
+        return jsonify({'error': 'No targets found — upload employees first'}), 400
+
+    template_name = campaign['template'] or 'IT Password Reset'
+
+    try:
+        template = get_template_by_name(template_name)
+    except Exception as e:
+        return jsonify({'error': f'Could not load template: {str(e)}'}), 500
+
+    try:
+        gophish_template_name = f'PG_{campaign_id}_{template_name}'
+        page_name  = f'PG_Awareness_{campaign_id}'
+        group_name = f'PG_Group_{campaign_id}'
+        camp_name  = f'PG_Campaign_{campaign_id}'
+
+        # ── Helper: delete GoPhish object by name if it exists ──────────────
+        def gophish_delete_if_exists(endpoint, name):
+            """Find object by name and delete it so we can recreate cleanly."""
+            try:
+                items = gophish_request(endpoint)
+                # items is a list; find matching name
+                if isinstance(items, list):
+                    for item in items:
+                        if item.get('name') == name:
+                            gophish_request(f'{endpoint}/{item["id"]}', 'DELETE')
+                            print(f'🗑️  Deleted existing GoPhish {endpoint}: {name}')
+                            break
+            except Exception as e:
+                print(f'⚠️ Could not clean up {endpoint}/{name}: {e}')
+
+        # Step 1 — Clean up then push YOUR template into GoPhish
+        gophish_delete_if_exists('templates', gophish_template_name)
+        gophish_request('templates', 'POST', {
+            'name':    gophish_template_name,
+            'subject': template['subject'],
+            'html':    template['html'],
+        })
+        print(f'✅ Template pushed to GoPhish: {gophish_template_name}')
+
+        # Step 2 — Clean up then push YOUR landing page into GoPhish
+        gophish_delete_if_exists('pages', page_name)
+        gophish_request('pages', 'POST', {
+            'name':                page_name,
+            'html':                AWARENESS_PAGE_HTML,
+            'capture_credentials': True,
+            'capture_passwords':   False,
+            'redirect_url':        'http://127.0.0.1:8080/awareness-training.html',
+        })
+        print('✅ Landing page pushed to GoPhish')
+
+        # Step 3 — Clean up then push targets as a GoPhish group
+        gophish_delete_if_exists('groups', group_name)
+        gophish_request('groups', 'POST', {
+            'name': group_name,
+            'targets': [{
+                'first_name': t['name'].split(' ')[0],
+                'last_name':  ' '.join(t['name'].split(' ')[1:]),
+                'email':      t['email'],
+                'position':   t['department'],
+            } for t in targets]
+        })
+        print(f'✅ Group pushed to GoPhish: {len(targets)} targets')
+
+        # Step 4 — Clean up then launch campaign in GoPhish
+        gophish_delete_if_exists('campaigns', camp_name)
+        gophish_campaign = {
+            'name':        camp_name,
+            'template':    {'name': gophish_template_name},
+            'page':        {'name': page_name},
+            'smtp':        {'name': 'Brevo SMTP'},
+            'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}',
+            'launch_date': (datetime.utcnow() - timedelta(minutes=2)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
+            'groups':      [{'name': group_name}],
+        }
+        result = gophish_request('campaigns', 'POST', gophish_campaign)
+        print(f'✅ Campaign launched in GoPhish. ID: {result["id"]}')
+
+        # Step 5 — Update status in YOUR database
+        conn = get_db()
+        conn.execute("UPDATE campaigns SET status='active' WHERE id=?", (campaign_id,))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success':    True,
+            'gophish_id': result['id'],
+            'targets':    len(targets),
+            'message':    f'Campaign launched — {len(targets)} phishing emails queued via GoPhish'
+        })
+
+    except Exception as e:
+        print(f'❌ Error launching campaign: {e}')
+        return jsonify({'error': str(e)}), 500
+
+
+# ── Health Check ───────────────────────────────────────────────────────────
+@app.route('/api/health', methods=['GET'])
+def health():
+    """GET /api/health — Check if the API is running."""
+    return jsonify({
+        'status':  'ok',
+        'message': 'PhishGuard API is running',
+        'version': '1.0.0',
+        'time':    datetime.now().isoformat(),
+    })
+
 
 # ── Run ────────────────────────────────────────────────────────────────────
 if __name__ == '__main__':
@@ -995,4 +1088,8 @@ if __name__ == '__main__':
     print('   POST /api/quiz/submit')
     print('   GET  /api/employees/<id>/risk')
     print('   GET  /api/health')
+    print('   GET  /api/templates')
+    print('   POST /api/templates')
+    print('   DEL  /api/templates/<id>')
+    print('   POST /api/campaigns/<id>/send')
     app.run(debug=True, host='0.0.0.0', port=5000)
