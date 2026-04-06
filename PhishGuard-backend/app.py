@@ -552,10 +552,26 @@ def track_click():
         print(f'🎣 Click tracked: {email} in campaign {campaign_id}')
 
     from flask import redirect
-    # Redirect to phishing landing page — passes campaign_id and email so
-    # the landing page can log a submission if the user enters credentials
+
+    # Look up which landing page to serve based on campaign's template
+    landing_page = 'phishing-landing.html'  # default fallback
+    if campaign_id:
+        try:
+            conn2 = get_db()
+            camp  = conn2.execute(
+                'SELECT template FROM campaigns WHERE id=?', (campaign_id,)
+            ).fetchone()
+            conn2.close()
+            if camp and camp['template']:
+                templates_meta = load_templates()
+                match = next((t for t in templates_meta if t['name'] == camp['template']), None)
+                if match and match.get('landing_file'):
+                    landing_page = match['landing_file']
+        except Exception as e:
+            print(f'⚠️ Could not look up landing page: {e}')
+
     return redirect(
-        f'http://127.0.0.1:8080/phishing-landing.html'
+        f'http://127.0.0.1:8088/{landing_page}'
         f'?campaign_id={campaign_id}&email={email}'
     )
 
@@ -589,7 +605,7 @@ def track_submit():
     return jsonify({
         'success':       True,
         'new_risk_score': new_score,
-        'redirect':       f'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign_id={campaign_id}'
+        'redirect':       f'http://127.0.0.1:8088/awareness-training.html?caught=1&campaign_id={campaign_id}'
     })
 
 
@@ -782,7 +798,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'# ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
@@ -846,7 +862,7 @@ AWARENESS_PAGE_HTML = """<!DOCTYPE html>
         <li>It threatened consequences for not acting immediately</li>
       </ul>
     </div>
-    <a href="http://127.0.0.1:8080/awareness-training.html"
+    <a href="http://127.0.0.1:8088/awareness-training.html"
        style="background:linear-gradient(135deg,#0077ff,#00d4ff);color:#000;
        padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:800">
       Start Security Training
@@ -1001,16 +1017,27 @@ def send_campaign_emails(campaign_id):
         })
         print(f'✅ Template pushed to GoPhish: {gophish_template_name}')
 
-        # Step 2 — Clean up then push YOUR landing page into GoPhish
+        # Step 2 — Clean up then push correct landing page HTML into GoPhish
+        # Use the template's matching landing page if available
+        landing_html = AWARENESS_PAGE_HTML  # default fallback
+        landing_file = template.get('landing_file', '')
+        if landing_file:
+            try:
+                landing_path = os.path.join(TEMPLATES_DIR, landing_file)
+                with open(landing_path, 'r') as lf:
+                    landing_html = lf.read()
+            except Exception as e:
+                print(f'⚠️ Could not load landing file {landing_file}: {e}')
+
         gophish_delete_if_exists('pages', page_name)
         gophish_request('pages', 'POST', {
             'name':                page_name,
-            'html':                AWARENESS_PAGE_HTML,
+            'html':                landing_html,
             'capture_credentials': True,
             'capture_passwords':   False,
-            'redirect_url':        'http://127.0.0.1:8080/awareness-training.html',
+            'redirect_url':        f'http://127.0.0.1:8088/awareness-training.html?caught=1&campaign_id={campaign_id}',
         })
-        print('✅ Landing page pushed to GoPhish')
+        print(f'✅ Landing page pushed to GoPhish: {landing_file or "default"}')
 
         # Step 3 — Clean up then push targets as a GoPhish group
         gophish_delete_if_exists('groups', group_name)
@@ -1031,7 +1058,7 @@ def send_campaign_emails(campaign_id):
             'name':        camp_name,
             'template':    {'name': gophish_template_name},
             'page':        {'name': page_name},
-            'smtp':        {'name': 'Brevo SMTP'},
+            'smtp':        {'name': 'Mailhog'},
             'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}',
             'launch_date': (datetime.utcnow() - timedelta(minutes=2)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
             'groups':      [{'name': group_name}],

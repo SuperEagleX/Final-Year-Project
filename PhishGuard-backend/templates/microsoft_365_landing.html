@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign in to your account</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f2f2f2;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ms-card {
+      background: #fff;
+      width: 440px;
+      padding: 44px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+
+    .ms-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    /* Microsoft four-square logo */
+    .ms-logo-squares {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      width: 24px;
+      height: 24px;
+    }
+    .ms-logo-squares div:nth-child(1) { background: #f25022; }
+    .ms-logo-squares div:nth-child(2) { background: #7fba00; }
+    .ms-logo-squares div:nth-child(3) { background: #00a4ef; }
+    .ms-logo-squares div:nth-child(4) { background: #ffb900; }
+
+    .ms-logo-text {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #1b1b1b;
+      letter-spacing: -0.3px;
+    }
+
+    .ms-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 12px;
+    }
+
+    .ms-subtitle {
+      font-size: 0.9rem;
+      color: #605e5c;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .ms-input-group {
+      margin-bottom: 16px;
+    }
+
+    .ms-input-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1b1b1b;
+      margin-bottom: 4px;
+    }
+
+    .ms-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #8a8886;
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: #1b1b1b;
+      outline: none;
+      border-radius: 0;
+      transition: border-color 0.15s;
+    }
+
+    .ms-input:focus {
+      border-color: #0078d4;
+      border-width: 2px;
+    }
+
+    .ms-input.error-input {
+      border-color: #a4262c;
+      border-width: 2px;
+    }
+
+    .ms-error {
+      display: none;
+      color: #a4262c;
+      font-size: 0.78rem;
+      margin-top: 4px;
+    }
+
+    .ms-options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      font-size: 0.82rem;
+    }
+
+    .ms-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #1b1b1b;
+      cursor: pointer;
+    }
+
+    .ms-checkbox-label input { cursor: pointer; }
+
+    .ms-forgot {
+      color: #0078d4;
+      text-decoration: none;
+      font-size: 0.82rem;
+    }
+    .ms-forgot:hover { text-decoration: underline; }
+
+    .ms-btn {
+      width: 100%;
+      padding: 10px;
+      background: #0078d4;
+      color: #fff;
+      border: none;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 16px;
+      border-radius: 0;
+    }
+    .ms-btn:hover { background: #106ebe; }
+    .ms-btn:disabled { background: #c8c6c4; cursor: not-allowed; }
+
+    .ms-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .ms-divider-line { flex: 1; height: 1px; background: #edebe9; }
+    .ms-divider-text { font-size: 0.78rem; color: #605e5c; }
+
+    .ms-other-options {
+      font-size: 0.82rem;
+      color: #0078d4;
+      text-align: center;
+      cursor: pointer;
+    }
+    .ms-other-options:hover { text-decoration: underline; }
+
+    .ms-footer {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #edebe9;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .ms-footer a {
+      font-size: 0.72rem;
+      color: #605e5c;
+      text-decoration: none;
+    }
+    .ms-footer a:hover { text-decoration: underline; color: #0078d4; }
+
+    /* Loading spinner shown on submit */
+    .ms-spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="ms-card">
+  <!-- Microsoft logo -->
+  <div class="ms-logo">
+    <div class="ms-logo-squares">
+      <div></div><div></div><div></div><div></div>
+    </div>
+    <span class="ms-logo-text">Microsoft</span>
+  </div>
+
+  <div class="ms-title">Sign in</div>
+  <div class="ms-subtitle" id="subtitleText">
+    Use your Microsoft account to continue
+  </div>
+
+  <form id="msForm" onsubmit="handleSubmit(event)">
+    <!-- Step 1: Email -->
+    <div id="step1">
+      <div class="ms-input-group">
+        <label for="emailInput">Email, phone, or Skype</label>
+        <input type="text" id="emailInput" class="ms-input"
+               placeholder="Email, phone, or Skype" autocomplete="username"/>
+        <div class="ms-error" id="emailError">Enter a valid email address</div>
+      </div>
+      <div class="ms-options-row">
+        <span></span>
+        <a href="#" class="ms-forgot">No account? Create one!</a>
+      </div>
+      <button type="button" class="ms-btn" onclick="nextStep()">Next</button>
+    </div>
+
+    <!-- Step 2: Password (hidden until email entered) -->
+    <div id="step2" style="display:none">
+      <div class="ms-input-group">
+        <label for="passwordInput">Password</label>
+        <input type="password" id="passwordInput" class="ms-input"
+               placeholder="Password" autocomplete="current-password"/>
+        <div class="ms-error" id="passwordError">
+          Your account or password is incorrect. If you don't remember your
+          password, reset it now.
+        </div>
+      </div>
+      <div class="ms-options-row">
+        <label class="ms-checkbox-label">
+          <input type="checkbox" id="keepSignedIn"/> Keep me signed in
+        </label>
+        <a href="#" class="ms-forgot">Forgot password?</a>
+      </div>
+      <button type="submit" class="ms-btn" id="signInBtn">
+        <span id="btnText">Sign in</span>
+        <div class="ms-spinner" id="btnSpinner"></div>
+      </button>
+    </div>
+  </form>
+
+  <div class="ms-divider">
+    <div class="ms-divider-line"></div>
+    <span class="ms-divider-text">or</span>
+    <div class="ms-divider-line"></div>
+  </div>
+
+  <div class="ms-other-options">Sign-in options</div>
+
+  <div class="ms-footer">
+    <a href="#">Terms of use</a>
+    <a href="#">Privacy & cookies</a>
+    <a href="#">...</a>
+  </div>
+</div>
+
+<script>
+  // ── Read campaign_id and email from URL params ──────────────────────────
+  const params     = new URLSearchParams(window.location.search);
+  const campaignId = params.get('campaign_id') || '';
+  const targetEmail = params.get('email') || '';
+
+  // Pre-fill email if passed in URL (GoPhish passes {{.Email}})
+  if (targetEmail) {
+    document.getElementById('emailInput').value = targetEmail;
+  }
+
+  // ── Step 1 → Step 2: show password field after email ───────────────────
+  function nextStep() {
+    const emailVal = document.getElementById('emailInput').value.trim();
+    const emailErr = document.getElementById('emailError');
+    const input    = document.getElementById('emailInput');
+
+    if (!emailVal || !emailVal.includes('@')) {
+      emailErr.style.display = 'block';
+      input.classList.add('error-input');
+      return;
+    }
+
+    emailErr.style.display = 'none';
+    input.classList.remove('error-input');
+
+    // Update subtitle to show the entered email (like real Microsoft)
+    document.getElementById('subtitleText').textContent = emailVal;
+
+    document.getElementById('step1').style.display = 'none';
+    document.getElementById('step2').style.display  = 'block';
+    document.getElementById('passwordInput').focus();
+  }
+
+  // ── Form submit: log "submitted" event to YOUR backend ──────────────────
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    const passwordVal = document.getElementById('passwordInput').value;
+    const passErr     = document.getElementById('passwordError');
+    const btn         = document.getElementById('signInBtn');
+    const btnText     = document.getElementById('btnText');
+    const spinner     = document.getElementById('btnSpinner');
+
+    if (!passwordVal) {
+      passErr.style.display = 'block';
+      document.getElementById('passwordInput').classList.add('error-input');
+      return;
+    }
+
+    // Show loading state
+    btn.disabled      = true;
+    btnText.style.display  = 'none';
+    spinner.style.display  = 'block';
+
+    // First attempt shows "incorrect password" to seem realistic
+    if (!btn.dataset.secondAttempt) {
+      await new Promise(r => setTimeout(r, 1200));
+      btn.disabled         = false;
+      btnText.style.display  = 'block';
+      spinner.style.display  = 'none';
+      passErr.style.display  = 'block';
+      document.getElementById('passwordInput').classList.add('error-input');
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+      btn.dataset.secondAttempt = '1';
+      return;
+    }
+
+    // Second attempt — log the submission to your backend then redirect
+    try {
+      const email = document.getElementById('emailInput').value.trim() || targetEmail;
+      await fetch('http://127.0.0.1:5000/api/track/submit', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ campaign_id: campaignId, email: email }),
+      });
+    } catch(err) {
+      // Even if API call fails, still redirect to awareness page
+      console.warn('Could not log submission:', err);
+    }
+
+    // Redirect to awareness training
+    window.location.href =
+      'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign_id=' + campaignId;
+  }
+
+  // Allow pressing Enter on email field to proceed
+  document.getElementById('emailInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); nextStep(); }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>HR Compliance Portal — Document Signing</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; }
+
+    .top-bar { background: #c0392b; padding: 12px 32px; display: flex; align-items: center; gap: 12px; }
+    .top-bar-title { color: #fff; font-size: 1rem; font-weight: 600; }
+    .top-bar-badge { margin-left: auto; background: #fff; color: #c0392b; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
+    .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+
+    .card { background: #fff; width: 100%; max-width: 560px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); overflow: hidden; }
+
+    .card-header { background: #c0392b; padding: 24px 32px; }
+    .card-header h1 { color: #fff; font-size: 1.15rem; font-weight: 600; }
+    .card-header p { color: #f5b7b1; font-size: 0.8rem; margin-top: 4px; }
+
+    .card-body { padding: 32px; }
+
+    .doc-preview { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin-bottom: 24px; }
+    .doc-title { font-size: 0.95rem; font-weight: 700; color: #333; margin-bottom: 8px; }
+    .doc-meta { font-size: 0.75rem; color: #888; margin-bottom: 12px; }
+    .doc-body { font-size: 0.8rem; color: #555; line-height: 1.7; max-height: 120px; overflow: hidden; position: relative; }
+    .doc-body::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(transparent, #f8f9fa); }
+
+    .deadline-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 16px; margin-bottom: 24px; font-size: 0.82rem; color: #664d03; display: flex; align-items: center; gap: 8px; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #333; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 0.9rem; color: #333; outline: none; }
+    .form-group input:focus { border-color: #c0392b; }
+    .error-msg { display: none; font-size: 0.75rem; color: #dc3545; margin-top: 4px; }
+
+    .consent-box { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 24px; padding: 14px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6; }
+    .consent-box input { margin-top: 3px; flex-shrink: 0; cursor: pointer; }
+    .consent-box label { font-size: 0.8rem; color: #555; line-height: 1.5; cursor: pointer; }
+
+    .btn { width: 100%; padding: 12px; background: #c0392b; color: #fff; border: none; border-radius: 4px; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #a93226; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .footer-note { margin-top: 16px; font-size: 0.72rem; color: #aaa; text-align: center; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="top-bar-title">📋 HR Compliance Portal</span>
+  <span class="top-bar-badge">ACTION REQUIRED</span>
+</div>
+
+<div class="main">
+  <div class="card">
+    <div class="card-header">
+      <h1>Employee Policy Acknowledgement</h1>
+      <p>2026 Employee Code of Conduct — Electronic Signature Required</p>
+    </div>
+    <div class="card-body">
+
+      <div class="deadline-banner">
+        ⏰ <strong>Deadline: This Friday</strong> — Failure to sign may impact your performance review
+      </div>
+
+      <div class="doc-preview">
+        <div class="doc-title">2026 Employee Code of Conduct & Remote Work Policy</div>
+        <div class="doc-meta">Version 4.2 · Issued by Human Resources · Effective 01 January 2026</div>
+        <div class="doc-body">
+          This policy outlines the expected standards of conduct for all employees of the organisation.
+          All employees are required to read, understand and comply with the terms outlined in this document.
+          Section 1 — Professional Conduct. All employees must maintain professional standards at all times...
+        </div>
+      </div>
+
+      <form onsubmit="handleSubmit(event)">
+        <div class="form-group">
+          <label>Employee Email Address</label>
+          <input type="email" id="emailInput" placeholder="you@company.com" required/>
+        </div>
+        <div class="form-group">
+          <label>Employee ID / Staff Number</label>
+          <input type="text" id="staffId" placeholder="e.g. EMP-00234" required/>
+        </div>
+        <div class="form-group">
+          <label>Network Password (to verify identity)</label>
+          <input type="password" id="passwordInput" placeholder="Enter your network login password" required/>
+          <div class="error-msg" id="passError">Incorrect password. Please try again.</div>
+        </div>
+
+        <div class="consent-box">
+          <input type="checkbox" id="consentCheck" required/>
+          <label for="consentCheck">
+            I confirm that I have read and understood the 2026 Employee Code of Conduct and Remote Work Policy and agree to abide by its terms.
+          </label>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">Sign & Submit Acknowledgement</button>
+      </form>
+
+      <p class="footer-note">
+        This document will be stored securely in your employee file.<br/>
+        Questions? Contact HR at hr@company.com or call ext. 2100
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const params      = new URLSearchParams(window.location.search);
+  const campaignId  = params.get('campaign_id') || '';
+  const targetEmail = params.get('email') || '';
+  if (targetEmail) document.getElementById('emailInput').value = targetEmail;
+
+  let attempts = 0;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const btn    = document.getElementById('submitBtn');
+    const errMsg = document.getElementById('passError');
+    attempts++;
+
+    if (attempts === 1) {
+      errMsg.style.display = 'block';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('passwordInput').focus();
+      return;
+    }
+
+    btn.textContent = 'Submitting...';
+    btn.disabled = true;
+
+    try {
+      const email = document.getElementById('emailInput').value || targetEmail;
+      await fetch('http://127.0.0.1:5000/api/track/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaignId, email }),
+      });
+    } catch(err) { console.warn(err); }
+
+    window.location.href = 'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign_id=' + campaignId;
+  }
+</script>
+</body>
+</html>

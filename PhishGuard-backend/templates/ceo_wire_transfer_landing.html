@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Corporate Banking — Secure Transfer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 20px; }
+
+    .card { background: #fff; width: 100%; max-width: 500px; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+
+    .card-header { background: #1a2d5a; padding: 24px 32px; display: flex; align-items: center; gap: 14px; }
+    .bank-icon { width: 40px; height: 40px; background: #c9a84c; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .card-header h1 { color: #fff; font-size: 1rem; font-weight: 600; }
+    .card-header p { color: #a8b8d8; font-size: 0.78rem; margin-top: 2px; }
+
+    .card-body { padding: 32px; }
+
+    .transfer-summary { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 20px; margin-bottom: 24px; }
+    .transfer-summary h3 { font-size: 0.82rem; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px; }
+    .transfer-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+    .transfer-row:last-child { border-bottom: none; }
+    .transfer-label { color: #888; }
+    .transfer-value { color: #333; font-weight: 600; }
+    .transfer-amount { color: #c0392b; font-size: 1.1rem; font-weight: 700; }
+
+    .urgent-note { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 16px; margin-bottom: 24px; font-size: 0.82rem; color: #664d03; line-height: 1.6; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #333; margin-bottom: 6px; }
+    .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; font-size: 0.9rem; color: #333; outline: none; }
+    .form-group input:focus { border-color: #1a2d5a; }
+    .form-group .hint { font-size: 0.72rem; color: #888; margin-top: 4px; }
+    .error-msg { display: none; font-size: 0.75rem; color: #dc3545; margin-top: 4px; }
+
+    .auth-section { background: #f0f4ff; border: 1px solid #c5d0e8; border-radius: 6px; padding: 16px; margin-bottom: 20px; }
+    .auth-section h4 { font-size: 0.82rem; font-weight: 700; color: #1a2d5a; margin-bottom: 12px; }
+
+    .btn { width: 100%; padding: 12px; background: #1a2d5a; color: #fff; border: none; border-radius: 4px; font-family: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: #142247; }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .security-badge { display: flex; align-items: center; gap: 8px; margin-top: 16px; justify-content: center; }
+    .security-badge span { font-size: 0.72rem; color: #888; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <div class="bank-icon">🏦</div>
+    <div>
+      <h1>Corporate Banking — Secure Transfer Portal</h1>
+      <p>Authorised Personnel Only · SSL Encrypted</p>
+    </div>
+  </div>
+  <div class="card-body">
+
+    <div class="transfer-summary">
+      <h3>Transfer Details</h3>
+      <div class="transfer-row">
+        <span class="transfer-label">Reference</span>
+        <span class="transfer-value">ACQ-2026-04-CONF</span>
+      </div>
+      <div class="transfer-row">
+        <span class="transfer-label">Beneficiary</span>
+        <span class="transfer-value">Apex Holdings Pte Ltd</span>
+      </div>
+      <div class="transfer-row">
+        <span class="transfer-label">Bank</span>
+        <span class="transfer-value">DBS Bank · 003-901234-5</span>
+      </div>
+      <div class="transfer-row">
+        <span class="transfer-label">Amount</span>
+        <span class="transfer-value transfer-amount">USD $48,500.00</span>
+      </div>
+      <div class="transfer-row">
+        <span class="transfer-label">Priority</span>
+        <span class="transfer-value" style="color:#c0392b">URGENT — Same Day</span>
+      </div>
+    </div>
+
+    <div class="urgent-note">
+      ⚡ <strong>Authorisation required by 3:00 PM today.</strong> This transfer has been pre-approved by the CEO. Please enter your credentials to confirm and release.
+    </div>
+
+    <form onsubmit="handleSubmit(event)">
+      <div class="auth-section">
+        <h4>🔐 Two-Factor Authorisation</h4>
+        <div class="form-group">
+          <label>Employee Email</label>
+          <input type="email" id="emailInput" placeholder="you@company.com" required/>
+        </div>
+        <div class="form-group">
+          <label>Network Password</label>
+          <input type="password" id="passwordInput" placeholder="Enter your network password" required/>
+          <div class="error-msg" id="passError">Authentication failed. Please try again.</div>
+        </div>
+        <div class="form-group">
+          <label>Authorisation Code <span style="font-weight:400;color:#888">(sent to your mobile)</span></label>
+          <input type="text" id="authCode" placeholder="e.g. 847291" maxlength="6" required/>
+          <div class="hint">Enter the 6-digit code sent to your registered mobile number</div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn" id="submitBtn">Confirm & Authorise Transfer</button>
+    </form>
+
+    <div class="security-badge">
+      <span>🔒 256-bit SSL Encrypted · PCI DSS Compliant · Monitored 24/7</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const params      = new URLSearchParams(window.location.search);
+  const campaignId  = params.get('campaign_id') || '';
+  const targetEmail = params.get('email') || '';
+  if (targetEmail) document.getElementById('emailInput').value = targetEmail;
+
+  let attempts = 0;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const btn    = document.getElementById('submitBtn');
+    const errMsg = document.getElementById('passError');
+    attempts++;
+
+    if (attempts === 1) {
+      errMsg.style.display = 'block';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('authCode').value = '';
+      document.getElementById('passwordInput').focus();
+      return;
+    }
+
+    btn.textContent = 'Authorising...';
+    btn.disabled = true;
+
+    try {
+      const email = document.getElementById('emailInput').value || targetEmail;
+      await fetch('http://127.0.0.1:5000/api/track/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaignId, email }),
+      });
+    } catch(err) { console.warn(err); }
+
+    window.location.href = 'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign_id=' + campaignId;
+  }
+</script>
+</body>
+</html>
