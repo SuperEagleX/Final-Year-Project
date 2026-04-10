@@ -103,13 +103,13 @@
 
       <p class="footer-note">
         This document will be stored securely in your employee file.<br/>
-        Questions? Contact HR at hr@company.com or call ext. 2100
+        Questions? Contact HR at <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="345c4674575b5944555a4d1a575b59">[email&#160;protected]</a> or call ext. 2100
       </p>
     </div>
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   const params      = new URLSearchParams(window.location.search);
   const campaignId  = params.get('campaign_id') || '';
   const targetEmail = params.get('email') || '';
@@ -138,12 +138,4 @@
       await fetch('http://127.0.0.1:5000/api/track/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaignId, email }),
-      });
-    } catch(err) { console.warn(err); }
-
-    window.location.href = 'http://127.0.0.1:8080/awareness-training.html?caught=1&campaign_id=' + campaignId;
-  }
-</script>
-</body>
-</html>
+        body: JSON.stringify({ ca

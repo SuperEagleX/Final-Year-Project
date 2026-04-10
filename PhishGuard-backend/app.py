@@ -136,6 +136,21 @@ def init_db():
         )
     ''')
 
+    # Email logs — persistent record of every phishing email sent
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS email_logs (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            campaign_id      INTEGER,
+            recipient_email  TEXT,
+            recipient_name   TEXT,
+            subject          TEXT,
+            template_name    TEXT,
+            status           TEXT DEFAULT 'sent',
+            sent_at          TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
+        )
+    ''')
+
     # Seed default admin user
     admin_password = hash_password('admin123')
     c.execute('''
@@ -571,7 +586,7 @@ def track_click():
             print(f'⚠️ Could not look up landing page: {e}')
 
     return redirect(
-        f'http://127.0.0.1:8088/{landing_page}'
+        f'http://127.0.0.1:5000/landing/{landing_page}'
         f'?campaign_id={campaign_id}&email={email}'
     )
 
@@ -798,7 +813,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'# ← paste your GoPhish API key
+GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
@@ -1058,7 +1073,7 @@ def send_campaign_emails(campaign_id):
             'name':        camp_name,
             'template':    {'name': gophish_template_name},
             'page':        {'name': page_name},
-            'smtp':        {'name': 'Mailhog'},
+            'smtp':        {'name': 'Brevo SMTP'},
             'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}',
             'launch_date': (datetime.utcnow() - timedelta(minutes=2)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
             'groups':      [{'name': group_name}],
@@ -1066,11 +1081,25 @@ def send_campaign_emails(campaign_id):
         result = gophish_request('campaigns', 'POST', gophish_campaign)
         print(f'✅ Campaign launched in GoPhish. ID: {result["id"]}')
 
-        # Step 5 — Update status in YOUR database
+        # Step 5 — Update status in YOUR database + save email logs
         conn = get_db()
         conn.execute("UPDATE campaigns SET status='active' WHERE id=?", (campaign_id,))
+
+        # Save a log entry for every target so we have persistent email history
+        for t in targets:
+            conn.execute('''
+                INSERT INTO email_logs (campaign_id, recipient_email, recipient_name, subject, template_name)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (
+                campaign_id,
+                t['email'],
+                t['name'],
+                template.get('subject', ''),
+                template_name,
+            ))
         conn.commit()
         conn.close()
+        print(f'✅ Saved {len(targets)} email log entries to database')
 
         return jsonify({
             'success':    True,
@@ -1082,6 +1111,63 @@ def send_campaign_emails(campaign_id):
     except Exception as e:
         print(f'❌ Error launching campaign: {e}')
         return jsonify({'error': str(e)}), 500
+
+
+# ── Serve Phishing Landing Pages ──────────────────────────────────────────
+@app.route('/landing/<path:filename>', methods=['GET'])
+def serve_landing_page(filename):
+    """
+    GET /landing/<filename>?campaign_id=X&email=Y
+    Serves phishing landing pages directly from the templates/ folder.
+    Avoids needing the frontend HTTP server to serve backend files.
+    """
+    from flask import send_from_directory, abort
+    landing_path = os.path.join(TEMPLATES_DIR, filename)
+    if not os.path.exists(landing_path):
+        print(f'❌ Landing page not found: {landing_path}')
+        abort(404)
+    print(f'✅ Serving landing page: {filename}')
+    return send_from_directory(TEMPLATES_DIR, filename)
+
+
+# ── Email Log Routes (for Mailhog persistence) ─────────────────────────────
+@app.route('/api/email-logs', methods=['GET'])
+def get_email_logs():
+    """GET /api/email-logs — Get all stored phishing emails sent."""
+    conn = get_db()
+    logs = conn.execute('''
+        SELECT el.*, c.name as campaign_name
+        FROM email_logs el
+        LEFT JOIN campaigns c ON el.campaign_id = c.id
+        ORDER BY el.sent_at DESC
+        LIMIT 100
+    ''').fetchall()
+    conn.close()
+    return jsonify([dict(l) for l in logs])
+
+
+@app.route('/api/email-logs', methods=['POST'])
+def save_email_log():
+    """
+    POST /api/email-logs
+    Store a record of a phishing email that was sent.
+    Body: { campaign_id, recipient_email, recipient_name, subject, template_name }
+    """
+    data = request.get_json()
+    conn = get_db()
+    conn.execute('''
+        INSERT INTO email_logs (campaign_id, recipient_email, recipient_name, subject, template_name)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (
+        data.get('campaign_id'),
+        data.get('recipient_email', ''),
+        data.get('recipient_name', ''),
+        data.get('subject', ''),
+        data.get('template_name', ''),
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True}), 201
 
 
 # ── Health Check ───────────────────────────────────────────────────────────
