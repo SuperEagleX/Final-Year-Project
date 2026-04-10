@@ -813,7 +813,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'# ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
@@ -1073,7 +1073,7 @@ def send_campaign_emails(campaign_id):
             'name':        camp_name,
             'template':    {'name': gophish_template_name},
             'page':        {'name': page_name},
-            'smtp':        {'name': 'Brevo SMTP'},
+            'smtp':        {'name': 'Mailhog'},
             'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}',
             'launch_date': (datetime.utcnow() - timedelta(minutes=2)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
             'groups':      [{'name': group_name}],
@@ -1168,6 +1168,161 @@ def save_email_log():
     conn.commit()
     conn.close()
     return jsonify({'success': True}), 201
+
+
+# ── Recent Tracking Events ────────────────────────────────────────────────
+@app.route('/api/tracking/recent', methods=['GET'])
+def get_recent_events():
+    """
+    GET /api/tracking/recent?limit=50
+    Returns recent tracking events with employee name and campaign name.
+    Used to populate the live activity feed on the dashboard.
+    """
+    limit = request.args.get('limit', 50)
+    conn  = get_db()
+    events = conn.execute('''
+        SELECT
+            te.id,
+            te.event_type,
+            te.email,
+            te.timestamp,
+            te.campaign_id,
+            c.name  AS campaign_name,
+            u.name  AS employee_name,
+            u.department
+        FROM tracking_events te
+        LEFT JOIN campaigns c ON te.campaign_id = c.id
+        LEFT JOIN users u     ON te.email = u.email
+        ORDER BY te.timestamp DESC
+        LIMIT ?
+    ''', (limit,)).fetchall()
+    conn.close()
+    return jsonify([dict(e) for e in events])
+
+
+# ── Dashboard Stats with submitted count ──────────────────────────────────
+@app.route('/api/dashboard/full', methods=['GET'])
+def dashboard_full():
+    """
+    GET /api/dashboard/full
+    Returns all stats needed for the dashboard in one call:
+    stat cards, donut chart data, campaign table, risk leaderboard,
+    recent events feed, and per-campaign chart data.
+    """
+    conn = get_db()
+
+    # ── Stat card numbers ──────────────────────────────────────────────────
+    total_sent = conn.execute(
+        'SELECT COUNT(*) FROM email_logs'
+    ).fetchone()[0]
+
+    opened    = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE event_type='opened'").fetchone()[0]
+    clicked   = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE event_type='clicked'").fetchone()[0]
+    submitted = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE event_type='submitted'").fetchone()[0]
+    reported  = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE event_type='reported'").fetchone()[0]
+
+    open_rate   = round(opened    / total_sent * 100, 1) if total_sent > 0 else 0
+    click_rate  = round(clicked   / total_sent * 100, 1) if total_sent > 0 else 0
+    report_rate = round(reported  / total_sent * 100, 1) if total_sent > 0 else 0
+    submit_rate = round(submitted / total_sent * 100, 1) if total_sent > 0 else 0
+
+    # ── Campaign table ─────────────────────────────────────────────────────
+    campaigns_raw = conn.execute(
+        'SELECT * FROM campaigns ORDER BY created_at DESC LIMIT 10'
+    ).fetchall()
+
+    campaigns = []
+    for c in campaigns_raw:
+        cid     = c['id']
+        targets = conn.execute(
+            'SELECT COUNT(*) FROM campaign_targets WHERE campaign_id=?', (cid,)
+        ).fetchone()[0]
+        cl = conn.execute(
+            "SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='clicked'", (cid,)
+        ).fetchone()[0]
+        sb = conn.execute(
+            "SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='submitted'", (cid,)
+        ).fetchone()[0]
+        campaigns.append({
+            'id':         cid,
+            'name':       c['name'],
+            'template':   c['template'],
+            'status':     c['status'],
+            'sent':       targets,
+            'clicked':    cl,
+            'submitted':  sb,
+            'click_rate': round(cl / targets * 100, 1) if targets > 0 else 0,
+        })
+
+    # ── Risk leaderboard ───────────────────────────────────────────────────
+    employees = conn.execute('''
+        SELECT id, name, email, department, risk_score
+        FROM users WHERE role='employee'
+        ORDER BY risk_score DESC LIMIT 8
+    ''').fetchall()
+
+    # ── Recent events feed ─────────────────────────────────────────────────
+    recent = conn.execute('''
+        SELECT
+            te.event_type,
+            te.email,
+            te.timestamp,
+            te.campaign_id,
+            c.name  AS campaign_name,
+            u.name  AS employee_name,
+            u.department
+        FROM tracking_events te
+        LEFT JOIN campaigns c ON te.campaign_id = c.id
+        LEFT JOIN users u     ON te.email = u.email
+        ORDER BY te.timestamp DESC
+        LIMIT 20
+    ''').fetchall()
+
+    # ── Per-campaign chart data (last 6 campaigns) ─────────────────────────
+    chart_campaigns = conn.execute(
+        'SELECT id, name FROM campaigns ORDER BY created_at DESC LIMIT 6'
+    ).fetchall()
+    chart_labels     = []
+    chart_click_data = []
+    chart_submit_data = []
+    for cc in reversed(list(chart_campaigns)):
+        cid   = cc['id']
+        tgts  = conn.execute(
+            'SELECT COUNT(*) FROM campaign_targets WHERE campaign_id=?', (cid,)
+        ).fetchone()[0]
+        cl = conn.execute(
+            "SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='clicked'", (cid,)
+        ).fetchone()[0]
+        sb = conn.execute(
+            "SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='submitted'", (cid,)
+        ).fetchone()[0]
+        chart_labels.append(cc['name'][:12])
+        chart_click_data.append(round(cl / tgts * 100, 1) if tgts > 0 else 0)
+        chart_submit_data.append(round(sb / tgts * 100, 1) if tgts > 0 else 0)
+
+    conn.close()
+
+    return jsonify({
+        'stats': {
+            'total_sent':   total_sent,
+            'opened':       opened,
+            'clicked':      clicked,
+            'submitted':    submitted,
+            'reported':     reported,
+            'open_rate':    open_rate,
+            'click_rate':   click_rate,
+            'report_rate':  report_rate,
+            'submit_rate':  submit_rate,
+        },
+        'campaigns':   campaigns,
+        'employees':   [dict(e) for e in employees],
+        'recent':      [dict(r) for r in recent],
+        'chart': {
+            'labels':      chart_labels,
+            'click_rate':  chart_click_data,
+            'submit_rate': chart_submit_data,
+        }
+    })
 
 
 # ── Health Check ───────────────────────────────────────────────────────────

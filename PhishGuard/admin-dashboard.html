@@ -6,7 +6,6 @@
   <title>PhishGuard — Admin Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="config.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -322,7 +321,7 @@
   <a class="nav-item" href="campaign-management.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
     Campaigns
-    <span class="nav-badge">3</span>
+    <span class="nav-badge">0</span>
   </a>
   <a class="nav-item" href="template-library.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -352,16 +351,13 @@
   </a>
 
   <div class="sidebar-footer">
-<div class="user-chip">
-  <div class="avatar">SA</div>
-  <div style="flex:1">
-    <div class="user-name">Super Admin</div>
-    <div class="user-role">Administrator</div>
-  </div>
-  <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px;transition:color 0.2s" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-  </button>
-</div>
+    <div class="user-chip">
+      <div class="avatar">SA</div>
+      <div class="user-info">
+        <div class="user-name">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
   </div>
 </aside>
 
@@ -622,116 +618,282 @@
   </div>
 </main>
 
+<script src="config.js"></script>
 <script>
-// ── On page load ────────────────────────────────────────────────────────
-async function init() {
-  const user = requireAuth('admin');
-  if (!user) return;
+// ── Charts (initialized after data loads) ──────────────────────────────
+let lineChartInstance  = null;
+let donutChartInstance = null;
 
-  // Show user's name in sidebar
-  document.querySelector('.user-name').textContent = user.name;
-
-  await loadStats();
-  await loadTopRiskEmployees();
-  renderCharts();
-}
-
-// ── Load live stats from your API ───────────────────────────────────────
-async function loadStats() {
-  try {
-    const stats = await apiFetch('dashboard/stats');
-    const nums  = document.querySelectorAll('.stat-card-num');
-    nums[0].textContent = stats.total_sent.toLocaleString();
-    nums[1].textContent = stats.open_rate  + '%';
-    nums[2].textContent = stats.click_rate + '%';
-    nums[3].textContent = stats.total_sent > 0 ? stats.report_rate + '%' : '0';
-    console.log('✅ Stats loaded');
-  } catch(e) {
-    console.warn('⚠️ Stats fallback to demo data');
-  }
-}
-
-// ── Load high risk employees into leaderboard ───────────────────────────
-async function loadTopRiskEmployees() {
-  try {
-    const employees = await apiFetch('employees');
-    const container = document.querySelector('.risk-card');
-    if (!container || employees.length === 0) return;
-
-    // Keep the header, replace the risk items
-    const header = container.querySelector('.risk-card-header');
-    container.innerHTML = '';
-    container.appendChild(header);
-
-    // Show top 5 highest risk employees
-    employees.slice(0, 5).forEach(emp => {
-      const level = emp.risk_score >= 70 ? 'var(--danger)'
-                  : emp.risk_score >= 40 ? 'var(--warn)'
-                  : 'var(--success)';
-      const initials = emp.name.split(' ').map(n => n[0]).join('').slice(0,2);
-      const item = document.createElement('div');
-      item.className = 'risk-item';
-      item.innerHTML = `
-        <div class="risk-avatar" style="background:linear-gradient(135deg,${level},${level}99)">${initials}</div>
-        <div class="risk-info">
-          <div class="risk-name">${emp.name}</div>
-          <div class="risk-dept">${emp.department}</div>
-        </div>
-        <div class="risk-bar-wrap">
-          <div class="risk-bar-bg">
-            <div class="risk-bar" style="width:${emp.risk_score}%;background:${level}"></div>
-          </div>
-        </div>
-        <div class="risk-score" style="color:${level}">${emp.risk_score}</div>`;
-      container.appendChild(item);
-    });
-    console.log('✅ Risk leaderboard loaded');
-  } catch(e) {
-    console.warn('⚠️ Could not load employees');
-  }
-}
-
-// ── Charts (keep existing chart code) ──────────────────────────────────
-function renderCharts() {
-  const lineCtx = document.getElementById('lineChart').getContext('2d');
-  new Chart(lineCtx, {
+function initLineChart(labels, clickData, submitData) {
+  const ctx = document.getElementById('lineChart').getContext('2d');
+  if (lineChartInstance) lineChartInstance.destroy();
+  lineChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'],
+      labels,
       datasets: [
-        { label: 'Click Rate',   data: [38,32,29,27,25,24], borderColor: '#ff4560', backgroundColor: 'rgba(255,69,96,0.08)', tension: 0.4, fill: true, pointBackgroundColor: '#ff4560', pointRadius: 4 },
-        { label: 'Report Rate',  data: [12,18,22,26,29,31], borderColor: '#00e5a0', backgroundColor: 'rgba(0,229,160,0.08)', tension: 0.4, fill: true, pointBackgroundColor: '#00e5a0', pointRadius: 4 }
+        {
+          label: 'Click Rate',
+          data: clickData,
+          borderColor: '#ff4560',
+          backgroundColor: 'rgba(255,69,96,0.08)',
+          tension: 0.4, fill: true,
+          pointBackgroundColor: '#ff4560',
+          pointRadius: 4, pointHoverRadius: 6,
+        },
+        {
+          label: 'Submit Rate',
+          data: submitData,
+          borderColor: '#ffb300',
+          backgroundColor: 'rgba(255,179,0,0.08)',
+          tension: 0.4, fill: true,
+          pointBackgroundColor: '#ffb300',
+          pointRadius: 4, pointHoverRadius: 6,
+        }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { color: '#0d284770' }, ticks: { color: '#4a7090', font: { family: 'Share Tech Mono', size: 11 } } },
-        y: { grid: { color: '#0d284770' }, ticks: { color: '#4a7090', font: { family: 'Share Tech Mono', size: 11 }, callback: v => v + '%' }, min: 0, max: 45 }
+        x: { grid: { color: '#0d284770' }, ticks: { color: '#4a7090', font: { family: 'Share Tech Mono', size: 11 }, maxRotation: 30 } },
+        y: { grid: { color: '#0d284770' }, ticks: { color: '#4a7090', font: { family: 'Share Tech Mono', size: 11 }, callback: v => v + '%' }, min: 0 }
       }
     }
   });
+}
 
-  const donutCtx = document.getElementById('donutChart').getContext('2d');
-  new Chart(donutCtx, {
+function initDonutChart(opened, clicked, submitted, reported) {
+  const ctx = document.getElementById('donutChart').getContext('2d');
+  if (donutChartInstance) donutChartInstance.destroy();
+  const total = opened + clicked + submitted + reported;
+  document.querySelector('.donut-center-num').textContent = total.toLocaleString();
+  donutChartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Opened','Clicked','Submitted','Reported'],
-      datasets: [{ data: [586,207,63,312], backgroundColor: ['#0077ff','#ff4560','#ffb300','#00e5a0'], borderColor: '#081a30', borderWidth: 3 }]
+      labels: ['Opened', 'Clicked', 'Submitted', 'Reported'],
+      datasets: [{
+        data: [opened, clicked, submitted, reported],
+        backgroundColor: ['#0077ff', '#ff4560', '#ffb300', '#00e5a0'],
+        borderColor: '#081a30',
+        borderWidth: 3,
+        hoverOffset: 6,
+      }]
     },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '72%', plugins: { legend: { display: false } } }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } }
+    }
+  });
+  // Update donut legend values
+  const vals = document.querySelectorAll('.donut-legend-val');
+  if (vals[0]) vals[0].textContent = opened.toLocaleString();
+  if (vals[1]) vals[1].textContent = clicked.toLocaleString();
+  if (vals[2]) vals[2].textContent = submitted.toLocaleString();
+  if (vals[3]) vals[3].textContent = reported.toLocaleString();
+}
+
+// ── Stat cards ────────────────────────────────────────────────────────────
+function updateStatCards(stats) {
+  const nums = document.querySelectorAll('.stat-card-num');
+  if (nums[0]) nums[0].textContent = stats.total_sent.toLocaleString();
+  if (nums[1]) nums[1].textContent = stats.open_rate + '%';
+  if (nums[2]) nums[2].textContent = stats.click_rate + '%';
+  if (nums[3]) nums[3].textContent = stats.reported.toLocaleString();
+
+  // Update threat level based on click rate
+  const threatEl = document.querySelector('.threat-pill strong');
+  if (threatEl) {
+    if (stats.click_rate >= 30)      { threatEl.textContent = 'High';   threatEl.style.color = '#ff4560'; }
+    else if (stats.click_rate >= 15) { threatEl.textContent = 'Medium'; threatEl.style.color = '#ffb300'; }
+    else                             { threatEl.textContent = 'Low';    threatEl.style.color = '#00e5a0'; }
+  }
+
+  // Update last refreshed time
+  const dateEl = document.querySelector('.topbar-left p');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ' — Just updated';
+  }
+}
+
+// ── Campaign table ────────────────────────────────────────────────────────
+function updateCampaignTable(campaigns) {
+  const tbody = document.querySelector('table tbody');
+  if (!tbody) return;
+
+  if (campaigns.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">No campaigns yet — create one to get started</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = campaigns.map(c => {
+    const statusClass = c.status === 'active' ? 'active' : c.status === 'complete' ? 'complete' : 'draft';
+    const statusLabel = c.status.charAt(0).toUpperCase() + c.status.slice(1);
+    const rateColour  = c.click_rate >= 30 ? 'var(--danger)' : c.click_rate >= 15 ? 'var(--warn)' : 'var(--success)';
+    return `<tr>
+      <td>${c.name}</td>
+      <td style="color:var(--muted)">${c.template || '—'}</td>
+      <td>${c.sent}</td>
+      <td style="color:${rateColour}">${c.click_rate > 0 ? c.click_rate + '%' : '—'}</td>
+      <td>${c.submitted}</td>
+      <td><span class="status-badge ${statusClass}"><span class="status-dot-sm"></span>${statusLabel}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Risk leaderboard ──────────────────────────────────────────────────────
+function updateRiskLeaderboard(employees) {
+  const container = document.querySelector('.risk-card');
+  if (!container) return;
+
+  const header = container.querySelector('.risk-card-header');
+  // Remove existing risk items
+  container.querySelectorAll('.risk-item').forEach(el => el.remove());
+
+  if (employees.length === 0) {
+    const empty = document.createElement('p');
+    empty.style.cssText = 'color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem';
+    empty.textContent   = 'No employee data yet';
+    container.appendChild(empty);
+    return;
+  }
+
+  employees.forEach(emp => {
+    const score   = emp.risk_score || 0;
+    const colour  = score >= 70 ? 'var(--danger)' : score >= 40 ? 'var(--warn)' : 'var(--success)';
+    const initials = (emp.name || '??').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    const item = document.createElement('div');
+    item.className = 'risk-item';
+    item.innerHTML = `
+      <div class="risk-avatar" style="background:linear-gradient(135deg,${colour},${colour}99)">${initials}</div>
+      <div class="risk-info">
+        <div class="risk-name">${emp.name}</div>
+        <div class="risk-dept">${emp.department || 'Unknown'}</div>
+      </div>
+      <div class="risk-bar-wrap">
+        <div class="risk-bar-bg">
+          <div class="risk-bar" style="width:${score}%;background:${colour}"></div>
+        </div>
+      </div>
+      <div class="risk-score" style="color:${colour}">${score}</div>`;
+    container.appendChild(item);
   });
 }
 
+// ── Recent events feed ────────────────────────────────────────────────────
+function buildEventsFeed(recent) {
+  // Find or create the feed container — inject after the bottom-row
+  let feedCard = document.getElementById('eventsFeedCard');
+  if (!feedCard) {
+    feedCard = document.createElement('div');
+    feedCard.id = 'eventsFeedCard';
+    feedCard.className = 'table-card';
+    feedCard.style.cssText = 'margin-top:1.2rem;animation:fadeUp 0.4s 0.2s ease both';
+    document.querySelector('.content').appendChild(feedCard);
+  }
+
+  const eventIcon = { opened: '📧', clicked: '🖱️', submitted: '🚨', reported: '🛡️' };
+  const eventColour = { opened: 'var(--accent2)', clicked: 'var(--warn)', submitted: 'var(--danger)', reported: 'var(--success)' };
+  const eventLabel  = { opened: 'Opened email', clicked: 'Clicked phishing link', submitted: 'Submitted credentials', reported: 'Reported phishing' };
+
+  feedCard.innerHTML = `
+    <div class="table-card-header" style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Live Activity Feed</h3>
+      <button class="btn-view-all" onclick="init()">↻ Refresh</button>
+    </div>
+    ${recent.length === 0
+      ? '<p style="color:var(--muted);font-size:0.82rem;padding:1rem;text-align:center">No tracking events yet — send a campaign to see live activity</p>'
+      : `<table>
+          <thead><tr>
+            <th>Event</th><th>Employee</th><th>Email</th><th>Campaign</th><th>Time</th>
+          </tr></thead>
+          <tbody>
+            ${recent.map(e => `<tr>
+              <td>
+                <span style="display:flex;align-items:center;gap:6px">
+                  <span>${eventIcon[e.event_type] || '•'}</span>
+                  <span style="color:${eventColour[e.event_type] || 'var(--text)'}">
+                    ${eventLabel[e.event_type] || e.event_type}
+                  </span>
+                </span>
+              </td>
+              <td>${e.employee_name || '—'}</td>
+              <td style="color:var(--muted);font-size:0.78rem">${e.email}</td>
+              <td style="color:var(--muted)">${e.campaign_name || '—'}</td>
+              <td style="color:var(--muted);font-size:0.75rem;font-family:'Share Tech Mono',monospace">
+                ${new Date(e.timestamp).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`
+    }`;
+}
+
+// ── Add Submitted column to campaign table header ─────────────────────────
+function patchTableHeader() {
+  const th = document.querySelector('table thead tr');
+  if (th && !th.querySelector('th:nth-child(5)')) {
+    const newTh = document.createElement('th');
+    newTh.textContent = 'Submitted';
+    th.insertBefore(newTh, th.children[4]);
+  }
+}
+
+// ── Main init — load everything from API ──────────────────────────────────
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  document.querySelector('.user-name').textContent = user.name;
+
+  // Update nav badge with active campaign count
+  try {
+    const campaigns = await apiFetch('campaigns');
+    const active = campaigns.filter(c => c.status === 'active').length;
+    const badge  = document.querySelector('.nav-badge');
+    if (badge) badge.textContent = active;
+  } catch(e) {}
+
+  // Load all dashboard data in one API call
+  try {
+    const data = await apiFetch('dashboard/full');
+    const s    = data.stats;
+
+    updateStatCards(s);
+    initDonutChart(s.opened, s.clicked, s.submitted, s.reported);
+    initLineChart(
+      data.chart.labels.length > 0 ? data.chart.labels : ['No data'],
+      data.chart.click_rate.length > 0 ? data.chart.click_rate : [0],
+      data.chart.submit_rate.length > 0 ? data.chart.submit_rate : [0]
+    );
+    patchTableHeader();
+    updateCampaignTable(data.campaigns);
+    updateRiskLeaderboard(data.employees);
+    buildEventsFeed(data.recent);
+
+    console.log('✅ Dashboard loaded from API:', s);
+  } catch(e) {
+    console.error('❌ Dashboard load failed:', e);
+    // Show fallback charts with zeros if API fails
+    initLineChart(['No data'], [0], [0]);
+    initDonutChart(0, 0, 0, 0);
+  }
+}
+
+// ── New Campaign button ───────────────────────────────────────────────────
 function logout() {
   clearSession();
   window.location.href = 'login.html';
 }
 
+document.querySelector('.btn-new')?.addEventListener('click', () => {
+  window.location.href = 'campaign-management.html';
+});
+
 init();
-
+// Auto-refresh every 30 seconds
+setInterval(init, 30000);
 </script>
-
 </body>
 </html>
