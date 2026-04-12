@@ -672,18 +672,47 @@ def track_report():
     campaign_id = data.get('campaign_id')
     email       = data.get('email', '')
 
-    if campaign_id and email:
-        conn = get_db()
-        conn.execute('''
-            INSERT INTO tracking_events (campaign_id, email, event_type)
-            VALUES (?, ?, 'reported')
-        ''', (campaign_id, email))
-        conn.commit()
-        conn.close()
-        score = update_risk_score(email)
-        return jsonify({'success': True, 'new_risk_score': score})
+    if not email:
+        return jsonify({'error': 'email is required'}), 400
 
-    return jsonify({'error': 'Missing campaign_id or email'}), 400
+    # If no campaign_id provided, try to find the most recent active campaign
+    # for this employee so the report is still associated
+    if not campaign_id:
+        try:
+            conn_lookup = get_db()
+            recent = conn_lookup.execute('''
+                SELECT te.campaign_id FROM tracking_events te
+                WHERE te.email = ? AND te.event_type IN ('sent', 'opened', 'clicked')
+                ORDER BY te.timestamp DESC LIMIT 1
+            ''', (email,)).fetchone()
+            if not recent:
+                # Try email_logs
+                recent = conn_lookup.execute(
+                    'SELECT campaign_id FROM email_logs WHERE recipient_email=? ORDER BY sent_at DESC LIMIT 1',
+                    (email,)
+                ).fetchone()
+            conn_lookup.close()
+            if recent:
+                campaign_id = recent['campaign_id']
+        except Exception as e:
+            print(f'⚠️ Could not look up campaign for report: {e}')
+
+    conn = get_db()
+    # Avoid duplicate reported events
+    existing = conn.execute(
+        "SELECT id FROM tracking_events WHERE campaign_id=? AND email=? AND event_type='reported'",
+        (campaign_id, email)
+    ).fetchone()
+    if not existing:
+        conn.execute('''
+            INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
+            VALUES (?, ?, 'reported', ?, ?)
+        ''', (campaign_id, email, request.remote_addr, request.user_agent.string))
+        conn.commit()
+        print(f'🛡️ Phishing reported: {email} campaign {campaign_id}')
+    conn.close()
+    score = update_risk_score(email)
+    return jsonify({'success': True, 'new_risk_score': score, 'campaign_id': campaign_id})
 
 
 # ── Training Routes ────────────────────────────────────────────────────────
@@ -1141,9 +1170,10 @@ def send_campaign_emails(campaign_id):
             # Build the hidden report link — looks like a standard unsubscribe footer
             # If an employee is suspicious and clicks this instead of the main CTA,
             # it logs a 'reported' event (good behaviour) instead of 'clicked' (bad)
-            report_url  = (
+            # Use &amp; in href so HTML parsers don't mangle the URL
+            report_url = (
                 f'http://127.0.0.1:5000/api/track/report-link'
-                f'?campaign_id={campaign_id}&email={t["email"]}'
+                f'?campaign_id={campaign_id}&amp;email={t["email"]}'
             )
             report_footer = (
                 f'<div style="margin-top:24px;padding-top:12px;border-top:1px solid #eee;'
@@ -1156,15 +1186,22 @@ def send_campaign_emails(campaign_id):
                 f'</div>'
             )
             # Personalise the HTML for this specific recipient
+            # Our own open tracking pixel — fires when email is opened
+            open_pixel = (
+                f'<img src="http://127.0.0.1:5000/api/track/open'
+                f'?campaign_id={campaign_id}&email={t["email"]}"'
+                f' width="1" height="1" style="display:none" alt=""/>'
+            )
+            click_url = (
+                f'http://127.0.0.1:5000/api/track/click'
+                f'?campaign_id={campaign_id}&email={t["email"]}'
+            )
             personalised = raw_html \
                 .replace('{{.FirstName}}', first_name) \
                 .replace('{{.Email}}',     t['email']) \
-                .replace('{{.Tracker}}',   '') \
+                .replace('{{.Tracker}}',   open_pixel) \
                 .replace('{{.RId}}',       '') \
-                .replace('{{.URL}}',
-                    f'http://127.0.0.1:5000/api/track/click'
-                    f'?campaign_id={campaign_id}&email={t["email"]}'
-                )
+                .replace('{{.URL}}',       click_url)
             # Inject report footer before </body> if it exists, else append
             if '</body>' in personalised.lower():
                 personalised = personalised.replace('</body>', report_footer + '</body>')

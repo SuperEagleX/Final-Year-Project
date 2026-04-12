@@ -501,6 +501,36 @@
           </p>
         </div>
 
+        <!-- Report Phishing card -->
+        <div class="panel-card" id="reportPhishingCard" style="background:linear-gradient(135deg,#ff45600a,#ff806008);border-color:#ff456025">
+          <h3 style="color:var(--danger)">🛡️ Report a Suspicious Email</h3>
+          <p style="font-size:0.78rem;color:var(--muted);line-height:1.6;margin-top:0.5rem;margin-bottom:1rem">
+            Received a suspicious email and didn't click anything? Report it here — you'll get credit for good security behaviour and your risk score will improve.
+          </p>
+          <div id="reportForm">
+            <div style="margin-bottom:10px">
+              <input id="reportEmailInput" type="email" placeholder="Your work email address"
+                style="width:100%;background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-family:'Syne',sans-serif;font-size:0.82rem;color:var(--text);outline:none;transition:border-color 0.2s"
+                onfocus="this.style.borderColor='var(--danger)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+            <div style="margin-bottom:10px">
+              <input id="reportCampInput" type="text" placeholder="Campaign ID (if known — optional)"
+                style="width:100%;background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:9px 12px;font-family:'Syne',sans-serif;font-size:0.82rem;color:var(--text);outline:none;transition:border-color 0.2s"
+                onfocus="this.style.borderColor='var(--danger)'" onblur="this.style.borderColor='var(--border)'"/>
+            </div>
+            <button onclick="submitPhishReport()" id="reportSubmitBtn"
+              style="width:100%;padding:10px;background:linear-gradient(135deg,#ff4560,#ff8060);color:#fff;border:none;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;transition:opacity 0.2s"
+              onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+              🛡️ Report Suspicious Email
+            </button>
+          </div>
+          <div id="reportSuccess" style="display:none;text-align:center;padding:12px 0">
+            <div style="font-size:2rem;margin-bottom:8px">✅</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--success);margin-bottom:4px">Report submitted!</div>
+            <div style="font-size:0.75rem;color:var(--muted)">Your security awareness has been recorded. Well done!</div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -806,101 +836,82 @@
   function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
   function closeBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-  // ── Option C: Proactive report + caught=1 banner ──────────────────────
+  // ── Report phishing + caught banner ──────────────────────────────────────
   (function() {
     const params     = new URLSearchParams(window.location.search);
     const caught     = params.get('caught');
-    const campaignId = params.get('campaign_id') || params.get('campaign');
+    const campaignId = params.get('campaign_id') || params.get('campaign') || '';
+
+    // Auto-fill email from logged-in session
+    try {
+      const user = getUser ? getUser() : null;
+      if (user && user.email) {
+        const emailInput = document.getElementById('reportEmailInput');
+        if (emailInput) {
+          emailInput.value = user.email;
+          emailInput.readOnly = true;
+          emailInput.style.opacity = '0.7';
+        }
+      }
+    } catch(e) {}
+
+    // Pre-fill campaign ID from URL if present
+    if (campaignId) {
+      const campInput = document.getElementById('reportCampInput');
+      if (campInput) campInput.value = campaignId;
+    }
 
     if (caught === '1') {
-      // Employee was caught — show a "you were phished" banner at the top
+      // Show caught banner — employee clicked a phishing link
       const banner = document.createElement('div');
-      banner.style.cssText = [
-        'position:fixed','top:0','left:0','right:0','z-index:9999',
-        'background:linear-gradient(90deg,#ff4560,#ff8060)',
-        'color:#fff','padding:14px 24px',
-        'display:flex','align-items:center','justify-content:space-between',
-        'font-family:Syne,sans-serif','font-size:0.88rem','font-weight:600',
-        'box-shadow:0 4px 20px rgba(255,69,96,0.4)'
-      ].join(';');
-      banner.innerHTML = `
-        <span>🎣 You clicked a phishing link in a simulation! Complete the training below to improve your security score.</span>
-        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1.2rem;padding:0 4px">×</button>`;
+      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#ff4560,#ff8060);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;font-family:Syne,sans-serif;font-size:0.88rem;font-weight:600;box-shadow:0 4px 20px rgba(255,69,96,0.4)';
+      banner.innerHTML = '<span>🎣 You clicked a phishing simulation link! Complete the training below to improve your security awareness score.</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1.4rem;line-height:1;padding:0 4px">&times;</button>';
       document.body.prepend(banner);
-
-    } else {
-      // Employee arrived on their own — show proactive report button
-      // This rewards cautious employees who checked the training page voluntarily
-      const reportSection = document.createElement('div');
-      reportSection.style.cssText = [
-        'position:fixed','bottom:24px','right:24px','z-index:9999'
-      ].join(';');
-      reportSection.innerHTML = `
-        <div id="reportWidget" style="background:#071628;border:1px solid #0d2847;border-radius:12px;padding:16px 20px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
-          <div style="font-size:0.88rem;font-weight:700;color:#fff;margin-bottom:6px">🛡️ Received a suspicious email?</div>
-          <div style="font-size:0.78rem;color:#4a7090;margin-bottom:12px;line-height:1.5">
-            If you think you received a phishing email and didn't click anything, report it here to get credit.
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:8px">
-            <input id="reportEmailInput" type="email" placeholder="Your email address"
-              style="flex:1;background:#040f1f;border:1px solid #0d2847;border-radius:6px;padding:8px 10px;font-size:0.78rem;color:#cde4f8;outline:none;font-family:inherit"/>
-          </div>
-          <div style="display:flex;gap:8px">
-            <input id="reportCampInput" type="text" placeholder="Campaign ID (optional)"
-              style="flex:1;background:#040f1f;border:1px solid #0d2847;border-radius:6px;padding:8px 10px;font-size:0.78rem;color:#cde4f8;outline:none;font-family:inherit"/>
-            <button onclick="submitProactiveReport()" id="reportSubmitBtn"
-              style="background:linear-gradient(135deg,#0077ff,#00d4ff);color:#000;border:none;border-radius:6px;padding:8px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
-              Report
-            </button>
-          </div>
-          <button onclick="document.getElementById('reportWidget').remove()"
-            style="position:absolute;top:10px;right:12px;background:none;border:none;color:#4a7090;cursor:pointer;font-size:1rem">×</button>
-        </div>`;
-      reportSection.style.position = 'fixed';
-      document.body.appendChild(reportSection);
+      // Hide report card when caught — they already failed
+      const card = document.getElementById('reportPhishingCard');
+      if (card) card.style.display = 'none';
     }
-
-    async function submitProactiveReport() {
-      const email      = document.getElementById('reportEmailInput')?.value.trim();
-      const campId     = document.getElementById('reportCampInput')?.value.trim() || campaignId || '';
-      const btn        = document.getElementById('reportSubmitBtn');
-
-      if (!email) {
-        alert('Please enter your email address');
-        return;
-      }
-
-      btn.textContent = '...';
-      btn.disabled    = true;
-
-      try {
-        const resp = await fetch('http://127.0.0.1:5000/api/track/report', {
-          method:  'POST',
-          mode:    'cors',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ campaign_id: campId || null, email }),
-        });
-        const data = await resp.json();
-        const widget = document.getElementById('reportWidget');
-        if (widget) {
-          widget.innerHTML = `
-            <div style="text-align:center;padding:8px">
-              <div style="font-size:2rem;margin-bottom:8px">🛡️</div>
-              <div style="font-size:0.88rem;font-weight:700;color:#00e5a0;margin-bottom:4px">Report submitted!</div>
-              <div style="font-size:0.75rem;color:#4a7090">Your security awareness has been recorded. Well done!</div>
-            </div>`;
-        }
-        console.log('✅ Proactive report submitted:', data);
-      } catch(err) {
-        btn.textContent = 'Report';
-        btn.disabled    = false;
-        console.error('Report failed:', err);
-      }
-    }
-
-    // Expose to global scope for onclick
-    window.submitProactiveReport = submitProactiveReport;
   })();
+
+  // ── Submit report from the card ───────────────────────────────────────────
+  async function submitPhishReport() {
+    const emailInput = document.getElementById('reportEmailInput');
+    const campInput  = document.getElementById('reportCampInput');
+    const btn        = document.getElementById('reportSubmitBtn');
+    const email      = emailInput ? emailInput.value.trim() : '';
+    const campId     = campInput  ? campInput.value.trim()  : '';
+
+    if (!email) {
+      emailInput.style.borderColor = 'var(--danger)';
+      emailInput.placeholder = 'Please enter your email address';
+      emailInput.focus();
+      return;
+    }
+
+    btn.textContent = '⏳ Reporting...';
+    btn.disabled    = true;
+
+    try {
+      const resp = await fetch('http://127.0.0.1:5000/api/track/report', {
+        method:  'POST',
+        mode:    'cors',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({
+          campaign_id: campId || null,
+          email:       email,
+        }),
+      });
+      const data = await resp.json();
+      // Show success state
+      document.getElementById('reportForm').style.display    = 'none';
+      document.getElementById('reportSuccess').style.display = 'block';
+      console.log('✅ Phishing report submitted:', data);
+    } catch(err) {
+      btn.textContent = '🛡️ Report Suspicious Email';
+      btn.disabled    = false;
+      console.error('Report failed:', err);
+    }
+  }
 </script>
 </body>
 </html>

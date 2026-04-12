@@ -813,60 +813,180 @@ function updateRiskLeaderboard(employees) {
 }
 
 // ── Recent events feed ────────────────────────────────────────────────────
+// ── Sent Emails Log — paginated + date filtered ───────────────────────────
+const EMAIL_PAGE_SIZE = 10;
+let emailsAllData  = [];   // full dataset from API
+let emailsFiltered = [];   // after date filter applied
+let emailsPage     = 1;    // current page (1-based)
+
 async function buildEmailsSentTable() {
-  // Find or create container
+  // Create container once
   let emailCard = document.getElementById('emailsSentCard');
   if (!emailCard) {
     emailCard = document.createElement('div');
-    emailCard.id = 'emailsSentCard';
+    emailCard.id        = 'emailsSentCard';
     emailCard.className = 'table-card';
     emailCard.style.cssText = 'margin-top:1.2rem;animation:fadeUp 0.4s 0.15s ease both';
     document.querySelector('.content').appendChild(emailCard);
   }
 
   try {
-    const emails = await apiFetch('emails/sent');
+    emailsAllData  = await apiFetch('emails/sent');
+    emailsFiltered = emailsAllData.slice(); // start unfiltered
+    emailsPage     = 1;
+    renderEmailsTable();
+  } catch(e) {
+    emailCard.innerHTML = '<p style="color:var(--muted);padding:1rem;text-align:center">Could not load email log</p>';
+    console.error(e);
+  }
+}
 
-    const statusIcon = (e) => {
-      if (e.submitted) return '<span style="color:var(--danger)">🚨 Submitted</span>';
-      if (e.clicked)   return '<span style="color:var(--warn)">🖱️ Clicked</span>';
-      if (e.opened)    return '<span style="color:var(--accent2)">📧 Opened</span>';
-      if (e.reported)  return '<span style="color:var(--success)">🛡️ Reported</span>';
-      return '<span style="color:var(--muted)">📤 Sent</span>';
-    };
+function applyEmailFilters() {
+  const from   = document.getElementById('emailDateFrom')?.value;
+  const to     = document.getElementById('emailDateTo')?.value;
+  const status = document.getElementById('emailStatusFilter')?.value || 'all';
 
-    emailCard.innerHTML = `
-      <div class="table-card-header" style="display:flex;justify-content:space-between;align-items:center">
-        <h3>📤 Sent Emails Log</h3>
-        <span style="font-size:0.75rem;color:var(--muted)">${emails.length} total — persists across sessions</span>
+  emailsFiltered = emailsAllData.filter(e => {
+    // Date filter
+    const d = new Date(e.sent_at);
+    if (from && d < new Date(from))              return false;
+    if (to   && d > new Date(to + 'T23:59:59'))  return false;
+    // Status filter
+    if (status === 'submitted' && !e.submitted)  return false;
+    if (status === 'clicked'   && !e.clicked)    return false;
+    if (status === 'opened'    && !e.opened)     return false;
+    if (status === 'reported'  && !e.reported)   return false;
+    if (status === 'sent'      && (e.opened || e.clicked || e.submitted || e.reported)) return false;
+    return true;
+  });
+  emailsPage = 1;
+  renderEmailsTable();
+}
+
+// Keep old name as alias so existing onchange calls still work
+function applyEmailDateFilter() { applyEmailFilters(); }
+
+function clearEmailDateFilter() {
+  const fromEl   = document.getElementById('emailDateFrom');
+  const toEl     = document.getElementById('emailDateTo');
+  const statusEl = document.getElementById('emailStatusFilter');
+  if (fromEl)   fromEl.value   = '';
+  if (toEl)     toEl.value     = '';
+  if (statusEl) statusEl.value = 'all';
+  emailsFiltered = emailsAllData.slice();
+  emailsPage = 1;
+  renderEmailsTable();
+}
+
+function goEmailPage(delta) {
+  const totalPages = Math.ceil(emailsFiltered.length / EMAIL_PAGE_SIZE);
+  emailsPage = Math.max(1, Math.min(emailsPage + delta, totalPages));
+  renderEmailsTable();
+}
+
+function renderEmailsTable() {
+  const emailCard = document.getElementById('emailsSentCard');
+  if (!emailCard) return;
+
+  const total      = emailsFiltered.length;
+  const totalPages = Math.max(1, Math.ceil(total / EMAIL_PAGE_SIZE));
+  const start      = (emailsPage - 1) * EMAIL_PAGE_SIZE;
+  const pageData   = emailsFiltered.slice(start, start + EMAIL_PAGE_SIZE);
+
+  const statusIcon = (e) => {
+    if (e.submitted) return '<span style="color:var(--danger)">🚨 Submitted</span>';
+    if (e.clicked)   return '<span style="color:var(--warn)">🖱️ Clicked</span>';
+    if (e.opened)    return '<span style="color:var(--accent2)">📧 Opened</span>';
+    if (e.reported)  return '<span style="color:var(--success)">🛡️ Reported</span>';
+    return '<span style="color:var(--muted)">📤 Sent</span>';
+  };
+
+  emailCard.innerHTML = `
+    <!-- Header + filters row -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border)">
+      <h3 style="font-size:0.95rem;font-weight:700;color:#fff">
+        📤 Sent Emails Log
+        <span style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px">${total.toLocaleString()} total</span>
+      </h3>
+      <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
+        <!-- Status filter -->
+        <select id="emailStatusFilter"
+          style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Syne',sans-serif;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer"
+          onchange="applyEmailFilters()">
+          <option value="all">All Status</option>
+          <option value="submitted">🚨 Submitted</option>
+          <option value="clicked">🖱️ Clicked</option>
+          <option value="opened">📧 Opened</option>
+          <option value="reported">🛡️ Reported</option>
+          <option value="sent">📤 Sent only</option>
+        </select>
+        <!-- Date filters -->
+        <span style="font-size:0.72rem;color:var(--muted)">From</span>
+        <input type="date" id="emailDateFrom"
+          style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer"
+          onchange="applyEmailFilters()"/>
+        <span style="font-size:0.72rem;color:var(--muted)">To</span>
+        <input type="date" id="emailDateTo"
+          style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer"
+          onchange="applyEmailFilters()"/>
+        <button onclick="clearEmailDateFilter()"
+          style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s"
+          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+          ✕ Clear
+        </button>
       </div>
-      ${emails.length === 0
-        ? '<p style="color:var(--muted);font-size:0.82rem;padding:1rem;text-align:center">No emails sent yet — launch a campaign to populate this log</p>'
-        : `<div style="overflow-x:auto"><table>
+    </div>
+
+    ${total === 0
+      ? '<p style="color:var(--muted);font-size:0.82rem;padding:1.5rem;text-align:center">No emails match the selected date range</p>'
+      : `<div style="overflow-x:auto">
+          <table>
             <thead><tr>
               <th>Recipient</th><th>Subject</th><th>Campaign</th><th>Template</th><th>Status</th><th>Sent At</th>
             </tr></thead>
             <tbody>
-              ${emails.map(e => `<tr>
+              ${pageData.map(e => `<tr>
                 <td>
                   <div style="font-weight:600;color:#fff">${e.recipient_name || e.recipient_email}</div>
                   <div style="font-size:0.72rem;color:var(--muted)">${e.recipient_email}</div>
                 </td>
-                <td style="font-size:0.8rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.subject || '—'}</td>
-                <td style="color:var(--muted)">${e.campaign_name || '—'}</td>
+                <td style="font-size:0.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.subject || '—'}</td>
+                <td style="color:var(--muted);font-size:0.8rem">${e.campaign_name || '—'}</td>
                 <td style="color:var(--muted);font-size:0.78rem">${e.template_name || '—'}</td>
                 <td>${statusIcon(e)}</td>
-                <td style="color:var(--muted);font-size:0.75rem;font-family:'Share Tech Mono',monospace">
-                  ${new Date(e.sent_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+                <td style="color:var(--muted);font-size:0.75rem;font-family:'Share Tech Mono',monospace;white-space:nowrap">
+                  ${new Date(e.sent_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
                 </td>
               </tr>`).join('')}
             </tbody>
-          </table></div>`
-      }`;
-  } catch(e) {
-    emailCard.innerHTML = '<p style="color:var(--muted);padding:1rem;text-align:center">Could not load email log</p>';
-    console.error('Email log error:', e);
-  }
+          </table>
+        </div>
+
+        <!-- Pagination bar -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)">
+          <span style="font-size:0.75rem;color:var(--muted)">
+            Showing ${start + 1}–${Math.min(start + EMAIL_PAGE_SIZE, total)} of ${total.toLocaleString()}
+          </span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button onclick="goEmailPage(-1)" ${emailsPage <= 1 ? 'disabled' : ''}
+              style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:${emailsPage <= 1 ? 'var(--muted)' : 'var(--text)'};cursor:${emailsPage <= 1 ? 'not-allowed' : 'pointer'};transition:all 0.2s"
+              onmouseover="if(!this.disabled){this.style.borderColor='var(--accent)';this.style.color='var(--accent)'}"
+              onmouseout="this.style.borderColor='var(--border)';this.style.color='${emailsPage <= 1 ? 'var(--muted)' : 'var(--text)'}'">
+              ← Prev
+            </button>
+            <span style="font-size:0.75rem;color:var(--text);padding:0 8px;font-family:'Share Tech Mono',monospace">
+              ${emailsPage} / ${totalPages}
+            </span>
+            <button onclick="goEmailPage(1)" ${emailsPage >= totalPages ? 'disabled' : ''}
+              style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:${emailsPage >= totalPages ? 'var(--muted)' : 'var(--text)'};cursor:${emailsPage >= totalPages ? 'not-allowed' : 'pointer'};transition:all 0.2s"
+              onmouseover="if(!this.disabled){this.style.borderColor='var(--accent)';this.style.color='var(--accent)'}"
+              onmouseout="this.style.borderColor='var(--border)';this.style.color='${emailsPage >= totalPages ? 'var(--muted)' : 'var(--text)'}'">
+              Next →
+            </button>
+          </div>
+        </div>`
+    }`;
 }
 
 function buildEventsFeed(recent) {
