@@ -385,6 +385,9 @@ def get_campaigns():
             "SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='reported'", (cid,)
         ).fetchone()[0]
 
+        submitted = conn.execute(
+            "SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='submitted'", (cid,)
+        ).fetchone()[0]
         result.append({
             'id':           cid,
             'name':         c['name'],
@@ -396,11 +399,15 @@ def get_campaigns():
             'end_date':     c['end_date'],
             'created_at':   c['created_at'],
             'stats': {
-                'total':    targets,
-                'opened':   opened,
-                'clicked':  clicked,
-                'reported': reported,
-                'click_rate': round(clicked / targets * 100, 1) if targets > 0 else 0,
+                'total':       targets,
+                'opened':      opened,
+                'clicked':     clicked,
+                'submitted':   submitted,
+                'reported':    reported,
+                'open_rate':   round(opened    / targets * 100, 1) if targets > 0 else 0,
+                'click_rate':  round(clicked   / targets * 100, 1) if targets > 0 else 0,
+                'submit_rate': round(submitted / targets * 100, 1) if targets > 0 else 0,
+                'report_rate': round(reported  / targets * 100, 1) if targets > 0 else 0,
             }
         })
 
@@ -437,6 +444,63 @@ def create_campaign():
         'campaign_id': campaign_id,
         'message':     f'Campaign "{data["name"]}" created successfully'
     }), 201
+
+
+@app.route('/api/campaigns/<int:campaign_id>', methods=['GET'])
+def get_campaign(campaign_id):
+    """GET /api/campaigns/<id> — Get single campaign with full stats."""
+    conn = get_db()
+    c = conn.execute('SELECT * FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
+    if not c:
+        conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    targets   = conn.execute('SELECT COUNT(*) FROM campaign_targets WHERE campaign_id=?', (campaign_id,)).fetchone()[0]
+    opened    = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='opened'",    (campaign_id,)).fetchone()[0]
+    clicked   = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='clicked'",   (campaign_id,)).fetchone()[0]
+    submitted = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='submitted'", (campaign_id,)).fetchone()[0]
+    reported  = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='reported'",  (campaign_id,)).fetchone()[0]
+    # Per-target detail
+    target_rows = conn.execute('''
+        SELECT ct.email, ct.name, ct.department,
+            MAX(CASE WHEN te.event_type='opened'    THEN 1 ELSE 0 END) as opened,
+            MAX(CASE WHEN te.event_type='clicked'   THEN 1 ELSE 0 END) as clicked,
+            MAX(CASE WHEN te.event_type='submitted' THEN 1 ELSE 0 END) as submitted,
+            MAX(CASE WHEN te.event_type='reported'  THEN 1 ELSE 0 END) as reported
+        FROM campaign_targets ct
+        LEFT JOIN tracking_events te ON te.email=ct.email AND te.campaign_id=ct.campaign_id
+        WHERE ct.campaign_id=?
+        GROUP BY ct.email
+    ''', (campaign_id,)).fetchall()
+    conn.close()
+    return jsonify({
+        'id': campaign_id, 'name': c['name'], 'template': c['template'],
+        'status': c['status'], 'sender_name': c['sender_name'],
+        'sender_email': c['sender_email'], 'start_date': c['start_date'],
+        'end_date': c['end_date'], 'created_at': c['created_at'],
+        'stats': {
+            'total': targets, 'opened': opened, 'clicked': clicked,
+            'submitted': submitted, 'reported': reported,
+            'open_rate':   round(opened/targets*100,1)    if targets else 0,
+            'click_rate':  round(clicked/targets*100,1)   if targets else 0,
+            'submit_rate': round(submitted/targets*100,1) if targets else 0,
+            'report_rate': round(reported/targets*100,1)  if targets else 0,
+        },
+        'targets': [dict(t) for t in target_rows]
+    })
+
+
+@app.route('/api/campaigns/<int:campaign_id>', methods=['DELETE'])
+def delete_campaign(campaign_id):
+    """DELETE /api/campaigns/<id> — Delete campaign and all related data."""
+    conn = get_db()
+    conn.execute('DELETE FROM tracking_events WHERE campaign_id=?',  (campaign_id,))
+    conn.execute('DELETE FROM campaign_targets WHERE campaign_id=?', (campaign_id,))
+    conn.execute('DELETE FROM email_logs WHERE campaign_id=?',       (campaign_id,))
+    conn.execute('DELETE FROM campaigns WHERE id=?',                 (campaign_id,))
+    conn.commit()
+    conn.close()
+    print(f'🗑️ Campaign {campaign_id} deleted')
+    return jsonify({'success': True})
 
 
 @app.route('/api/campaigns/<int:campaign_id>/status', methods=['PUT'])
@@ -879,7 +943,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""

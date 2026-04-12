@@ -812,230 +812,276 @@ function updateRiskLeaderboard(employees) {
   });
 }
 
-// ── Recent events feed ────────────────────────────────────────────────────
-// ── Sent Emails Log — paginated + date filtered ───────────────────────────
+// ── Sent Emails Log ───────────────────────────────────────────────────────
 const EMAIL_PAGE_SIZE = 10;
-let emailsAllData  = [];   // full dataset from API
-let emailsFiltered = [];   // after date filter applied
-let emailsPage     = 1;    // current page (1-based)
+let emailsAllData    = [];
+let emailsFiltered   = [];
+let emailsPage       = 1;
+let emailFilterState = { status: 'all', from: '', to: '' };
 
 async function buildEmailsSentTable() {
-  // Create container once
-  let emailCard = document.getElementById('emailsSentCard');
-  if (!emailCard) {
-    emailCard = document.createElement('div');
-    emailCard.id        = 'emailsSentCard';
-    emailCard.className = 'table-card';
-    emailCard.style.cssText = 'margin-top:1.2rem;animation:fadeUp 0.4s 0.15s ease both';
-    document.querySelector('.content').appendChild(emailCard);
+  let card = document.getElementById('emailsSentCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.id        = 'emailsSentCard';
+    card.className = 'table-card';
+    card.style.cssText = 'margin-top:1.2rem';
+    document.querySelector('.content').appendChild(card);
+    card.innerHTML = [
+      '<div id="emailsHeader" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border)">',
+        '<h3 style="font-size:0.95rem;font-weight:700;color:#fff">',
+          '&#128228; Sent Emails Log',
+          '<span id="emailTotalCount" style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px"></span>',
+        '</h3>',
+        '<div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">',
+          '<select id="emailStatusFilter" style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:Syne,sans-serif;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer" onchange="emailFilterState.status=this.value;emailsPage=1;applyEmailFilters()">',
+            '<option value="all">All Status</option>',
+            '<option value="submitted">Submitted</option>',
+            '<option value="clicked">Clicked</option>',
+            '<option value="opened">Opened</option>',
+            '<option value="reported">Reported</option>',
+            '<option value="sent">Sent only</option>',
+          '</select>',
+          '<span style="font-size:0.72rem;color:var(--muted)">From</span>',
+          '<input type="date" id="emailDateFrom" style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:Share Tech Mono,monospace;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer" onchange="emailFilterState.from=this.value;emailsPage=1;applyEmailFilters()"/>',
+          '<span style="font-size:0.72rem;color:var(--muted)">To</span>',
+          '<input type="date" id="emailDateTo" style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:Share Tech Mono,monospace;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer" onchange="emailFilterState.to=this.value;emailsPage=1;applyEmailFilters()"/>',
+          '<button onclick="clearEmailFilters()" style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:Syne,sans-serif;font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer" onmouseover="this.style.color=\'var(--accent)\'" onmouseout="this.style.color=\'var(--muted)\'">Clear</button>',
+        '</div>',
+      '</div>',
+      '<div style="overflow-x:auto"><table>',
+        '<thead><tr><th>Recipient</th><th>Subject</th><th>Campaign</th><th>Template</th><th>Status</th><th>Sent At</th></tr></thead>',
+        '<tbody id="emailTableBody"></tbody>',
+      '</table></div>',
+      '<div id="emailPagination" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)"></div>'
+    ].join('');
   }
-
   try {
-    emailsAllData  = await apiFetch('emails/sent');
-    emailsFiltered = emailsAllData.slice(); // start unfiltered
-    emailsPage     = 1;
-    renderEmailsTable();
+    emailsAllData = await apiFetch('emails/sent');
+    // Restore persisted filter state into DOM
+    const sel = document.getElementById('emailStatusFilter');
+    const df  = document.getElementById('emailDateFrom');
+    const dt  = document.getElementById('emailDateTo');
+    if (sel) sel.value = emailFilterState.status;
+    if (df)  df.value  = emailFilterState.from;
+    if (dt)  dt.value  = emailFilterState.to;
+    applyEmailFilters();
   } catch(e) {
-    emailCard.innerHTML = '<p style="color:var(--muted);padding:1rem;text-align:center">Could not load email log</p>';
-    console.error(e);
+    const tb = document.getElementById('emailTableBody');
+    if (tb) tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">Could not load email log</td></tr>';
   }
 }
 
 function applyEmailFilters() {
-  const from   = document.getElementById('emailDateFrom')?.value;
-  const to     = document.getElementById('emailDateTo')?.value;
-  const status = document.getElementById('emailStatusFilter')?.value || 'all';
-
-  emailsFiltered = emailsAllData.filter(e => {
-    // Date filter
+  const s = emailFilterState;
+  emailsFiltered = emailsAllData.filter(function(e) {
     const d = new Date(e.sent_at);
-    if (from && d < new Date(from))              return false;
-    if (to   && d > new Date(to + 'T23:59:59'))  return false;
-    // Status filter
-    if (status === 'submitted' && !e.submitted)  return false;
-    if (status === 'clicked'   && !e.clicked)    return false;
-    if (status === 'opened'    && !e.opened)     return false;
-    if (status === 'reported'  && !e.reported)   return false;
-    if (status === 'sent'      && (e.opened || e.clicked || e.submitted || e.reported)) return false;
+    if (s.from && d < new Date(s.from))             return false;
+    if (s.to   && d > new Date(s.to + 'T23:59:59')) return false;
+    if (s.status === 'submitted' && !e.submitted)   return false;
+    if (s.status === 'clicked'   && !e.clicked)     return false;
+    if (s.status === 'opened'    && !e.opened)      return false;
+    if (s.status === 'reported'  && !e.reported)    return false;
+    if (s.status === 'sent' && (e.opened||e.clicked||e.submitted||e.reported)) return false;
     return true;
   });
-  emailsPage = 1;
-  renderEmailsTable();
+  renderEmailsRows();
 }
 
-// Keep old name as alias so existing onchange calls still work
-function applyEmailDateFilter() { applyEmailFilters(); }
-
-function clearEmailDateFilter() {
-  const fromEl   = document.getElementById('emailDateFrom');
-  const toEl     = document.getElementById('emailDateTo');
-  const statusEl = document.getElementById('emailStatusFilter');
-  if (fromEl)   fromEl.value   = '';
-  if (toEl)     toEl.value     = '';
-  if (statusEl) statusEl.value = 'all';
+function clearEmailFilters() {
+  emailFilterState = { status: 'all', from: '', to: '' };
+  const sel = document.getElementById('emailStatusFilter');
+  const df  = document.getElementById('emailDateFrom');
+  const dt  = document.getElementById('emailDateTo');
+  if (sel) sel.value = 'all';
+  if (df)  df.value  = '';
+  if (dt)  dt.value  = '';
   emailsFiltered = emailsAllData.slice();
   emailsPage = 1;
-  renderEmailsTable();
+  renderEmailsRows();
 }
 
 function goEmailPage(delta) {
-  const totalPages = Math.ceil(emailsFiltered.length / EMAIL_PAGE_SIZE);
-  emailsPage = Math.max(1, Math.min(emailsPage + delta, totalPages));
-  renderEmailsTable();
+  const tp = Math.max(1, Math.ceil(emailsFiltered.length / EMAIL_PAGE_SIZE));
+  emailsPage = Math.max(1, Math.min(emailsPage + delta, tp));
+  renderEmailsRows();
 }
 
-function renderEmailsTable() {
-  const emailCard = document.getElementById('emailsSentCard');
-  if (!emailCard) return;
+function renderEmailsRows() {
+  const tbody   = document.getElementById('emailTableBody');
+  const pagEl   = document.getElementById('emailPagination');
+  const countEl = document.getElementById('emailTotalCount');
+  if (!tbody) return;
 
-  const total      = emailsFiltered.length;
-  const totalPages = Math.max(1, Math.ceil(total / EMAIL_PAGE_SIZE));
-  const start      = (emailsPage - 1) * EMAIL_PAGE_SIZE;
-  const pageData   = emailsFiltered.slice(start, start + EMAIL_PAGE_SIZE);
+  const total  = emailsFiltered.length;
+  const tp     = Math.max(1, Math.ceil(total / EMAIL_PAGE_SIZE));
+  const start  = (emailsPage - 1) * EMAIL_PAGE_SIZE;
+  const page   = emailsFiltered.slice(start, start + EMAIL_PAGE_SIZE);
 
-  const statusIcon = (e) => {
-    if (e.submitted) return '<span style="color:var(--danger)">🚨 Submitted</span>';
-    if (e.clicked)   return '<span style="color:var(--warn)">🖱️ Clicked</span>';
-    if (e.opened)    return '<span style="color:var(--accent2)">📧 Opened</span>';
-    if (e.reported)  return '<span style="color:var(--success)">🛡️ Reported</span>';
-    return '<span style="color:var(--muted)">📤 Sent</span>';
+  if (countEl) countEl.textContent = total.toLocaleString() + ' total';
+
+  var si = function(e) {
+    if (e.submitted) return '<span style="color:var(--danger)">&#128680; Submitted</span>';
+    if (e.clicked)   return '<span style="color:var(--warn)">&#128279; Clicked</span>';
+    if (e.opened)    return '<span style="color:var(--accent2)">&#128231; Opened</span>';
+    if (e.reported)  return '<span style="color:var(--success)">&#128737; Reported</span>';
+    return '<span style="color:var(--muted)">&#128228; Sent</span>';
   };
 
-  emailCard.innerHTML = `
-    <!-- Header + filters row -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border)">
-      <h3 style="font-size:0.95rem;font-weight:700;color:#fff">
-        📤 Sent Emails Log
-        <span style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px">${total.toLocaleString()} total</span>
-      </h3>
-      <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
-        <!-- Status filter -->
-        <select id="emailStatusFilter"
-          style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Syne',sans-serif;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer"
-          onchange="applyEmailFilters()">
-          <option value="all">All Status</option>
-          <option value="submitted">🚨 Submitted</option>
-          <option value="clicked">🖱️ Clicked</option>
-          <option value="opened">📧 Opened</option>
-          <option value="reported">🛡️ Reported</option>
-          <option value="sent">📤 Sent only</option>
-        </select>
-        <!-- Date filters -->
-        <span style="font-size:0.72rem;color:var(--muted)">From</span>
-        <input type="date" id="emailDateFrom"
-          style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer"
-          onchange="applyEmailFilters()"/>
-        <span style="font-size:0.72rem;color:var(--muted)">To</span>
-        <input type="date" id="emailDateTo"
-          style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer"
-          onchange="applyEmailFilters()"/>
-        <button onclick="clearEmailDateFilter()"
-          style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s"
-          onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
-          onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
-          ✕ Clear
-        </button>
-      </div>
-    </div>
-
-    ${total === 0
-      ? '<p style="color:var(--muted);font-size:0.82rem;padding:1.5rem;text-align:center">No emails match the selected date range</p>'
-      : `<div style="overflow-x:auto">
-          <table>
-            <thead><tr>
-              <th>Recipient</th><th>Subject</th><th>Campaign</th><th>Template</th><th>Status</th><th>Sent At</th>
-            </tr></thead>
-            <tbody>
-              ${pageData.map(e => `<tr>
-                <td>
-                  <div style="font-weight:600;color:#fff">${e.recipient_name || e.recipient_email}</div>
-                  <div style="font-size:0.72rem;color:var(--muted)">${e.recipient_email}</div>
-                </td>
-                <td style="font-size:0.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.subject || '—'}</td>
-                <td style="color:var(--muted);font-size:0.8rem">${e.campaign_name || '—'}</td>
-                <td style="color:var(--muted);font-size:0.78rem">${e.template_name || '—'}</td>
-                <td>${statusIcon(e)}</td>
-                <td style="color:var(--muted);font-size:0.75rem;font-family:'Share Tech Mono',monospace;white-space:nowrap">
-                  ${new Date(e.sent_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
-                </td>
-              </tr>`).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Pagination bar -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)">
-          <span style="font-size:0.75rem;color:var(--muted)">
-            Showing ${start + 1}–${Math.min(start + EMAIL_PAGE_SIZE, total)} of ${total.toLocaleString()}
-          </span>
-          <div style="display:flex;gap:6px;align-items:center">
-            <button onclick="goEmailPage(-1)" ${emailsPage <= 1 ? 'disabled' : ''}
-              style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:${emailsPage <= 1 ? 'var(--muted)' : 'var(--text)'};cursor:${emailsPage <= 1 ? 'not-allowed' : 'pointer'};transition:all 0.2s"
-              onmouseover="if(!this.disabled){this.style.borderColor='var(--accent)';this.style.color='var(--accent)'}"
-              onmouseout="this.style.borderColor='var(--border)';this.style.color='${emailsPage <= 1 ? 'var(--muted)' : 'var(--text)'}'">
-              ← Prev
-            </button>
-            <span style="font-size:0.75rem;color:var(--text);padding:0 8px;font-family:'Share Tech Mono',monospace">
-              ${emailsPage} / ${totalPages}
-            </span>
-            <button onclick="goEmailPage(1)" ${emailsPage >= totalPages ? 'disabled' : ''}
-              style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:${emailsPage >= totalPages ? 'var(--muted)' : 'var(--text)'};cursor:${emailsPage >= totalPages ? 'not-allowed' : 'pointer'};transition:all 0.2s"
-              onmouseover="if(!this.disabled){this.style.borderColor='var(--accent)';this.style.color='var(--accent)'}"
-              onmouseout="this.style.borderColor='var(--border)';this.style.color='${emailsPage >= totalPages ? 'var(--muted)' : 'var(--text)'}'">
-              Next →
-            </button>
-          </div>
-        </div>`
-    }`;
-}
-
-function buildEventsFeed(recent) {
-  // Find or create the feed container — inject after the bottom-row
-  let feedCard = document.getElementById('eventsFeedCard');
-  if (!feedCard) {
-    feedCard = document.createElement('div');
-    feedCard.id = 'eventsFeedCard';
-    feedCard.className = 'table-card';
-    feedCard.style.cssText = 'margin-top:1.2rem;animation:fadeUp 0.4s 0.2s ease both';
-    document.querySelector('.content').appendChild(feedCard);
+  if (total === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">No emails match the selected filters</td></tr>';
+    if (pagEl) pagEl.innerHTML = '';
+    return;
   }
 
-  const eventIcon = { opened: '📧', clicked: '🖱️', submitted: '🚨', reported: '🛡️' };
-  const eventColour = { opened: 'var(--accent2)', clicked: 'var(--warn)', submitted: 'var(--danger)', reported: 'var(--success)' };
-  const eventLabel  = { opened: 'Opened email', clicked: 'Clicked phishing link', submitted: 'Submitted credentials', reported: 'Reported phishing' };
+  tbody.innerHTML = page.map(function(e) {
+    return '<tr>' +
+      '<td><div style="font-weight:600;color:#fff">' + (e.recipient_name||e.recipient_email) + '</div>' +
+      '<div style="font-size:0.72rem;color:var(--muted)">' + e.recipient_email + '</div></td>' +
+      '<td style="font-size:0.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (e.subject||'&mdash;') + '</td>' +
+      '<td style="color:var(--muted);font-size:0.8rem">' + (e.campaign_name||'&mdash;') + '</td>' +
+      '<td style="color:var(--muted);font-size:0.78rem">' + (e.template_name||'&mdash;') + '</td>' +
+      '<td>' + si(e) + '</td>' +
+      '<td style="color:var(--muted);font-size:0.75rem;white-space:nowrap">' +
+        new Date(e.sent_at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) +
+      '</td></tr>';
+  }).join('');
 
-  feedCard.innerHTML = `
-    <div class="table-card-header" style="display:flex;justify-content:space-between;align-items:center">
-      <h3>Live Activity Feed</h3>
-      <button class="btn-view-all" onclick="init()">↻ Refresh</button>
-    </div>
-    ${recent.length === 0
-      ? '<p style="color:var(--muted);font-size:0.82rem;padding:1rem;text-align:center">No tracking events yet — send a campaign to see live activity</p>'
-      : `<table>
-          <thead><tr>
-            <th>Event</th><th>Employee</th><th>Email</th><th>Campaign</th><th>Time</th>
-          </tr></thead>
-          <tbody>
-            ${recent.map(e => `<tr>
-              <td>
-                <span style="display:flex;align-items:center;gap:6px">
-                  <span>${eventIcon[e.event_type] || '•'}</span>
-                  <span style="color:${eventColour[e.event_type] || 'var(--text)'}">
-                    ${eventLabel[e.event_type] || e.event_type}
-                  </span>
-                </span>
-              </td>
-              <td>${e.employee_name || '—'}</td>
-              <td style="color:var(--muted);font-size:0.78rem">${e.email}</td>
-              <td style="color:var(--muted)">${e.campaign_name || '—'}</td>
-              <td style="color:var(--muted);font-size:0.75rem;font-family:'Share Tech Mono',monospace">
-                ${new Date(e.timestamp).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}
-              </td>
-            </tr>`).join('')}
-          </tbody>
-        </table>`
-    }`;
+  var pd = emailsPage <= 1, nd = emailsPage >= tp;
+  if (pagEl) pagEl.innerHTML =
+    '<span style="font-size:0.75rem;color:var(--muted)">Showing ' + (start+1) + '&ndash;' + Math.min(start+EMAIL_PAGE_SIZE,total) + ' of ' + total.toLocaleString() + '</span>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+      '<button onclick="goEmailPage(-1)" ' + (pd?'disabled':'') + ' style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:' + (pd?'not-allowed':'pointer') + ';color:' + (pd?'var(--muted)':'var(--text)') + '">&larr; Prev</button>' +
+      '<span style="font-size:0.75rem;color:var(--text);padding:0 8px">' + emailsPage + ' / ' + tp + '</span>' +
+      '<button onclick="goEmailPage(1)" ' + (nd?'disabled':'') + ' style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:' + (nd?'not-allowed':'pointer') + ';color:' + (nd?'var(--muted)':'var(--text)') + '">Next &rarr;</button>' +
+    '</div>';
 }
+
+// ── Live Activity Feed ─────────────────────────────────────────────────────
+const FEED_PAGE_SIZE = 10;
+let feedAllData     = [];
+let feedFiltered    = [];
+let feedPage        = 1;
+let feedFilterState = { campaign: '', from: '', to: '' };
+
+function buildEventsFeed(allRecent) {
+  let card = document.getElementById('eventsFeedCard');
+  if (!card) {
+    card = document.createElement('div');
+    card.id        = 'eventsFeedCard';
+    card.className = 'table-card';
+    card.style.cssText = 'margin-top:1.2rem';
+    document.querySelector('.content').appendChild(card);
+    card.innerHTML = [
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.8rem;padding:1rem 1.2rem;border-bottom:1px solid var(--border)">',
+        '<h3 style="font-size:0.95rem;font-weight:700;color:#fff">&#9889; Live Activity Feed <span id="feedTotalCount" style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px"></span></h3>',
+        '<div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">',
+          '<input id="feedCampaignFilter" type="text" placeholder="Filter by campaign..." style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:0.75rem;color:var(--text);outline:none;width:160px" oninput="feedFilterState.campaign=this.value.toLowerCase();feedPage=1;applyFeedFilters()"/>',
+          '<span style="font-size:0.72rem;color:var(--muted)">From</span>',
+          '<input type="date" id="feedDateFrom" style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer" onchange="feedFilterState.from=this.value;feedPage=1;applyFeedFilters()"/>',
+          '<span style="font-size:0.72rem;color:var(--muted)">To</span>',
+          '<input type="date" id="feedDateTo" style="background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:0.75rem;color:var(--text);outline:none;cursor:pointer" onchange="feedFilterState.to=this.value;feedPage=1;applyFeedFilters()"/>',
+          '<button onclick="clearFeedFilters()" style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer" onmouseover="this.style.color=\'var(--accent)\'" onmouseout="this.style.color=\'var(--muted)\'">Clear</button>',
+          '<button onclick="init()" style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:0.72rem;font-weight:600;color:var(--muted);cursor:pointer" onmouseover="this.style.color=\'var(--accent)\'" onmouseout="this.style.color=\'var(--muted)\'">&#8635; Refresh</button>',
+        '</div>',
+      '</div>',
+      '<div style="overflow-x:auto"><table>',
+        '<thead><tr><th>Event</th><th>Employee</th><th>Email</th><th>Campaign</th><th>Time</th></tr></thead>',
+        '<tbody id="feedTableBody"></tbody>',
+      '</table></div>',
+      '<div id="feedPagination" style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)"></div>'
+    ].join('');
+  }
+
+  feedAllData = allRecent;
+  // Restore persisted filter state into DOM
+  const cf = document.getElementById('feedCampaignFilter');
+  const df = document.getElementById('feedDateFrom');
+  const dt = document.getElementById('feedDateTo');
+  if (cf) cf.value = feedFilterState.campaign;
+  if (df) df.value = feedFilterState.from;
+  if (dt) dt.value = feedFilterState.to;
+  applyFeedFilters();
+}
+
+function applyFeedFilters() {
+  const s = feedFilterState;
+  feedFiltered = feedAllData.filter(function(e) {
+    const d = new Date(e.timestamp);
+    if (s.from && d < new Date(s.from))             return false;
+    if (s.to   && d > new Date(s.to + 'T23:59:59')) return false;
+    if (s.campaign && !(e.campaign_name||'').toLowerCase().includes(s.campaign)) return false;
+    return true;
+  });
+  renderFeedRows();
+}
+
+function clearFeedFilters() {
+  feedFilterState = { campaign: '', from: '', to: '' };
+  const cf = document.getElementById('feedCampaignFilter');
+  const df = document.getElementById('feedDateFrom');
+  const dt = document.getElementById('feedDateTo');
+  if (cf) cf.value = '';
+  if (df) df.value = '';
+  if (dt) dt.value = '';
+  feedFiltered = feedAllData.slice();
+  feedPage = 1;
+  renderFeedRows();
+}
+
+function goFeedPage(delta) {
+  const tp = Math.max(1, Math.ceil(feedFiltered.length / FEED_PAGE_SIZE));
+  feedPage = Math.max(1, Math.min(feedPage + delta, tp));
+  renderFeedRows();
+}
+
+function renderFeedRows() {
+  const tbody   = document.getElementById('feedTableBody');
+  const pagEl   = document.getElementById('feedPagination');
+  const countEl = document.getElementById('feedTotalCount');
+  if (!tbody) return;
+
+  const total = feedFiltered.length;
+  const tp    = Math.max(1, Math.ceil(total / FEED_PAGE_SIZE));
+  const start = (feedPage - 1) * FEED_PAGE_SIZE;
+  const page  = feedFiltered.slice(start, start + FEED_PAGE_SIZE);
+
+  if (countEl) countEl.textContent = total.toLocaleString() + ' events';
+
+  var ic = { opened:'&#128231;', clicked:'&#128279;', submitted:'&#128680;', reported:'&#128737;' };
+  var co = { opened:'var(--accent2)', clicked:'var(--warn)', submitted:'var(--danger)', reported:'var(--success)' };
+  var lb = { opened:'Opened email', clicked:'Clicked link', submitted:'Submitted creds', reported:'Reported phish' };
+
+  if (total === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.5rem">No events match the selected filters</td></tr>';
+    if (pagEl) pagEl.innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = page.map(function(e) {
+    return '<tr>' +
+      '<td><span style="display:flex;align-items:center;gap:6px">' +
+        '<span>' + (ic[e.event_type]||'&bull;') + '</span>' +
+        '<span style="color:' + (co[e.event_type]||'var(--text)') + '">' + (lb[e.event_type]||e.event_type) + '</span>' +
+      '</span></td>' +
+      '<td>' + (e.employee_name||'&mdash;') + '</td>' +
+      '<td style="color:var(--muted);font-size:0.78rem">' + e.email + '</td>' +
+      '<td style="color:var(--muted)">' + (e.campaign_name||'&mdash;') + '</td>' +
+      '<td style="color:var(--muted);font-size:0.75rem">' +
+        new Date(e.timestamp).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) +
+      '</td></tr>';
+  }).join('');
+
+  var pd = feedPage <= 1, nd = feedPage >= tp;
+  if (pagEl) pagEl.innerHTML =
+    '<span style="font-size:0.75rem;color:var(--muted)">Showing ' + (start+1) + '&ndash;' + Math.min(start+FEED_PAGE_SIZE,total) + ' of ' + total.toLocaleString() + '</span>' +
+    '<div style="display:flex;gap:6px;align-items:center">' +
+      '<button onclick="goFeedPage(-1)" ' + (pd?'disabled':'') + ' style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:' + (pd?'not-allowed':'pointer') + ';color:' + (pd?'var(--muted)':'var(--text)') + '">&larr; Prev</button>' +
+      '<span style="font-size:0.75rem;color:var(--text);padding:0 8px">' + feedPage + ' / ' + tp + '</span>' +
+      '<button onclick="goFeedPage(1)" ' + (nd?'disabled':'') + ' style="background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:0.75rem;font-weight:700;cursor:' + (nd?'not-allowed':'pointer') + ';color:' + (nd?'var(--muted)':'var(--text)') + '">Next &rarr;</button>' +
+    '</div>';
+}
+
 
 // ── Add Submitted column to campaign table header ─────────────────────────
 function patchTableHeader() {

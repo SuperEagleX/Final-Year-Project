@@ -24,7 +24,7 @@
       --sidebar-w: 240px;
     }
 
-    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); overflow: hidden; }
+    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); }
 
     /* ── Sidebar (same as dashboard) ── */
     .sidebar {
@@ -53,7 +53,7 @@
     .user-role { font-size: 0.7rem; color: var(--accent); }
 
     /* ── Main ── */
-    .main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; display: flex; flex-direction: column; position: relative; z-index: 1; }
     .main::-webkit-scrollbar { width: 5px; }
     .main::-webkit-scrollbar-track { background: transparent; }
     .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
@@ -80,6 +80,7 @@
       display: flex; align-items: center; gap: 1rem;
       margin-bottom: 1.5rem;
       animation: fadeUp 0.4s ease both;
+      position: relative; z-index: 10;
     }
     .search-wrap { position: relative; flex: 1; max-width: 320px; }
     .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
@@ -247,6 +248,55 @@
     .schedule-opt-icon { font-size: 1.4rem; margin-bottom: 6px; display: block; }
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Campaign rows ── */
+    .camp-row {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      display: grid; grid-template-columns: 3px 1fr auto; align-items: center;
+      overflow: hidden; animation: fadeUp 0.3s ease both; transition: border-color 0.2s;
+    }
+    .camp-row:hover { border-color: var(--accent2); }
+    .camp-row-stripe { height: 100%; width: 3px; }
+    .camp-row-body { padding: 1rem 1.2rem; display: grid; grid-template-columns: 220px 120px 100px repeat(4, 80px) 120px; align-items: center; gap: 0.6rem; }
+    .camp-row-name { font-size: 0.9rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .camp-row-template { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .camp-row-date { font-size: 0.72rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
+    .camp-stat { text-align: center; }
+    .camp-stat-num { font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; font-weight: 700; }
+    .camp-stat-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; }
+    .pill-active   { background: #00e5a018; color: var(--success); }
+    .pill-complete { background: #0077ff18; color: var(--accent2); }
+    .pill-draft    { background: #4a709018; color: var(--muted); }
+    .pill-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; animation: blink 1.2s infinite; }
+    .pill-complete .pill-dot, .pill-draft .pill-dot { animation: none; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .camp-row-actions { display: flex; gap: 0.4rem; padding: 0 1rem; flex-shrink: 0; }
+    .act-btn { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; white-space: nowrap; }
+    .act-view   { background: #0077ff18; color: var(--accent2); border: 1px solid #0077ff30; }
+    .act-view:hover   { background: #0077ff30; }
+    .act-copy   { background: #00d4ff15; color: var(--accent); border: 1px solid #00d4ff25; }
+    .act-copy:hover   { background: #00d4ff25; }
+    .act-delete { background: #ff456015; color: var(--danger); border: 1px solid #ff456025; }
+    .act-delete:hover { background: #ff456030; }
+    .camp-table-header { display: grid; grid-template-columns: 3px 1fr auto; margin-bottom: 0.3rem; }
+    .camp-table-header-body { padding: 0 1.2rem; display: grid; grid-template-columns: 220px 120px 100px repeat(4, 80px) 120px; gap: 0.6rem; }
+    .camp-table-header-body span { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .camp-empty { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.88rem; }
+
+    /* ── Results modal ── */
+    .results-modal { max-width: 800px; }
+    .result-stat-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 0.8rem; margin-bottom: 1.4rem; }
+    .result-stat-card { background: var(--deep); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+    .result-stat-num { font-family: 'Share Tech Mono', monospace; font-size: 1.3rem; font-weight: 700; }
+    .result-stat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+    .target-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .target-table th { padding: 8px 10px; text-align: left; font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+    .target-table td { padding: 9px 10px; border-bottom: 1px solid #0d284750; color: var(--text); }
+    .target-table tr:last-child td { border-bottom: none; }
+    .t-check { font-size: 0.9rem; }
+    .t-yes { color: var(--danger); }
+    .t-no  { color: var(--border); }
   </style>
 </head>
 <body>
@@ -328,169 +378,101 @@
   <div class="content">
 
     <!-- Filter bar -->
-    <div class="filter-bar">
+    <div class="filter-bar" style="flex-wrap:wrap;gap:0.6rem">
       <div class="search-wrap">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input class="search-input" type="text" placeholder="Search campaigns..."/>
+        <input class="search-input" id="campSearch" type="text" placeholder="Search campaigns..." oninput="renderCampaigns()"/>
       </div>
       <div class="filter-tabs">
-        <button class="filter-tab active" onclick="setTab(this,'all')">All</button>
-        <button class="filter-tab" onclick="setTab(this,'active')">Active</button>
-        <button class="filter-tab" onclick="setTab(this,'complete')">Complete</button>
-        <button class="filter-tab" onclick="setTab(this,'draft')">Draft</button>
+        <button class="filter-tab active" id="tab-all"      onclick="setStatusTab('all',this)">All</button>
+        <button class="filter-tab"        id="tab-active"   onclick="setStatusTab('active',this)">Active</button>
+        <button class="filter-tab"        id="tab-complete" onclick="setStatusTab('complete',this)">Complete</button>
+        <button class="filter-tab"        id="tab-draft"    onclick="setStatusTab('draft',this)">Draft</button>
       </div>
-      <select class="sort-select">
-        <option>Sort: Newest</option>
-        <option>Sort: Click Rate ↑</option>
-        <option>Sort: Click Rate ↓</option>
-        <option>Sort: Sent Count</option>
+      <select class="sort-select" id="campSort" onchange="renderCampaigns()">
+        <option value="newest">Sort: Newest</option>
+        <option value="oldest">Sort: Oldest</option>
+        <option value="click_asc">Click Rate ↑</option>
+        <option value="click_desc">Click Rate ↓</option>
+        <option value="name">Name A–Z</option>
       </select>
+      <input type="date" id="campDateFrom" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--text);outline:none;cursor:pointer" placeholder="From" title="Filter from date" onchange="renderCampaigns()"/>
+      <input type="date" id="campDateTo"   style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Share Tech Mono',monospace;font-size:0.78rem;color:var(--text);outline:none;cursor:pointer" placeholder="To"   title="Filter to date"   onchange="renderCampaigns()"/>
+      <button onclick="clearCampFilters()" style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:600;color:var(--muted);cursor:pointer" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--muted)'">Clear</button>
     </div>
 
-    <!-- Campaign cards -->
-    <div class="campaigns-grid">
+    <!-- Campaign rows container — populated by JS -->
+    <div id="campaignRows" style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:2rem"></div>
 
-      <!-- Card 1 — Active -->
-      <div class="campaign-card" style="animation-delay:0.05s">
-        <div class="status-strip strip-active"></div>
-        <div class="campaign-card-top">
-          <span class="campaign-type-badge type-it">IT Support</span>
-          <button class="campaign-menu-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <div class="campaign-card-body">
-          <div class="campaign-name">Q1 IT Helpdesk Reset</div>
-          <div class="campaign-meta">📅 Jan 15 – Feb 28, 2026 &nbsp;·&nbsp; 324 targets</div>
-          <div class="progress-label"><span>Progress</span> 73% sent</div>
-          <div class="progress-bg"><div class="progress-fill" style="width:73%"></div></div>
-          <div class="mini-stats">
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">68%</div><div class="mini-stat-label">Opened</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">31%</div><div class="mini-stat-label">Clicked</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">12%</div><div class="mini-stat-label">Submitted</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">8%</div><div class="mini-stat-label">Reported</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2 — Active -->
-      <div class="campaign-card" style="animation-delay:0.1s">
-        <div class="status-strip strip-active"></div>
-        <div class="campaign-card-top">
-          <span class="campaign-type-badge type-credential">Credential Harvest</span>
-          <button class="campaign-menu-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <div class="campaign-card-body">
-          <div class="campaign-name">Microsoft 365 Suspension</div>
-          <div class="campaign-meta">📅 Feb 01 – Mar 01, 2026 &nbsp;·&nbsp; 450 targets</div>
-          <div class="progress-label"><span>Progress</span> 55% sent</div>
-          <div class="progress-bg"><div class="progress-fill" style="width:55%"></div></div>
-          <div class="mini-stats">
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">59%</div><div class="mini-stat-label">Opened</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">27%</div><div class="mini-stat-label">Clicked</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">18%</div><div class="mini-stat-label">Submitted</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">5%</div><div class="mini-stat-label">Reported</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3 — Complete -->
-      <div class="campaign-card" style="animation-delay:0.15s">
-        <div class="status-strip strip-complete"></div>
-        <div class="campaign-card-top">
-          <span class="campaign-type-badge type-hr">HR Notice</span>
-          <button class="campaign-menu-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <div class="campaign-card-body">
-          <div class="campaign-name">HR Policy Update 2026</div>
-          <div class="campaign-meta">📅 Dec 01 – Dec 31, 2025 &nbsp;·&nbsp; 210 targets</div>
-          <div class="progress-label"><span>Progress</span> 100% sent</div>
-          <div class="progress-bg"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,var(--accent2),var(--success))"></div></div>
-          <div class="mini-stats">
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">74%</div><div class="mini-stat-label">Opened</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">19%</div><div class="mini-stat-label">Clicked</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">7%</div><div class="mini-stat-label">Submitted</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">22%</div><div class="mini-stat-label">Reported</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 4 — Complete -->
-      <div class="campaign-card" style="animation-delay:0.2s">
-        <div class="status-strip strip-complete"></div>
-        <div class="campaign-card-top">
-          <span class="campaign-type-badge type-delivery">Delivery Notice</span>
-          <button class="campaign-menu-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <div class="campaign-card-body">
-          <div class="campaign-name">Package Delivery Alert Alert</div>
-          <div class="campaign-meta">📅 Nov 10 – Nov 30, 2025 &nbsp;·&nbsp; 300 targets</div>
-          <div class="progress-label"><span>Progress</span> 100% sent</div>
-          <div class="progress-bg"><div class="progress-fill" style="width:100%;background:linear-gradient(90deg,var(--accent2),var(--success))"></div></div>
-          <div class="mini-stats">
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">61%</div><div class="mini-stat-label">Opened</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">9%</div><div class="mini-stat-label">Clicked</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">3%</div><div class="mini-stat-label">Submitted</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">34%</div><div class="mini-stat-label">Reported</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 5 — Paused -->
-      <div class="campaign-card" style="animation-delay:0.25s">
-        <div class="status-strip strip-paused"></div>
-        <div class="campaign-card-top">
-          <span class="campaign-type-badge type-exec">Executive</span>
-          <button class="campaign-menu-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <div class="campaign-card-body">
-          <div class="campaign-name">CEO Wire Transfer Request</div>
-          <div class="campaign-meta">📅 Feb 10 – Feb 25, 2026 &nbsp;·&nbsp; 150 targets</div>
-          <div class="progress-label"><span>Progress</span> 38% sent</div>
-          <div class="progress-bg"><div class="progress-fill" style="width:38%;background:linear-gradient(90deg,var(--warn),#ff8c00)"></div></div>
-          <div class="mini-stats">
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--accent)">44%</div><div class="mini-stat-label">Opened</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--danger)">22%</div><div class="mini-stat-label">Clicked</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--warn)">9%</div><div class="mini-stat-label">Submitted</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--success)">11%</div><div class="mini-stat-label">Reported</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 6 — Draft -->
-      <div class="campaign-card" style="animation-delay:0.3s;opacity:0.75">
-        <div class="status-strip strip-draft"></div>
-        <div class="campaign-card-top">
-          <span class="campaign-type-badge type-credential">Credential Harvest</span>
-          <button class="campaign-menu-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-          </button>
-        </div>
-        <div class="campaign-card-body">
-          <div class="campaign-name">LinkedIn Connection Phish</div>
-          <div class="campaign-meta">📅 Not scheduled yet &nbsp;·&nbsp; — targets</div>
-          <div class="progress-label"><span>Status</span> Draft — not launched</div>
-          <div class="progress-bg"><div class="progress-fill" style="width:0%"></div></div>
-          <div class="mini-stats">
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Opened</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Clicked</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Submitted</div></div>
-            <div class="mini-stat"><div class="mini-stat-num" style="color:var(--muted)">—</div><div class="mini-stat-label">Reported</div></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
   </div>
 </main>
+
+<!-- ── Results Modal ── -->
+<div class="modal-overlay" id="resultsOverlay" onclick="if(event.target===this)closeResults()">
+  <div class="modal results-modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="resultsTitle">Campaign Results</h2>
+        <p id="resultsSubtitle"></p>
+      </div>
+      <button class="modal-close" onclick="closeResults()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="resultsBody">Loading...</div>
+  </div>
+</div>
+
+<!-- ── Copy Campaign Modal ── -->
+<div class="modal-overlay" id="copyOverlay" onclick="if(event.target===this)closeCopy()">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2>Copy Campaign</h2>
+        <p>Edit details and launch as a new campaign</p>
+      </div>
+      <button class="modal-close" onclick="closeCopy()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Campaign Name</label>
+        <input type="text" id="copyName" placeholder="Campaign name"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Start Date</label>
+          <input type="date" id="copyStartDate"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>End Date</label>
+          <input type="date" id="copyEndDate"/>
+        </div>
+      </div>
+      <div style="margin-bottom:1.2rem"></div>
+      <div class="form-group">
+        <label>Sender Name</label>
+        <input type="text" id="copySenderName" placeholder="Sender name"/>
+      </div>
+      <div class="form-group">
+        <label>Sender Email</label>
+        <input type="email" id="copySenderEmail" placeholder="Sender email"/>
+      </div>
+      <div class="form-group">
+        <label>Template</label>
+        <input type="text" id="copyTemplate" placeholder="Template name" readonly style="opacity:0.7"/>
+      </div>
+      <p style="font-size:0.78rem;color:var(--muted);margin-top:0.5rem">
+        ⚠️ Upload a new CSV in the launch step. The original target list is not copied.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeCopy()">Cancel</button>
+      <button class="btn btn-primary" onclick="launchCopiedCampaign()">🚀 Launch Copy</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Create Campaign Modal ── -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeOnBg(event)">
@@ -633,183 +615,354 @@
 
 <script src="config.js"></script>
 <script>
-  let currentStep       = 1;
-  let uploadedEmployees = [];
+// ── State ─────────────────────────────────────────────────────────────────
+let currentStep       = 1;
+let uploadedEmployees = [];
+let allCampaigns      = [];
+let activeStatusTab   = 'all';
+let copyCampaignData  = null;
 
-  // ── Auth ──────────────────────────────────────────────────────────────
-  function init() {
-    const user = requireAuth('admin');
-    if (!user) return;
-    document.querySelector('.user-name').textContent = user.name;
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  document.querySelector('.user-name').textContent = user.name;
+  await loadCampaigns();
+}
+
+async function loadCampaigns() {
+  try {
+    allCampaigns = await apiFetch('campaigns');
+    console.log('📋 Loaded', allCampaigns.length, 'campaigns:', allCampaigns);
+    renderCampaigns();
+  } catch(e) {
+    console.error('❌ loadCampaigns error:', e);
+    document.getElementById('campaignRows').innerHTML =
+      '<div class="camp-empty">Could not load campaigns — is app.py running?<br><small style="color:var(--danger)">' + e.message + '</small></div>';
   }
+}
 
-  // ── Modal ─────────────────────────────────────────────────────────────
-  function openModal() {
-    document.getElementById('modalOverlay').classList.add('open');
-    currentStep = 1;
-    uploadedEmployees = [];
-    renderStep();
-  }
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('open');
-  }
-  function closeOnBg(e) {
-    if (e.target === document.getElementById('modalOverlay')) closeModal();
-  }
+// ── Filter / sort / render ────────────────────────────────────────────────
+function setStatusTab(status, el) {
+  activeStatusTab = status;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderCampaigns();
+}
 
-  function renderStep() {
-    for (let i = 1; i <= 3; i++) {
-      document.getElementById('step' + i).style.display = i === currentStep ? 'block' : 'none';
-    }
-    ['s1','s2','s3'].forEach((id, idx) => {
-      const el = document.getElementById(id);
-      el.classList.remove('active','done');
-      if (idx + 1 < currentStep) { el.classList.add('done'); el.querySelector('.step-circle').innerHTML = '✓'; }
-      else { if (idx + 1 === currentStep) el.classList.add('active'); el.querySelector('.step-circle').innerHTML = idx + 1; }
-    });
-    document.getElementById('stepNum').textContent = currentStep;
-    document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
-    document.getElementById('nextBtn').textContent = currentStep === 3 ? '🚀 Launch Campaign' : 'Next →';
-  }
+function clearCampFilters() {
+  document.getElementById('campSearch').value  = '';
+  document.getElementById('campSort').value    = 'newest';
+  document.getElementById('campDateFrom').value = '';
+  document.getElementById('campDateTo').value   = '';
+  activeStatusTab = 'all';
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-all').classList.add('active');
+  renderCampaigns();
+}
 
-  async function nextStep() {
-    if (currentStep < 3) { currentStep++; renderStep(); }
-    else { await launchCampaign(); }
-  }
-  function prevStep() {
-    if (currentStep > 1) { currentStep--; renderStep(); }
-  }
+function renderCampaigns() {
+  const query    = (document.getElementById('campSearch')?.value  || '').toLowerCase();
+  const sort     = document.getElementById('campSort')?.value    || 'newest';
+  const dateFrom = document.getElementById('campDateFrom')?.value || '';
+  const dateTo   = document.getElementById('campDateTo')?.value   || '';
 
-  // ── Launch Campaign ───────────────────────────────────────────────────
-  async function launchCampaign() {
-    const btn = document.getElementById('nextBtn');
-    btn.textContent = '⏳ Launching...';
-    btn.disabled = true;
-
-    // Read form values from step 1
-    const inputs      = document.querySelectorAll('#step1 input[type="text"]');
-    const emailInputs = document.querySelectorAll('#step1 input[type="email"]');
-    const dateInputs  = document.querySelectorAll('#step1 input[type="date"]');
-    const name        = inputs[0]?.value.trim()       || 'New Campaign';
-    const senderName  = inputs[1]?.value.trim()       || 'IT Support';
-    const senderEmail = emailInputs[0]?.value.trim()  || 'it@company.com';
-    const startDate   = dateInputs[0]?.value          || '';
-    const endDate     = dateInputs[1]?.value          || '';
-
-    // Read selected template name — EXACT match with templates.json
-    const templateEl = document.querySelector('.template-option.selected .template-option-name');
-    const template   = templateEl ? templateEl.textContent.trim() : 'IT Password Reset';
-    console.log('🎯 Selected template:', template);
-
-    try {
-      // Step 1 — Create campaign in database
-      const campaign = await apiFetch('campaigns', 'POST', {
-        name, template,
-        sender_name:  senderName,
-        sender_email: senderEmail,
-        start_date:   startDate,
-        end_date:     endDate,
-        status:       'draft',
-      });
-      console.log('✅ Campaign created, ID:', campaign.campaign_id);
-
-      // Step 2 — Upload targets
-      if (uploadedEmployees.length > 0) {
-        await apiFetch('employees/upload', 'POST', {
-          employees:   uploadedEmployees,
-          campaign_id: campaign.campaign_id,
-        });
-        console.log('✅ Targets uploaded:', uploadedEmployees.length);
-      }
-
-      // Step 3 — Send via GoPhish
-      const result = await apiFetch('campaigns/' + campaign.campaign_id + '/send', 'POST', {});
-      closeModal();
-      showToast('✅ Campaign "' + name + '" launched! ' + result.targets + ' emails queued.', 'success');
-      console.log('✅ Campaign launched:', result);
-
-    } catch(err) {
-      showToast('❌ Launch failed: ' + err.message, 'error');
-      console.error('launchCampaign error:', err);
-      btn.textContent = '🚀 Launch Campaign';
-      btn.disabled = false;
-    }
-  }
-
-  // ── Send emails for existing campaign ────────────────────────────────
-  async function sendCampaignEmails(campaignId, campaignName) {
-    if (!confirm('Send phishing emails for "' + campaignName + '"?\nThis will send real emails via GoPhish.')) return;
-    showToast('📧 Sending emails...', 'success');
-    try {
-      const result = await apiFetch('campaigns/' + campaignId + '/send', 'POST', {});
-      showToast('✅ ' + result.targets + ' emails queued!', 'success');
-    } catch(err) {
-      showToast('❌ Failed: ' + err.message, 'error');
-    }
-  }
-
-  // ── CSV Upload ────────────────────────────────────────────────────────
-  function handleCSV(event) {
-    const file = event.target?.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const lines   = e.target.result.trim().split('\n');
-      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-      const nameIdx  = headers.indexOf('name');
-      const emailIdx = headers.indexOf('email');
-      const deptIdx  = headers.indexOf('department');
-      if (emailIdx === -1) { showToast('❌ CSV must have an email column', 'error'); return; }
-      uploadedEmployees = [];
-      lines.slice(1).forEach(line => {
-        const cols = line.split(',').map(c => c.trim());
-        if (cols[emailIdx]) uploadedEmployees.push({
-          name:       nameIdx !== -1 ? cols[nameIdx] : '',
-          email:      cols[emailIdx],
-          department: deptIdx !== -1 ? cols[deptIdx] : '',
-        });
-      });
-      const label = document.getElementById('uploadLabel');
-      if (label) label.innerHTML = '✅ <strong style="color:var(--success)">' + file.name + '</strong> — ' + uploadedEmployees.length + ' employees ready';
-      showToast('✅ ' + uploadedEmployees.length + ' employees loaded', 'success');
-    };
-    reader.readAsText(file);
-  }
-
-  // Drag and drop
-  document.addEventListener('DOMContentLoaded', () => {
-    const zone = document.getElementById('uploadZone');
-    if (!zone) return;
-    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
-    zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
-    zone.addEventListener('drop', e => {
-      e.preventDefault(); zone.style.borderColor = '';
-      const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith('.csv')) {
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        const inp = document.getElementById('csvFileInput');
-        inp.files = dt.files;
-        handleCSV({ target: inp });
-      } else showToast('❌ Please drop a .csv file', 'error');
-    });
+  let list = allCampaigns.filter(c => {
+    if (activeStatusTab !== 'all' && c.status !== activeStatusTab) return false;
+    if (query && !c.name.toLowerCase().includes(query) && !(c.template||'').toLowerCase().includes(query)) return false;
+    if (dateFrom && new Date(c.created_at) < new Date(dateFrom))              return false;
+    if (dateTo   && new Date(c.created_at) > new Date(dateTo + 'T23:59:59')) return false;
+    return true;
   });
 
-  function selectTemplate(el) {
-    document.querySelectorAll('.template-option').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-  }
-  function selectSchedule(el) {
-    document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
-    el.classList.add('selected');
-  }
-  function setTab(el) {
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-  }
-  function logout() { clearSession(); window.location.href = 'login.html'; }
+  list = list.slice().sort((a, b) => {
+    if (sort === 'newest')     return new Date(b.created_at) - new Date(a.created_at);
+    if (sort === 'oldest')     return new Date(a.created_at) - new Date(b.created_at);
+    if (sort === 'click_asc')  return (a.stats?.click_rate||0) - (b.stats?.click_rate||0);
+    if (sort === 'click_desc') return (b.stats?.click_rate||0) - (a.stats?.click_rate||0);
+    if (sort === 'name')       return a.name.localeCompare(b.name);
+    return 0;
+  });
 
-  init();
+  const container = document.getElementById('campaignRows');
+
+  if (list.length === 0) {
+    container.innerHTML = '<div class="camp-empty">No campaigns match your filters</div>';
+    return;
+  }
+
+  // Table header
+  const header = '<div class="camp-table-header">' +
+    '<div></div>' +
+    '<div class="camp-table-header-body">' +
+      '<span>Campaign</span><span>Template</span><span>Status</span>' +
+      '<span style="text-align:center">Opened</span><span style="text-align:center">Clicked</span>' +
+      '<span style="text-align:center">Submitted</span><span style="text-align:center">Reported</span>' +
+      '<span>Created</span>' +
+    '</div><div></div>' +
+  '</div>';
+
+  const stripeColor = { active: 'var(--success)', complete: 'var(--accent2)', draft: 'var(--border)', paused: 'var(--warn)' };
+  const statusPill  = s => {
+    if (s === 'active')   return '<span class="status-pill pill-active"><span class="pill-dot"></span>Active</span>';
+    if (s === 'complete') return '<span class="status-pill pill-complete"><span class="pill-dot"></span>Complete</span>';
+    return '<span class="status-pill pill-draft"><span class="pill-dot"></span>Draft</span>';
+  };
+  const fmt = v => v > 0 ? v + '%' : '—';
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+  container.innerHTML = header + list.map((c, i) => {
+    const s   = c.stats || {};
+    const or  = s.open_rate   || 0;
+    const cr  = s.click_rate  || 0;
+    const sbr = s.submit_rate || 0;
+    const rr  = s.report_rate || 0;
+    return '<div class="camp-row" style="animation-delay:' + (i*0.04) + 's">' +
+      '<div class="camp-row-stripe" style="background:' + (stripeColor[c.status]||'var(--border)') + '"></div>' +
+      '<div class="camp-row-body">' +
+        '<div><div class="camp-row-name">' + c.name + '</div>' +
+        '<div class="camp-row-template">' + (c.template||'No template') + '</div></div>' +
+        '<div class="camp-row-date">' + (c.template||'—') + '</div>' +
+        '<div>' + statusPill(c.status) + '</div>' +
+        '<div class="camp-stat"><div class="camp-stat-num" style="color:var(--accent)">'  + fmt(or)  + '</div><div class="camp-stat-label">Opened</div></div>' +
+        '<div class="camp-stat"><div class="camp-stat-num" style="color:var(--danger)">'  + fmt(cr)  + '</div><div class="camp-stat-label">Clicked</div></div>' +
+        '<div class="camp-stat"><div class="camp-stat-num" style="color:var(--warn)">'    + fmt(sbr) + '</div><div class="camp-stat-label">Submitted</div></div>' +
+        '<div class="camp-stat"><div class="camp-stat-num" style="color:var(--success)">' + fmt(rr)  + '</div><div class="camp-stat-label">Reported</div></div>' +
+        '<div class="camp-row-date">' + fmtDate(c.created_at) + '</div>' +
+      '</div>' +
+      '<div class="camp-row-actions">' +
+        '<button class="act-btn act-view"   onclick="viewResults(' + c.id + ')">&#128202; Results</button>' +
+        '<button class="act-btn act-copy"   onclick="copyCampaign(' + c.id + ')">&#128203; Copy</button>' +
+        '<button class="act-btn act-delete" onclick="deleteCampaign(' + c.id + ')" data-name="' + c.name.replace(/"/g,'&quot;') + '">&#128465; Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── View Results ──────────────────────────────────────────────────────────
+async function viewResults(campaignId) {
+  document.getElementById('resultsOverlay').classList.add('open');
+  document.getElementById('resultsBody').innerHTML = '<p style="text-align:center;padding:2rem;color:var(--muted)">Loading...</p>';
+  try {
+    const c = await apiFetch('campaigns/' + campaignId);
+    const s = c.stats;
+    document.getElementById('resultsTitle').textContent    = c.name;
+    document.getElementById('resultsSubtitle').textContent =
+      (c.template||'') + ' &bull; Created ' + new Date(c.created_at).toLocaleDateString('en-GB');
+
+    const statusMap = { active: 'In Progress', complete: 'Completed', draft: 'Queued / Draft' };
+    const statusCol = { active: 'var(--success)', complete: 'var(--accent2)', draft: 'var(--muted)' };
+
+    document.getElementById('resultsBody').innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:1.2rem">' +
+        '<span style="font-size:0.8rem;color:var(--muted)">Status:</span>' +
+        '<span style="font-weight:700;color:' + (statusCol[c.status]||'var(--muted)') + '">' + (statusMap[c.status]||c.status) + '</span>' +
+        '<span style="font-size:0.78rem;color:var(--muted);margin-left:auto">' + s.total + ' targets</span>' +
+      '</div>' +
+      '<div class="result-stat-row">' +
+        '<div class="result-stat-card"><div class="result-stat-num" style="color:#fff">' + s.total + '</div><div class="result-stat-label">Sent</div></div>' +
+        '<div class="result-stat-card"><div class="result-stat-num" style="color:var(--accent)">'  + s.open_rate   + '%</div><div class="result-stat-label">Open Rate</div></div>' +
+        '<div class="result-stat-card"><div class="result-stat-num" style="color:var(--danger)">'  + s.click_rate  + '%</div><div class="result-stat-label">Click Rate</div></div>' +
+        '<div class="result-stat-card"><div class="result-stat-num" style="color:var(--warn)">'    + s.submit_rate + '%</div><div class="result-stat-label">Submit Rate</div></div>' +
+        '<div class="result-stat-card"><div class="result-stat-num" style="color:var(--success)">' + s.report_rate + '%</div><div class="result-stat-label">Report Rate</div></div>' +
+      '</div>' +
+      (c.targets && c.targets.length > 0 ?
+        '<p style="font-size:0.72rem;color:var(--muted);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.6rem">Per-Employee Breakdown</p>' +
+        '<div style="overflow-x:auto;max-height:320px;overflow-y:auto">' +
+        '<table class="target-table"><thead><tr>' +
+          '<th>Employee</th><th>Email</th><th>Dept</th>' +
+          '<th style="text-align:center">Opened</th><th style="text-align:center">Clicked</th>' +
+          '<th style="text-align:center">Submitted</th><th style="text-align:center">Reported</th>' +
+        '</tr></thead><tbody>' +
+        c.targets.map(t =>
+          '<tr>' +
+            '<td>' + (t.name||'—') + '</td>' +
+            '<td style="color:var(--muted);font-size:0.75rem">' + t.email + '</td>' +
+            '<td style="color:var(--muted);font-size:0.75rem">' + (t.department||'—') + '</td>' +
+            '<td class="t-check" style="text-align:center"><span class="' + (t.opened    ? 't-yes':'t-no') + '">' + (t.opened    ? '&#10003;':'&#8212;') + '</span></td>' +
+            '<td class="t-check" style="text-align:center"><span class="' + (t.clicked   ? 't-yes':'t-no') + '">' + (t.clicked   ? '&#10003;':'&#8212;') + '</span></td>' +
+            '<td class="t-check" style="text-align:center"><span class="' + (t.submitted ? 't-yes':'t-no') + '">' + (t.submitted ? '&#10003;':'&#8212;') + '</span></td>' +
+            '<td class="t-check" style="text-align:center"><span class="' + (t.reported  ? 't-yes':'t-no') + '">' + (t.reported  ? '&#10003;':'&#8212;') + '</span></td>' +
+          '</tr>'
+        ).join('') +
+        '</tbody></table></div>'
+      : '<p style="color:var(--muted);font-size:0.82rem;text-align:center;padding:1rem">No target data yet — send the campaign first</p>');
+  } catch(e) {
+    document.getElementById('resultsBody').innerHTML = '<p style="color:var(--danger);padding:1rem">Failed to load results</p>';
+  }
+}
+function closeResults() { document.getElementById('resultsOverlay').classList.remove('open'); }
+
+// ── Copy Campaign ─────────────────────────────────────────────────────────
+async function copyCampaign(campaignId) {
+  try {
+    const c = await apiFetch('campaigns/' + campaignId);
+    copyCampaignData = c;
+    document.getElementById('copyName').value        = 'Copy of ' + c.name;
+    document.getElementById('copyStartDate').value   = c.start_date  || '';
+    document.getElementById('copyEndDate').value     = c.end_date    || '';
+    document.getElementById('copySenderName').value  = c.sender_name  || '';
+    document.getElementById('copySenderEmail').value = c.sender_email || '';
+    document.getElementById('copyTemplate').value    = c.template     || '';
+    document.getElementById('copyOverlay').classList.add('open');
+  } catch(e) { showToast('Failed to load campaign: ' + e.message, 'error'); }
+}
+
+async function launchCopiedCampaign() {
+  const btn = document.querySelector('#copyOverlay .btn-primary');
+  btn.textContent = '⏳ Launching...';
+  btn.disabled = true;
+  try {
+    const campaign = await apiFetch('campaigns', 'POST', {
+      name:         document.getElementById('copyName').value.trim() || 'Copied Campaign',
+      template:     document.getElementById('copyTemplate').value,
+      sender_name:  document.getElementById('copySenderName').value,
+      sender_email: document.getElementById('copySenderEmail').value,
+      start_date:   document.getElementById('copyStartDate').value,
+      end_date:     document.getElementById('copyEndDate').value,
+      status:       'draft',
+    });
+    closeCopy();
+    showToast('✅ Campaign copied! Upload a CSV and send.', 'success');
+    await loadCampaigns();
+  } catch(e) {
+    showToast('❌ ' + e.message, 'error');
+    btn.textContent = '🚀 Launch Copy';
+    btn.disabled = false;
+  }
+}
+function closeCopy() { document.getElementById('copyOverlay').classList.remove('open'); }
+
+// ── Delete Campaign ───────────────────────────────────────────────────────
+async function deleteCampaign(id) {
+  const c = allCampaigns.find(c => c.id === id);
+  const name = c ? c.name : 'this campaign';
+  if (!confirm('Delete campaign "' + name + '"?\nThis will remove all tracking data permanently.')) return;
+  try {
+    await apiFetch('campaigns/' + id, 'DELETE');
+    showToast('Campaign deleted', 'success');
+    allCampaigns = allCampaigns.filter(c => c.id !== id);
+    renderCampaigns();
+  } catch(e) { showToast('Delete failed: ' + e.message, 'error'); }
+}
+
+// ── Create Campaign Modal ─────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('modalOverlay').classList.add('open');
+  currentStep = 1;
+  uploadedEmployees = [];
+  renderStep();
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeOnBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+function renderStep() {
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('step' + i).style.display = i === currentStep ? 'block' : 'none';
+  }
+  ['s1','s2','s3'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    el.classList.remove('active','done');
+    if (idx + 1 < currentStep) { el.classList.add('done'); el.querySelector('.step-circle').innerHTML = '&#10003;'; }
+    else { if (idx + 1 === currentStep) el.classList.add('active'); el.querySelector('.step-circle').innerHTML = idx + 1; }
+  });
+  document.getElementById('stepNum').textContent = currentStep;
+  document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
+  document.getElementById('nextBtn').textContent = currentStep === 3 ? '&#128640; Launch Campaign' : 'Next &rarr;';
+}
+
+async function nextStep() {
+  if (currentStep < 3) { currentStep++; renderStep(); }
+  else { await launchCampaign(); }
+}
+function prevStep() {
+  if (currentStep > 1) { currentStep--; renderStep(); }
+}
+
+async function launchCampaign() {
+  const btn = document.getElementById('nextBtn');
+  btn.textContent = '&#9203; Launching...';
+  btn.disabled = true;
+
+  const inputs      = document.querySelectorAll('#step1 input[type="text"]');
+  const emailInputs = document.querySelectorAll('#step1 input[type="email"]');
+  const dateInputs  = document.querySelectorAll('#step1 input[type="date"]');
+  const name        = inputs[0]?.value.trim()      || 'New Campaign';
+  const senderName  = inputs[1]?.value.trim()      || 'IT Support';
+  const senderEmail = emailInputs[0]?.value.trim() || 'it@company.com';
+  const startDate   = dateInputs[0]?.value         || '';
+  const endDate     = dateInputs[1]?.value         || '';
+  const templateEl  = document.querySelector('.template-option.selected .template-option-name');
+  const template    = templateEl ? templateEl.textContent.trim() : 'IT Password Reset';
+
+  try {
+    const campaign = await apiFetch('campaigns', 'POST', {
+      name, template, sender_name: senderName, sender_email: senderEmail,
+      start_date: startDate, end_date: endDate, status: 'draft',
+    });
+    if (uploadedEmployees.length > 0) {
+      await apiFetch('employees/upload', 'POST', { employees: uploadedEmployees, campaign_id: campaign.campaign_id });
+    }
+    const result = await apiFetch('campaigns/' + campaign.campaign_id + '/send', 'POST', {});
+    closeModal();
+    showToast('&#10003; Campaign "' + name + '" launched! ' + result.targets + ' emails queued.', 'success');
+    await loadCampaigns();
+  } catch(err) {
+    showToast('&#10060; Launch failed: ' + err.message, 'error');
+    btn.textContent = '&#128640; Launch Campaign';
+    btn.disabled = false;
+  }
+}
+
+// ── CSV Upload ────────────────────────────────────────────────────────────
+function handleCSV(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines   = e.target.result.trim().split('\n');
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    const ni = headers.indexOf('name'), ei = headers.indexOf('email'), di = headers.indexOf('department');
+    if (ei === -1) { showToast('CSV must have an email column', 'error'); return; }
+    uploadedEmployees = [];
+    lines.slice(1).forEach(line => {
+      const cols = line.split(',').map(c => c.trim());
+      if (cols[ei]) uploadedEmployees.push({ name: ni>=0?cols[ni]:'', email: cols[ei], department: di>=0?cols[di]:'' });
+    });
+    const lbl = document.getElementById('uploadLabel');
+    if (lbl) lbl.innerHTML = '&#10003; <strong style="color:var(--success)">' + file.name + '</strong> — ' + uploadedEmployees.length + ' employees ready';
+    showToast(uploadedEmployees.length + ' employees loaded', 'success');
+  };
+  reader.readAsText(file);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('uploadZone');
+  if (!zone) return;
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.style.borderColor = 'var(--accent)'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) {
+      const dt = new DataTransfer(); dt.items.add(file);
+      const inp = document.getElementById('csvFileInput');
+      inp.files = dt.files; handleCSV({ target: inp });
+    } else showToast('Please drop a .csv file', 'error');
+  });
+});
+
+function selectTemplate(el) {
+  document.querySelectorAll('.template-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectSchedule(el) {
+  document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function logout() { clearSession(); window.location.href = 'login.html'; }
+
+init();
 </script>
 </body>
 </html>
