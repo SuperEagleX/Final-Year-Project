@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard — Inbox Simulator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="config.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #020b18; --deep:   #040f1f; --panel:  #071628; --card:   #081a30;
+      --border: #0d2847; --accent: #00d4ff; --accent2:#0077ff; --danger: #ff4560;
+      --warn:   #ffb300; --success:#00e5a0; --text:   #cde4f8; --muted:  #4a7090;
+      --sidebar-w: 240px;
+    }
+    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); overflow: hidden; }
+
+    /* ── Sidebar (same as other pages) ── */
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 1.6rem 1.4rem; border-bottom: 1px solid var(--border); }
+    .sidebar-logo svg { width: 36px; height: 36px; }
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .sidebar-logo-text span { color: var(--accent); }
+    .sidebar-section { padding: 1.2rem 1rem 0.4rem; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 1.2rem; margin: 2px 0.6rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .nav-item:hover { background: var(--border); color: var(--text); }
+    .nav-item.active { background: linear-gradient(90deg, #00d4ff18, #0077ff10); color: var(--accent); border-left: 2px solid var(--accent); margin-left: calc(0.6rem - 2px); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: 1rem; border-top: 1px solid var(--border); }
+    .user-chip { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: var(--deep); border: 1px solid var(--border); }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; }
+    .user-role { font-size: 0.7rem; color: var(--accent); }
+
+    /* ── Main layout ── */
+    .main { margin-left: var(--sidebar-w); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* ── Topbar ── */
+    .topbar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: var(--navy); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .topbar h1 { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .topbar p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Inbox layout: list + preview side by side ── */
+    .inbox-wrap { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Email list panel ── */
+    .email-list-panel { width: 380px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--panel); }
+
+    .list-toolbar { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .search-box { flex: 1; background: var(--deep); border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: var(--text); outline: none; }
+    .search-box:focus { border-color: var(--accent); }
+    .list-count { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+
+    .email-list { flex: 1; overflow-y: auto; }
+    .email-list::-webkit-scrollbar { width: 4px; }
+    .email-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    .email-item { padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; position: relative; }
+    .email-item:hover { background: var(--card); }
+    .email-item.active { background: linear-gradient(90deg, #00d4ff12, #0077ff08); border-left: 2px solid var(--accent); padding-left: 14px; }
+    .email-item.unread .email-item-subject { color: #fff; font-weight: 700; }
+
+    .email-item-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+    .email-item-from { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .email-item-time { font-size: 0.68rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; white-space: nowrap; }
+    .email-item-subject { font-size: 0.78rem; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .email-item-preview { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .email-item-badges { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .badge { font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.04em; }
+    .badge-sent      { background: #0077ff18; color: var(--accent2); border: 1px solid #0077ff30; }
+    .badge-opened    { background: #00d4ff15; color: var(--accent);  border: 1px solid #00d4ff30; }
+    .badge-clicked   { background: #ffb30018; color: var(--warn);    border: 1px solid #ffb30030; }
+    .badge-submitted { background: #ff456018; color: var(--danger);  border: 1px solid #ff456030; }
+    .badge-reported  { background: #00e5a018; color: var(--success); border: 1px solid #00e5a030; }
+
+    .empty-list { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 12px; padding: 2rem; text-align: center; }
+    .empty-list-icon { font-size: 3rem; }
+
+    /* ── Email preview panel ── */
+    .email-preview-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--deep); }
+
+    .preview-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--muted); gap: 12px; }
+    .preview-placeholder-icon { font-size: 3.5rem; }
+
+    .preview-header { padding: 20px 28px; border-bottom: 1px solid var(--border); background: var(--panel); flex-shrink: 0; }
+    .preview-subject { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 10px; }
+    .preview-meta { display: flex; flex-direction: column; gap: 4px; }
+    .preview-meta-row { display: flex; gap: 8px; font-size: 0.8rem; }
+    .preview-meta-label { color: var(--muted); width: 50px; flex-shrink: 0; }
+    .preview-meta-value { color: var(--text); }
+
+    .preview-actions { display: flex; gap: 8px; margin-top: 14px; }
+    .action-btn { padding: 6px 14px; border-radius: 6px; font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; }
+    .action-reply    { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .action-reply:hover { border-color: var(--accent); color: var(--accent); }
+    .action-report   { background: #00e5a015; color: var(--success); border: 1px solid #00e5a040; }
+    .action-report:hover { background: #00e5a025; }
+    .action-delete   { background: #ff456015; color: var(--danger); border: 1px solid #ff456040; }
+    .action-delete:hover { background: #ff456025; }
+
+    .preview-body { flex: 1; overflow-y: auto; }
+    .preview-body::-webkit-scrollbar { width: 5px; }
+    .preview-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* iframe renders the real email HTML */
+    .email-iframe { width: 100%; height: 100%; border: none; background: #fff; }
+
+    /* ── Filter tabs ── */
+    .filter-tabs { display: flex; gap: 4px; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
+    .filter-tab { padding: 5px 12px; border-radius: 6px; font-size: 0.74rem; font-weight: 600; cursor: pointer; color: var(--muted); border: none; background: none; font-family: 'Syne', sans-serif; transition: all 0.2s; }
+    .filter-tab.active { background: var(--border); color: var(--accent); }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none">
+      <path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/>
+      <path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+  <a class="nav-item" href="campaign-management.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+    Campaigns
+  </a>
+  <a class="nav-item" href="template-library.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Templates
+  </a>
+  <a class="nav-item active" href="inbox.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+    Inbox
+  </a>
+  <div class="sidebar-section">Reports</div>
+  <a class="nav-item" href="admin-dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Analytics
+  </a>
+  <div class="sidebar-section">System</div>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+    Settings
+  </a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar">SA</div>
+      <div style="flex:1">
+        <div class="user-name">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+      <button onclick="logout()" title="Logout" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;border-radius:4px" onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--muted)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1>📥 Inbox Simulator</h1>
+      <p>All phishing emails sent — persistent across sessions. Click any email to open and test tracking.</p>
+    </div>
+    <div style="display:flex;gap:0.8rem">
+      <button class="btn btn-ghost" onclick="loadEmails()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="inbox-wrap">
+
+    <!-- ── Left: Email list ── -->
+    <div class="email-list-panel">
+      <div class="list-toolbar">
+        <input class="search-box" id="searchBox" type="text" placeholder="Search emails..." oninput="filterEmails()"/>
+        <span class="list-count" id="listCount">0 emails</span>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-tab" onclick="setFilter('unread',this)">Unread</button>
+        <button class="filter-tab" onclick="setFilter('clicked',this)">Clicked</button>
+        <button class="filter-tab" onclick="setFilter('submitted',this)">Submitted</button>
+        <button class="filter-tab" onclick="setFilter('reported',this)">Reported</button>
+      </div>
+      <div class="email-list" id="emailList">
+        <div class="empty-list">
+          <div class="empty-list-icon">⏳</div>
+          <div>Loading emails...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Right: Email preview ── -->
+    <div class="email-preview-panel" id="previewPanel">
+      <div class="preview-placeholder" id="previewPlaceholder">
+        <div class="preview-placeholder-icon">📧</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text)">Select an email to preview</div>
+        <div style="font-size:0.82rem;text-align:center">Click any email on the left to open it.<br/>Opening an email logs an "opened" tracking event.</div>
+      </div>
+      <div id="previewContent" style="display:none;flex-direction:column;height:100%">
+        <div class="preview-header">
+          <div class="preview-subject" id="previewSubject"></div>
+          <div class="preview-meta">
+            <div class="preview-meta-row">
+              <span class="preview-meta-label">From</span>
+              <span class="preview-meta-value" id="previewFrom"></span>
+            </div>
+            <div class="preview-meta-row">
+              <span class="preview-meta-label">To</span>
+              <span class="preview-meta-value" id="previewTo"></span>
+            </div>
+            <div class="preview-meta-row">
+              <span class="preview-meta-label">Campaign</span>
+              <span class="preview-meta-value" id="previewCampaign"></span>
+            </div>
+            <div class="preview-meta-row">
+              <span class="preview-meta-label">Sent</span>
+              <span class="preview-meta-value" id="previewDate"></span>
+            </div>
+          </div>
+          <div class="preview-actions">
+            <button class="action-btn action-reply" onclick="showToast('Reply disabled in simulation mode','error')">↩ Reply</button>
+            <button class="action-btn action-report" id="reportBtn" onclick="reportEmail()">🛡️ Report Phishing</button>
+            <button class="action-btn action-delete" onclick="showToast('Delete disabled in simulation mode','error')">🗑 Delete</button>
+          </div>
+        </div>
+        <div class="preview-body">
+          <iframe id="emailIframe" class="email-iframe" sandbox="allow-same-origin allow-scripts allow-forms" title="Email preview"></iframe>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+let allEmails      = [];
+let activeFilter   = 'all';
+let activeEmailId  = null;
+let activeEmailData = null;
+
+// ── Init ─────────────────────────────────────────────────────────────────
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  document.querySelector('.user-name').textContent = user.name;
+  await loadEmails();
+}
+
+// ── Load all emails from API ──────────────────────────────────────────────
+async function loadEmails() {
+  try {
+    allEmails = await apiFetch('inbox');
+    renderList(applyFilters(allEmails));
+  } catch(e) {
+    document.getElementById('emailList').innerHTML = `
+      <div class="empty-list">
+        <div class="empty-list-icon">❌</div>
+        <div>Could not load emails — is app.py running?</div>
+      </div>`;
+    console.error(e);
+  }
+}
+
+// ── Apply search + tab filter ─────────────────────────────────────────────
+function applyFilters(emails) {
+  const query = document.getElementById('searchBox').value.toLowerCase().trim();
+  return emails.filter(e => {
+    const matchTab =
+      activeFilter === 'all'       ? true :
+      activeFilter === 'unread'    ? !e.opened :
+      activeFilter === 'clicked'   ? e.clicked :
+      activeFilter === 'submitted' ? e.submitted :
+      activeFilter === 'reported'  ? e.reported : true;
+
+    const matchSearch = !query ||
+      (e.recipient_email || '').toLowerCase().includes(query) ||
+      (e.recipient_name  || '').toLowerCase().includes(query) ||
+      (e.subject         || '').toLowerCase().includes(query) ||
+      (e.campaign_name   || '').toLowerCase().includes(query) ||
+      (e.template_name   || '').toLowerCase().includes(query);
+
+    return matchTab && matchSearch;
+  });
+}
+
+function filterEmails() {
+  renderList(applyFilters(allEmails));
+}
+
+function setFilter(filter, el) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  filterEmails();
+}
+
+// ── Render email list ─────────────────────────────────────────────────────
+function renderList(emails) {
+  const list = document.getElementById('emailList');
+  document.getElementById('listCount').textContent = `${emails.length} email${emails.length !== 1 ? 's' : ''}`;
+
+  if (emails.length === 0) {
+    list.innerHTML = `
+      <div class="empty-list">
+        <div class="empty-list-icon">📭</div>
+        <div style="font-weight:700;color:var(--text)">No emails found</div>
+        <div style="font-size:0.78rem">Send a campaign to populate the inbox</div>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = emails.map(e => {
+    const isActive  = e.id === activeEmailId;
+    const isUnread  = !e.opened;
+    const timeStr   = new Date(e.sent_at).toLocaleString('en-GB', {
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+
+    const badges = [];
+    if (e.reported)  badges.push('<span class="badge badge-reported">🛡️ Reported</span>');
+    else if (e.submitted) badges.push('<span class="badge badge-submitted">🚨 Submitted</span>');
+    else if (e.clicked)   badges.push('<span class="badge badge-clicked">🖱️ Clicked</span>');
+    else if (e.opened)    badges.push('<span class="badge badge-opened">📧 Opened</span>');
+    else                  badges.push('<span class="badge badge-sent">📤 Sent</span>');
+
+    return `<div class="email-item ${isActive ? 'active' : ''} ${isUnread ? 'unread' : ''}"
+                 onclick="openEmail(${e.id})">
+      <div class="email-item-top">
+        <div class="email-item-from">${e.recipient_name || e.recipient_email}</div>
+        <div class="email-item-time">${timeStr}</div>
+      </div>
+      <div class="email-item-subject">${e.subject || '(No subject)'}</div>
+      <div class="email-item-preview">${e.campaign_name || ''} · ${e.template_name || ''}</div>
+      <div class="email-item-badges">${badges.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Open and render an email ──────────────────────────────────────────────
+async function openEmail(emailId) {
+  activeEmailId = emailId;
+
+  // Re-render list to show active state
+  renderList(applyFilters(allEmails));
+
+  try {
+    // Fetch the full email including html_body (also logs open event server-side)
+    const email = await apiFetch(`inbox/${emailId}`);
+    activeEmailData = email;
+
+    // Update header
+    document.getElementById('previewSubject').textContent  = email.subject || '(No subject)';
+    document.getElementById('previewFrom').textContent     = email.template_name + ' Simulation';
+    document.getElementById('previewTo').textContent       = `${email.recipient_name || ''} <${email.recipient_email}>`;
+    document.getElementById('previewCampaign').textContent = email.campaign_name || '—';
+    document.getElementById('previewDate').textContent     = new Date(email.sent_at).toLocaleString('en-GB', {
+      weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    // Render email HTML in iframe
+    const iframe = document.getElementById('emailIframe');
+    if (email.html_body) {
+      iframe.srcdoc = email.html_body;
+    } else {
+      iframe.srcdoc = `<html><body style="font-family:Arial,sans-serif;padding:40px;color:#555;text-align:center">
+        <p style="font-size:1.2rem">📧</p>
+        <p>Email HTML not stored — resend the campaign to generate preview</p>
+      </body></html>`;
+    }
+
+    // Show preview, hide placeholder
+    document.getElementById('previewPlaceholder').style.display = 'none';
+    const previewContent = document.getElementById('previewContent');
+    previewContent.style.display = 'flex';
+
+    // Mark as opened in local state so badge updates
+    const emailInList = allEmails.find(e => e.id === emailId);
+    if (emailInList) emailInList.opened = 1;
+    renderList(applyFilters(allEmails));
+
+    showToast('📧 Email opened — open event tracked', 'success');
+
+  } catch(err) {
+    showToast('❌ Could not load email', 'error');
+    console.error(err);
+  }
+}
+
+// ── Report phishing ───────────────────────────────────────────────────────
+async function reportEmail() {
+  if (!activeEmailData) return;
+
+  const btn = document.getElementById('reportBtn');
+  btn.textContent = '⏳ Reporting...';
+  btn.disabled = true;
+
+  try {
+    await apiFetch('track/report', 'POST', {
+      campaign_id: activeEmailData.campaign_id,
+      email:       activeEmailData.recipient_email,
+    });
+    showToast('🛡️ Phishing reported! Risk score reduced.', 'success');
+    btn.textContent = '✅ Reported';
+
+    // Update local state
+    const emailInList = allEmails.find(e => e.id === activeEmailId);
+    if (emailInList) emailInList.reported = 1;
+    renderList(applyFilters(allEmails));
+
+  } catch(err) {
+    showToast('❌ Could not report: ' + err.message, 'error');
+    btn.textContent = '🛡️ Report Phishing';
+    btn.disabled = false;
+  }
+}
+
+function logout() { clearSession(); window.location.href = 'login.html'; }
+
+init();
+</script>
+</body>
+</html>

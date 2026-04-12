@@ -150,7 +150,7 @@
     /* Stat cards */
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 1rem;
       margin-bottom: 1.6rem;
     }
@@ -171,6 +171,7 @@
     .stat-card.c2::before { background: linear-gradient(90deg, var(--warn), #ff8c00); }
     .stat-card.c3::before { background: linear-gradient(90deg, var(--danger), #ff8060); }
     .stat-card.c4::before { background: linear-gradient(90deg, var(--success), #00c896); }
+    .stat-card.c5::before { background: linear-gradient(90deg, #ff4560, #ff8060); }
 
     .stat-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
     .stat-card-icon {
@@ -182,6 +183,7 @@
     .c2 .stat-card-icon { background: #ffb30015; color: var(--warn); }
     .c3 .stat-card-icon { background: #ff456015; color: var(--danger); }
     .c4 .stat-card-icon { background: #00e5a015; color: var(--success); }
+    .c5 .stat-card-icon { background: #ff456015; color: var(--danger); }
 
     .stat-change { font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
     .stat-change.up   { background: #00e5a015; color: var(--success); }
@@ -321,11 +323,14 @@
   <a class="nav-item" href="campaign-management.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
     Campaigns
-    <span class="nav-badge">0</span>
   </a>
   <a class="nav-item" href="template-library.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
     Templates
+  </a>
+  <a class="nav-item" href="inbox.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+    Inbox
   </a>
   <a class="nav-item" href="#">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
@@ -393,7 +398,7 @@
           </div>
           <span class="stat-change up">↑ 12%</span>
         </div>
-        <div class="stat-card-num">1,284</div>
+        <div class="stat-card-num" id="statSent">—</div>
         <div class="stat-card-label">Total Emails Sent</div>
       </div>
 
@@ -404,7 +409,7 @@
           </div>
           <span class="stat-change up">↑ 5%</span>
         </div>
-        <div class="stat-card-num">68.4%</div>
+        <div class="stat-card-num" id="statOpen">—</div>
         <div class="stat-card-label">Email Open Rate</div>
       </div>
 
@@ -415,7 +420,7 @@
           </div>
           <span class="stat-change down">↓ 3%</span>
         </div>
-        <div class="stat-card-num">24.1%</div>
+        <div class="stat-card-num" id="statClick">—</div>
         <div class="stat-card-label">Link Click Rate</div>
       </div>
 
@@ -424,10 +429,21 @@
           <div class="stat-card-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
           </div>
-          <span class="stat-change up">↑ 18%</span>
+          <span class="stat-change up" id="reportedChange">—</span>
         </div>
-        <div class="stat-card-num">312</div>
+        <div class="stat-card-num" id="statReported">—</div>
         <div class="stat-card-label">Phishes Reported</div>
+      </div>
+
+      <div class="stat-card c5">
+        <div class="stat-card-top">
+          <div class="stat-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <span class="stat-change down" id="submittedChange">—</span>
+        </div>
+        <div class="stat-card-num" id="statSubmitted">—</div>
+        <div class="stat-card-label">Credentials Submitted</div>
       </div>
     </div>
 
@@ -692,17 +708,29 @@ function initDonutChart(opened, clicked, submitted, reported) {
   if (vals[1]) vals[1].textContent = clicked.toLocaleString();
   if (vals[2]) vals[2].textContent = submitted.toLocaleString();
   if (vals[3]) vals[3].textContent = reported.toLocaleString();
+  // Update center total
+  const centerNum = document.querySelector('.donut-center-num');
+  if (centerNum) centerNum.textContent = (opened + clicked + submitted + reported).toLocaleString();
 }
 
 // ── Stat cards ────────────────────────────────────────────────────────────
 function updateStatCards(stats) {
-  const nums = document.querySelectorAll('.stat-card-num');
-  if (nums[0]) nums[0].textContent = stats.total_sent.toLocaleString();
-  if (nums[1]) nums[1].textContent = stats.open_rate + '%';
-  if (nums[2]) nums[2].textContent = stats.click_rate + '%';
-  if (nums[3]) nums[3].textContent = stats.reported.toLocaleString();
+  const el = id => document.getElementById(id);
 
-  // Update threat level based on click rate
+  if (el('statSent'))      el('statSent').textContent      = stats.total_sent.toLocaleString();
+  if (el('statOpen'))      el('statOpen').textContent      = stats.open_rate + '%';
+  if (el('statClick'))     el('statClick').textContent     = stats.click_rate + '%';
+  if (el('statReported'))  el('statReported').textContent  = stats.reported.toLocaleString();
+  if (el('statSubmitted')) el('statSubmitted').textContent = stats.submitted.toLocaleString();
+
+  // Submitted % change label
+  const submitRate = stats.submit_rate || 0;
+  if (el('submittedChange')) {
+    el('submittedChange').textContent = submitRate + '%';
+    el('submittedChange').className   = 'stat-change ' + (submitRate > 0 ? 'down' : 'up');
+  }
+
+  // Threat level based on click rate
   const threatEl = document.querySelector('.threat-pill strong');
   if (threatEl) {
     if (stats.click_rate >= 30)      { threatEl.textContent = 'High';   threatEl.style.color = '#ff4560'; }
@@ -710,11 +738,13 @@ function updateStatCards(stats) {
     else                             { threatEl.textContent = 'Low';    threatEl.style.color = '#00e5a0'; }
   }
 
-  // Update last refreshed time
+  // Last refreshed timestamp
   const dateEl = document.querySelector('.topbar-left p');
   if (dateEl) {
     const now = new Date();
-    dateEl.textContent = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) + ' — Just updated';
+    dateEl.textContent = now.toLocaleDateString('en-GB', {
+      weekday:'long', day:'numeric', month:'long', year:'numeric'
+    }) + ' — Just updated';
   }
 }
 
@@ -783,6 +813,62 @@ function updateRiskLeaderboard(employees) {
 }
 
 // ── Recent events feed ────────────────────────────────────────────────────
+async function buildEmailsSentTable() {
+  // Find or create container
+  let emailCard = document.getElementById('emailsSentCard');
+  if (!emailCard) {
+    emailCard = document.createElement('div');
+    emailCard.id = 'emailsSentCard';
+    emailCard.className = 'table-card';
+    emailCard.style.cssText = 'margin-top:1.2rem;animation:fadeUp 0.4s 0.15s ease both';
+    document.querySelector('.content').appendChild(emailCard);
+  }
+
+  try {
+    const emails = await apiFetch('emails/sent');
+
+    const statusIcon = (e) => {
+      if (e.submitted) return '<span style="color:var(--danger)">🚨 Submitted</span>';
+      if (e.clicked)   return '<span style="color:var(--warn)">🖱️ Clicked</span>';
+      if (e.opened)    return '<span style="color:var(--accent2)">📧 Opened</span>';
+      if (e.reported)  return '<span style="color:var(--success)">🛡️ Reported</span>';
+      return '<span style="color:var(--muted)">📤 Sent</span>';
+    };
+
+    emailCard.innerHTML = `
+      <div class="table-card-header" style="display:flex;justify-content:space-between;align-items:center">
+        <h3>📤 Sent Emails Log</h3>
+        <span style="font-size:0.75rem;color:var(--muted)">${emails.length} total — persists across sessions</span>
+      </div>
+      ${emails.length === 0
+        ? '<p style="color:var(--muted);font-size:0.82rem;padding:1rem;text-align:center">No emails sent yet — launch a campaign to populate this log</p>'
+        : `<div style="overflow-x:auto"><table>
+            <thead><tr>
+              <th>Recipient</th><th>Subject</th><th>Campaign</th><th>Template</th><th>Status</th><th>Sent At</th>
+            </tr></thead>
+            <tbody>
+              ${emails.map(e => `<tr>
+                <td>
+                  <div style="font-weight:600;color:#fff">${e.recipient_name || e.recipient_email}</div>
+                  <div style="font-size:0.72rem;color:var(--muted)">${e.recipient_email}</div>
+                </td>
+                <td style="font-size:0.8rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.subject || '—'}</td>
+                <td style="color:var(--muted)">${e.campaign_name || '—'}</td>
+                <td style="color:var(--muted);font-size:0.78rem">${e.template_name || '—'}</td>
+                <td>${statusIcon(e)}</td>
+                <td style="color:var(--muted);font-size:0.75rem;font-family:'Share Tech Mono',monospace">
+                  ${new Date(e.sent_at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table></div>`
+      }`;
+  } catch(e) {
+    emailCard.innerHTML = '<p style="color:var(--muted);padding:1rem;text-align:center">Could not load email log</p>';
+    console.error('Email log error:', e);
+  }
+}
+
 function buildEventsFeed(recent) {
   // Find or create the feed container — inject after the bottom-row
   let feedCard = document.getElementById('eventsFeedCard');
@@ -847,12 +933,12 @@ async function init() {
   if (!user) return;
   document.querySelector('.user-name').textContent = user.name;
 
-  // Update nav badge with active campaign count
+  // Update page title with current date
   try {
     const campaigns = await apiFetch('campaigns');
     const active = campaigns.filter(c => c.status === 'active').length;
-    const badge  = document.querySelector('.nav-badge');
-    if (badge) badge.textContent = active;
+    // badge removed — keeping active count for console only
+    console.log(`Active campaigns: ${active}`);
   } catch(e) {}
 
   // Load all dashboard data in one API call
@@ -871,6 +957,7 @@ async function init() {
     updateCampaignTable(data.campaigns);
     updateRiskLeaderboard(data.employees);
     buildEventsFeed(data.recent);
+    await buildEmailsSentTable();
 
     console.log('✅ Dashboard loaded from API:', s);
   } catch(e) {

@@ -170,6 +170,7 @@
       const email = document.getElementById('emailInput').value || targetEmail;
       await fetch('http://127.0.0.1:5000/api/track/submit', {
         method: 'POST',
+        mode: 'cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ campaign_id: campaignId, email }),
       });

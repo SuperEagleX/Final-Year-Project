@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 
 # ── App Setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)  # Allow frontend to talk to this API
+CORS(app, resources={r'/api/*': {'origins': '*'}, r'/landing/*': {'origins': '*'}})  # Allow all origins for demo
 
 DB_PATH    = 'phishguard.db'
 SECRET_KEY = 'phishguard-secret-key-change-in-production'
@@ -145,11 +145,17 @@ def init_db():
             recipient_name   TEXT,
             subject          TEXT,
             template_name    TEXT,
+            html_body        TEXT DEFAULT '',
             status           TEXT DEFAULT 'sent',
             sent_at          TEXT DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
         )
     ''')
+    # Add html_body column if upgrading from older DB
+    try:
+        c.execute("ALTER TABLE email_logs ADD COLUMN html_body TEXT DEFAULT ''")
+    except Exception:
+        pass  # Column already exists
 
     # Seed default admin user
     admin_password = hash_password('admin123')
@@ -551,25 +557,51 @@ def track_click():
     GET /api/track/click?campaign_id=X&email=Y
     Called when an employee clicks the phishing link.
     Logs the click event then redirects to the phishing landing page.
+    GoPhish passes {{.Email}} which resolves to the recipient's email.
     """
     campaign_id = request.args.get('campaign_id', '')
-    email       = request.args.get('email', '')
+    email       = request.args.get('email', '').strip()
+
+    # If email is empty, try to look it up from GoPhish RId
+    if not email:
+        rid = request.args.get('rid', '')
+        if rid:
+            try:
+                # Look up email from email_logs using campaign_id
+                conn_lookup = get_db()
+                log = conn_lookup.execute(
+                    'SELECT recipient_email FROM email_logs WHERE campaign_id=? LIMIT 1',
+                    (campaign_id,)
+                ).fetchone()
+                conn_lookup.close()
+                if log:
+                    email = log['recipient_email']
+            except Exception as e:
+                print(f'⚠️ RId lookup failed: {e}')
 
     if campaign_id and email:
         conn = get_db()
-        conn.execute('''
-            INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
-            VALUES (?, ?, 'clicked', ?, ?)
-        ''', (campaign_id, email, request.remote_addr, request.user_agent.string))
-        conn.commit()
+        # Avoid duplicate click events for same email+campaign
+        existing = conn.execute(
+            "SELECT id FROM tracking_events WHERE campaign_id=? AND email=? AND event_type='clicked'",
+            (campaign_id, email)
+        ).fetchone()
+        if not existing:
+            conn.execute('''
+                INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
+                VALUES (?, ?, 'clicked', ?, ?)
+            ''', (campaign_id, email, request.remote_addr, request.user_agent.string))
+            conn.commit()
+            print(f'🎣 Click tracked: {email} in campaign {campaign_id}')
         conn.close()
         update_risk_score(email)
-        print(f'🎣 Click tracked: {email} in campaign {campaign_id}')
+    else:
+        print(f'⚠️ Click event with no email — campaign_id={campaign_id}')
 
     from flask import redirect
 
     # Look up which landing page to serve based on campaign's template
-    landing_page = 'phishing-landing.html'  # default fallback
+    landing_page = 'it_password_reset_landing.html'  # default fallback
     if campaign_id:
         try:
             conn2 = get_db()
@@ -579,9 +611,14 @@ def track_click():
             conn2.close()
             if camp and camp['template']:
                 templates_meta = load_templates()
+                print(f'🔍 Looking up template: "{camp["template"]}"')
+                print(f'📋 Available templates: {[t["name"] for t in templates_meta]}')
                 match = next((t for t in templates_meta if t['name'] == camp['template']), None)
                 if match and match.get('landing_file'):
                     landing_page = match['landing_file']
+                    print(f'✅ Landing page resolved: {landing_page}')
+                else:
+                    print(f'⚠️ No landing_file match for template: {camp["template"]}')
         except Exception as e:
             print(f'⚠️ Could not look up landing page: {e}')
 
@@ -813,7 +850,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'# ← paste your GoPhish API key
+GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'  # ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
@@ -1069,12 +1106,24 @@ def send_campaign_emails(campaign_id):
 
         # Step 4 — Clean up then launch campaign in GoPhish
         gophish_delete_if_exists('campaigns', camp_name)
+        # Detect which SMTP profile to use — try Mailhog first, fall back to Brevo
+        smtp_profiles = []
+        try:
+            smtp_profiles = gophish_request('smtp')
+            smtp_profiles = [s['name'] for s in smtp_profiles] if smtp_profiles else []
+        except Exception:
+            pass
+        smtp_name = 'Mailhog' if 'Mailhog' in smtp_profiles else 'Brevo SMTP'
+        print(f'📧 Using SMTP profile: {smtp_name}')
+
         gophish_campaign = {
             'name':        camp_name,
             'template':    {'name': gophish_template_name},
             'page':        {'name': page_name},
-            'smtp':        {'name': 'Mailhog'},
-            'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}',
+            'smtp':        {'name': smtp_name},
+            # {{.Email}} is a GoPhish placeholder — it inserts the recipient email
+            # This is how track_click knows WHO clicked
+            'url':         f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}&email={{{{.Email}}}}',
             'launch_date': (datetime.utcnow() - timedelta(minutes=2)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
             'groups':      [{'name': group_name}],
         }
@@ -1085,21 +1134,58 @@ def send_campaign_emails(campaign_id):
         conn = get_db()
         conn.execute("UPDATE campaigns SET status='active' WHERE id=?", (campaign_id,))
 
-        # Save a log entry for every target so we have persistent email history
+        # Save a log entry for every target — including personalised HTML body
+        raw_html = template.get('html', '')
         for t in targets:
+            first_name = t['name'].split(' ')[0] if t['name'] else 'Employee'
+            # Build the hidden report link — looks like a standard unsubscribe footer
+            # If an employee is suspicious and clicks this instead of the main CTA,
+            # it logs a 'reported' event (good behaviour) instead of 'clicked' (bad)
+            report_url  = (
+                f'http://127.0.0.1:5000/api/track/report-link'
+                f'?campaign_id={campaign_id}&email={t["email"]}'
+            )
+            report_footer = (
+                f'<div style="margin-top:24px;padding-top:12px;border-top:1px solid #eee;'
+                f'font-size:11px;color:#aaa;text-align:center">'
+                f'This message was sent to {t["email"]}. '
+                f'<a href="{report_url}" style="color:#aaa;text-decoration:underline">'
+                f'Unsubscribe</a> &middot; '
+                f'<a href="{report_url}" style="color:#aaa;text-decoration:underline">'
+                f'Email Preferences</a>'
+                f'</div>'
+            )
+            # Personalise the HTML for this specific recipient
+            personalised = raw_html \
+                .replace('{{.FirstName}}', first_name) \
+                .replace('{{.Email}}',     t['email']) \
+                .replace('{{.Tracker}}',   '') \
+                .replace('{{.RId}}',       '') \
+                .replace('{{.URL}}',
+                    f'http://127.0.0.1:5000/api/track/click'
+                    f'?campaign_id={campaign_id}&email={t["email"]}'
+                )
+            # Inject report footer before </body> if it exists, else append
+            if '</body>' in personalised.lower():
+                personalised = personalised.replace('</body>', report_footer + '</body>')
+                personalised = personalised.replace('</BODY>', report_footer + '</BODY>')
+            else:
+                personalised += report_footer
             conn.execute('''
-                INSERT INTO email_logs (campaign_id, recipient_email, recipient_name, subject, template_name)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO email_logs
+                    (campaign_id, recipient_email, recipient_name, subject, template_name, html_body)
+                VALUES (?, ?, ?, ?, ?, ?)
             ''', (
                 campaign_id,
                 t['email'],
                 t['name'],
                 template.get('subject', ''),
                 template_name,
+                personalised,
             ))
         conn.commit()
         conn.close()
-        print(f'✅ Saved {len(targets)} email log entries to database')
+        print(f'✅ Saved {len(targets)} email log entries with HTML to database')
 
         return jsonify({
             'success':    True,
@@ -1323,6 +1409,194 @@ def dashboard_full():
             'submit_rate': chart_submit_data,
         }
     })
+
+
+# ── Inbox API ─────────────────────────────────────────────────────────────
+@app.route('/api/inbox', methods=['GET'])
+def get_inbox():
+    """
+    GET /api/inbox?email=X
+    Returns all emails sent to a specific recipient from email_logs.
+    If no email param, returns all emails (admin view).
+    """
+    recipient = request.args.get('email', '')
+    conn = get_db()
+    if recipient:
+        rows = conn.execute('''
+            SELECT el.*, c.name as campaign_name,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'opened'
+            ) THEN 1 ELSE 0 END AS opened,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'clicked'
+            ) THEN 1 ELSE 0 END AS clicked,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'submitted'
+            ) THEN 1 ELSE 0 END AS submitted
+            FROM email_logs el
+            LEFT JOIN campaigns c ON el.campaign_id = c.id
+            WHERE el.recipient_email = ?
+            ORDER BY el.sent_at DESC
+        ''', (recipient,)).fetchall()
+    else:
+        rows = conn.execute('''
+            SELECT el.*, c.name as campaign_name,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'opened'
+            ) THEN 1 ELSE 0 END AS opened,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'clicked'
+            ) THEN 1 ELSE 0 END AS clicked,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'submitted'
+            ) THEN 1 ELSE 0 END AS submitted
+            FROM email_logs el
+            LEFT JOIN campaigns c ON el.campaign_id = c.id
+            ORDER BY el.sent_at DESC
+            LIMIT 200
+        ''').fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/inbox/<int:email_id>', methods=['GET'])
+def get_email(email_id):
+    """
+    GET /api/inbox/<id>
+    Returns a single email with full HTML body.
+    Also logs an 'opened' tracking event if not already logged.
+    """
+    conn = get_db()
+    row = conn.execute(
+        'SELECT * FROM email_logs WHERE id=?', (email_id,)
+    ).fetchone()
+    if not row:
+        conn.close()
+        return jsonify({'error': 'Email not found'}), 404
+
+    # Log open event if not already tracked
+    existing = conn.execute(
+        "SELECT id FROM tracking_events WHERE campaign_id=? AND email=? AND event_type='opened'",
+        (row['campaign_id'], row['recipient_email'])
+    ).fetchone()
+    if not existing:
+        conn.execute('''
+            INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
+            VALUES (?, ?, 'opened', ?, ?)
+        ''', (row['campaign_id'], row['recipient_email'],
+               request.remote_addr, request.user_agent.string))
+        conn.commit()
+        update_risk_score(row['recipient_email'])
+        print(f'📧 Open tracked: {row["recipient_email"]} opened email {email_id}')
+
+    conn.close()
+    return jsonify(dict(row))
+
+
+# ── Option B: Report via hidden link in email ─────────────────────────────
+@app.route('/api/track/report-link', methods=['GET'])
+def track_report_link():
+    """
+    GET /api/track/report-link?campaign_id=X&email=Y
+    Called when an employee clicks the hidden Unsubscribe / Email Preferences
+    link in the phishing email footer. Logs a 'reported' event — good behaviour.
+    Redirects to a neutral page so the employee doesn't know they were being tested.
+    """
+    from flask import redirect
+    campaign_id = request.args.get('campaign_id', '')
+    email       = request.args.get('email', '').strip()
+
+    if campaign_id and email:
+        conn = get_db()
+        # Only log if not already reported
+        existing = conn.execute(
+            "SELECT id FROM tracking_events WHERE campaign_id=? AND email=? AND event_type='reported'",
+            (campaign_id, email)
+        ).fetchone()
+        if not existing:
+            conn.execute('''
+                INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
+                VALUES (?, ?, 'reported', ?, ?)
+            ''', (campaign_id, email, request.remote_addr, request.user_agent.string))
+            conn.commit()
+            update_risk_score(email)
+            print(f'🛡️ Phishing reported via hidden link: {email} in campaign {campaign_id}')
+        conn.close()
+
+    # Redirect to a neutral page — employee thinks they just unsubscribed
+    # Does NOT reveal this was a phishing test
+    return redirect('http://127.0.0.1:8088/unsubscribe.html')
+
+
+# ── Sent Emails Display (persistent, survives Mailhog restart) ────────────
+@app.route('/api/emails/sent', methods=['GET'])
+def get_sent_emails():
+    """
+    GET /api/emails/sent
+    Returns all emails sent with their tracking status.
+    Persists in SQLite so Mailhog resets don't lose history.
+    """
+    conn = get_db()
+    rows = conn.execute('''
+        SELECT
+            el.id,
+            el.campaign_id,
+            el.recipient_email,
+            el.recipient_name,
+            el.subject,
+            el.template_name,
+            el.status,
+            el.sent_at,
+            c.name AS campaign_name,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'opened'
+            ) THEN 1 ELSE 0 END AS opened,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'clicked'
+            ) THEN 1 ELSE 0 END AS clicked,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'submitted'
+            ) THEN 1 ELSE 0 END AS submitted,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM tracking_events te
+                WHERE te.email = el.recipient_email
+                AND te.campaign_id = el.campaign_id
+                AND te.event_type = 'reported'
+            ) THEN 1 ELSE 0 END AS reported
+        FROM email_logs el
+        LEFT JOIN campaigns c ON el.campaign_id = c.id
+        ORDER BY el.sent_at DESC
+        LIMIT 200
+    ''').fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 
 # ── Health Check ───────────────────────────────────────────────────────────
