@@ -459,19 +459,48 @@ def get_campaign(campaign_id):
     clicked   = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='clicked'",   (campaign_id,)).fetchone()[0]
     submitted = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='submitted'", (campaign_id,)).fetchone()[0]
     reported  = conn.execute("SELECT COUNT(*) FROM tracking_events WHERE campaign_id=? AND event_type='reported'",  (campaign_id,)).fetchone()[0]
-    # Per-target detail
+    # Per-target detail with timestamps for timeline
     target_rows = conn.execute('''
         SELECT ct.email, ct.name, ct.department,
             MAX(CASE WHEN te.event_type='opened'    THEN 1 ELSE 0 END) as opened,
             MAX(CASE WHEN te.event_type='clicked'   THEN 1 ELSE 0 END) as clicked,
             MAX(CASE WHEN te.event_type='submitted' THEN 1 ELSE 0 END) as submitted,
-            MAX(CASE WHEN te.event_type='reported'  THEN 1 ELSE 0 END) as reported
+            MAX(CASE WHEN te.event_type='reported'  THEN 1 ELSE 0 END) as reported,
+            MAX(CASE WHEN te.event_type='opened'    THEN te.timestamp END) as opened_at,
+            MAX(CASE WHEN te.event_type='clicked'   THEN te.timestamp END) as clicked_at,
+            MAX(CASE WHEN te.event_type='submitted' THEN te.timestamp END) as submitted_at,
+            MAX(CASE WHEN te.event_type='reported'  THEN te.timestamp END) as reported_at
         FROM campaign_targets ct
         LEFT JOIN tracking_events te ON te.email=ct.email AND te.campaign_id=ct.campaign_id
         WHERE ct.campaign_id=?
         GROUP BY ct.email
+        ORDER BY ct.name
     ''', (campaign_id,)).fetchall()
     conn.close()
+
+    def split_name(full):
+        parts = (full or '').strip().split(' ', 1)
+        return parts[0], parts[1] if len(parts) > 1 else ''
+
+    target_list = []
+    for t in target_rows:
+        fn, ln = split_name(t['name'])
+        target_list.append({
+            'email':        t['email'],
+            'name':         t['name'] or '',
+            'first_name':   fn,
+            'last_name':    ln,
+            'department':   t['department'] or '',
+            'opened':       t['opened'],
+            'clicked':      t['clicked'],
+            'submitted':    t['submitted'],
+            'reported':     t['reported'],
+            'opened_at':    t['opened_at'],
+            'clicked_at':   t['clicked_at'],
+            'submitted_at': t['submitted_at'],
+            'reported_at':  t['reported_at'],
+        })
+
     return jsonify({
         'id': campaign_id, 'name': c['name'], 'template': c['template'],
         'status': c['status'], 'sender_name': c['sender_name'],
@@ -485,7 +514,7 @@ def get_campaign(campaign_id):
             'submit_rate': round(submitted/targets*100,1) if targets else 0,
             'report_rate': round(reported/targets*100,1)  if targets else 0,
         },
-        'targets': [dict(t) for t in target_rows]
+        'targets': target_list
     })
 
 
@@ -943,7 +972,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'  # ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""

@@ -279,6 +279,83 @@
     .act-copy:hover   { background: #00d4ff25; }
     .act-delete { background: #ff456015; color: var(--danger); border: 1px solid #ff456025; }
     .act-delete:hover { background: #ff456030; }
+    .act-details { background: #9b59b618; color: #c39bd3; border: 1px solid #9b59b630; }
+    .act-details:hover { background: #9b59b630; }
+
+    /* ── Details fullpage overlay ── */
+    .details-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: var(--navy);
+      display: none; flex-direction: column;
+      overflow: hidden;
+    }
+    .details-overlay.open { display: flex; }
+    .details-topbar {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 2rem; background: var(--panel);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .details-back { background: none; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; transition: all 0.2s; }
+    .details-back:hover { background: var(--border); color: var(--text); }
+    .details-title { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .details-subtitle { font-size: 0.78rem; color: var(--muted); margin-left: 4px; }
+    .details-body { flex: 1; overflow-y: auto; padding: 1.6rem 2rem; }
+    .details-body::-webkit-scrollbar { width: 5px; }
+    .details-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Details table */
+    .details-toolbar { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .details-search { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; color: var(--text); outline: none; width: 280px; }
+    .details-search:focus { border-color: var(--accent); }
+    .details-count { font-size: 0.78rem; color: var(--muted); margin-left: auto; }
+    /* Details grid — 6 columns: [expand] [name] [email] [dept] [status] [reported] */
+    .det-grid-cols { display: grid; grid-template-columns: 32px 180px 1fr 140px 130px 80px; align-items: center; gap: 0; }
+    .det-grid-header { display: grid; grid-template-columns: 32px 180px 1fr 140px 130px 80px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .det-grid-header > div { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+    .det-row { border-bottom: 1px solid #0d284740; }
+    .det-row-main { display: grid; grid-template-columns: 32px 180px 1fr 140px 130px 80px; align-items: center; padding: 10px 12px; cursor: pointer; transition: background 0.15s; gap: 0; }
+    .det-row-main:hover { background: var(--card); }
+    .det-expand-btn { background: none; border: 1px solid var(--border); border-radius: 4px; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 0.65rem; flex-shrink: 0; transition: all 0.2s; }
+    .det-expand-btn.open { background: var(--border); color: var(--accent); transform: rotate(90deg); }
+    .det-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .det-name-cell { overflow: hidden; }
+    .det-name { font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 8px; }
+    .det-email { font-size: 0.72rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .det-dept { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; }
+    .det-status-cell { }
+    .det-reported { text-align: center; }
+    .det-chk { font-size: 0.85rem; }
+    .chk-yes { color: var(--danger); }
+    .chk-rep { color: var(--success); }
+    .chk-no  { color: var(--border); }
+
+    /* Status badge for detail rows */
+    .det-status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; }
+    .ds-submitted { background: #ff456018; color: var(--danger); }
+    .ds-clicked   { background: #ffb30018; color: var(--warn); }
+    .ds-opened    { background: #0077ff18; color: var(--accent2); }
+    .ds-reported  { background: #00e5a018; color: var(--success); }
+    .ds-none      { background: #4a709018; color: var(--muted); }
+
+    /* Timeline */
+    .det-timeline { padding: 10px 12px 14px 56px; background: #040f1f; border-top: 1px dashed var(--border); display: none; }
+    .det-timeline.open { display: block; }
+    .tl-title { font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+    .tl-items { display: flex; flex-direction: column; gap: 8px; }
+    .tl-item { display: flex; align-items: flex-start; gap: 10px; }
+    .tl-dot-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-line { width: 1px; background: var(--border); flex: 1; min-height: 16px; }
+    .tl-label { font-size: 0.78rem; font-weight: 600; }
+    .tl-time { font-size: 0.7rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; margin-top: 2px; }
+    .tl-none { font-size: 0.75rem; color: var(--muted); font-style: italic; }
+
+    /* Pagination */
+    .det-pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; margin-top: 8px; }
+    .pg-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 14px; font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--text); cursor: pointer; transition: all 0.2s; }
+    .pg-btn:disabled { color: var(--muted); cursor: not-allowed; }
+    .pg-btn:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
+    .pg-info { font-size: 0.75rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; }
     .camp-table-header { display: grid; grid-template-columns: 3px 1fr auto; margin-bottom: 0.3rem; }
     .camp-table-header-body { padding: 0 1.2rem; display: grid; grid-template-columns: 220px 120px 100px repeat(4, 80px) 120px; gap: 0.6rem; }
     .camp-table-header-body span { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -364,10 +441,17 @@
       <p>Create, monitor and analyse your phishing simulation campaigns</p>
     </div>
     <div class="topbar-right">
-      <button class="btn btn-ghost">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export
-      </button>
+      <div style="position:relative;display:inline-block" id="exportWrap">
+        <button class="btn btn-ghost" onclick="toggleExportMenu()" id="exportBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+        </button>
+        <div id="exportMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px;min-width:220px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+          <div style="font-size:0.65rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:4px 8px 6px">Select Campaign</div>
+          <div id="exportCampaignList" style="max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
       <button class="btn btn-primary" onclick="openModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         New Campaign
@@ -406,6 +490,50 @@
 
   </div>
 </main>
+
+<!-- ── Campaign Details Fullpage ── -->
+<div class="details-overlay" id="detailsOverlay">
+  <div class="details-topbar">
+    <button class="details-back" onclick="closeDetails()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      Back to Campaigns
+    </button>
+    <div>
+      <span class="details-title" id="detailsCampaignName">Campaign Details</span>
+      <span class="details-subtitle" id="detailsCampaignMeta"></span>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:0.6rem">
+      <button class="btn btn-ghost" onclick="exportDetailsCsv()" style="font-size:0.78rem;padding:7px 14px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
+  <div class="details-body">
+    <div class="details-toolbar">
+      <input class="details-search" id="detailsSearch" type="text" placeholder="Search by name or email..." oninput="renderDetailsTable()"/>
+      <span class="details-count" id="detailsCount"></span>
+    </div>
+    <div style="overflow-x:auto">
+      <!-- Grid header -->
+      <div class="det-grid-header">
+        <div></div>
+        <div>Name</div>
+        <div>Email</div>
+        <div>Department</div>
+        <div>Status</div>
+        <div style="text-align:center">Reported</div>
+      </div>
+      <!-- Grid rows injected by JS -->
+      <div id="detailsTableBody"></div>
+    </div>
+    <div class="det-pagination">
+      <button class="pg-btn" id="detPrevBtn" onclick="goDetailsPage(-1)">&#8592; Prev</button>
+      <span class="pg-info" id="detPageInfo"></span>
+      <button class="pg-btn" id="detNextBtn" onclick="goDetailsPage(1)">Next &#8594;</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Results Modal ── -->
 <div class="modal-overlay" id="resultsOverlay" onclick="if(event.target===this)closeResults()">
@@ -732,11 +860,242 @@ function renderCampaigns() {
       '</div>' +
       '<div class="camp-row-actions">' +
         '<button class="act-btn act-view"   onclick="viewResults(' + c.id + ')">&#128202; Results</button>' +
+        '<button class="act-btn act-details" onclick="viewDetails(' + c.id + ')">&#128101; Details</button>' +
         '<button class="act-btn act-copy"   onclick="copyCampaign(' + c.id + ')">&#128203; Copy</button>' +
         '<button class="act-btn act-delete" onclick="deleteCampaign(' + c.id + ')" data-name="' + c.name.replace(/"/g,'&quot;') + '">&#128465; Delete</button>' +
       '</div>' +
     '</div>';
   }).join('');
+}
+
+// ── Export Campaign CSV ───────────────────────────────────────────────────
+function toggleExportMenu() {
+  const menu = document.getElementById('exportMenu');
+  const isOpen = menu.style.display === 'block';
+  menu.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) buildExportMenu();
+  // Close on outside click
+  if (!isOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!document.getElementById('exportWrap').contains(e.target)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 0);
+  }
+}
+
+function buildExportMenu() {
+  const list = document.getElementById('exportCampaignList');
+  if (allCampaigns.length === 0) {
+    list.innerHTML = '<div style="padding:8px 10px;font-size:0.78rem;color:var(--muted)">No campaigns</div>';
+    return;
+  }
+  list.innerHTML = allCampaigns.map(c =>
+    '<div onclick="exportCampaignCsv(' + c.id + ')" style="padding:8px 12px;font-size:0.8rem;color:var(--text);cursor:pointer;border-radius:6px;transition:background 0.15s" ' +
+    'onmouseover="this.style.background=\'#0d2847\'" onmouseout="this.style.background=\'\'">'+
+      '<div style="font-weight:600">' + c.name + '</div>' +
+      '<div style="font-size:0.68rem;color:var(--muted)">' + (c.template||'') + ' &middot; ' + (c.stats?.total||0) + ' targets</div>' +
+    '</div>'
+  ).join('');
+}
+
+async function exportCampaignCsv(campaignId) {
+  document.getElementById('exportMenu').style.display = 'none';
+  try {
+    const c = await apiFetch('campaigns/' + campaignId);
+    const rows = [
+      ['First Name','Last Name','Email','Department','Status','Opened','Clicked','Submitted','Reported',
+       'Opened At','Clicked At','Submitted At','Reported At']
+    ];
+    (c.targets||[]).forEach(t => {
+      const status = t.submitted ? 'Submitted' : t.clicked ? 'Clicked' : t.opened ? 'Opened' : 'Sent';
+      rows.push([
+        t.first_name, t.last_name, t.email, t.department, status,
+        t.opened?'Yes':'No', t.clicked?'Yes':'No', t.submitted?'Yes':'No', t.reported?'Yes':'No',
+        t.opened_at||'', t.clicked_at||'', t.submitted_at||'', t.reported_at||''
+      ]);
+    });
+    const csv    = rows.map(r => r.map(v => '"' + String(v||'').replace(/"/g,'""') + '"').join(',')).join('\n');
+    const blob   = new Blob([csv], { type: 'text/csv' });
+    const url    = URL.createObjectURL(blob);
+    const a      = document.createElement('a');
+    a.href       = url;
+    a.download   = c.name.replace(/[^a-z0-9]/gi,'_') + '_results.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exported: ' + (c.targets||[]).length + ' rows', 'success');
+  } catch(e) { showToast('Export failed: ' + e.message, 'error'); }
+}
+
+// ── Campaign Details Page ──────────────────────────────────────────────────
+let detailsData    = null;
+let detailsPage    = 1;
+let detailsFiltered = [];
+const DET_PAGE_SIZE = 10;
+let expandedRows   = new Set();
+
+async function viewDetails(campaignId) {
+  expandedRows.clear();
+  document.getElementById('detailsTableBody').innerHTML =
+    '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">Loading...</td></tr>';
+  document.getElementById('detailsOverlay').classList.add('open');
+
+  try {
+    detailsData = await apiFetch('campaigns/' + campaignId);
+    document.getElementById('detailsCampaignName').textContent  = detailsData.name;
+    document.getElementById('detailsCampaignMeta').textContent  =
+      ' · ' + (detailsData.template||'') + ' · ' + (detailsData.stats?.total||0) + ' targets';
+    document.getElementById('detailsSearch').value = '';
+    detailsPage = 1;
+    renderDetailsTable();
+  } catch(e) {
+    document.getElementById('detailsTableBody').innerHTML =
+      '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--danger)">Failed to load</td></tr>';
+  }
+}
+
+function closeDetails() {
+  document.getElementById('detailsOverlay').classList.remove('open');
+  detailsData = null;
+}
+
+function renderDetailsTable() {
+  if (!detailsData) return;
+  const query = (document.getElementById('detailsSearch')?.value || '').toLowerCase();
+  detailsFiltered = (detailsData.targets || []).filter(t =>
+    !query ||
+    (t.name||'').toLowerCase().includes(query) ||
+    (t.email||'').toLowerCase().includes(query) ||
+    (t.department||'').toLowerCase().includes(query)
+  );
+
+  const total  = detailsFiltered.length;
+  const tp     = Math.max(1, Math.ceil(total / DET_PAGE_SIZE));
+  detailsPage  = Math.min(detailsPage, tp);
+  const start  = (detailsPage - 1) * DET_PAGE_SIZE;
+  const page   = detailsFiltered.slice(start, start + DET_PAGE_SIZE);
+
+  document.getElementById('detailsCount').textContent = total + ' employees';
+  document.getElementById('detPageInfo').textContent  = detailsPage + ' / ' + tp;
+  document.getElementById('detPrevBtn').disabled = detailsPage <= 1;
+  document.getElementById('detNextBtn').disabled = detailsPage >= tp;
+
+  const colours = ['#0077ff','#9b59b6','#e67e22','#2ecc71','#e74c3c','#1abc9c','#f39c12','#3498db'];
+  const avatarColour = email => colours[email.charCodeAt(0) % colours.length];
+
+  function getStatus(t) {
+    if (t.submitted) return '<span class="det-status ds-submitted">&#128680; Submitted</span>';
+    if (t.clicked)   return '<span class="det-status ds-clicked">&#128279; Clicked</span>';
+    if (t.opened)    return '<span class="det-status ds-opened">&#128231; Opened</span>';
+    if (t.reported)  return '<span class="det-status ds-reported">&#128737; Reported</span>';
+    return '<span class="det-status ds-none">&#128228; Sent</span>';
+  }
+
+  function buildTimeline(t) {
+    const events = [
+      { key: 'opened',    label: 'Email Opened',           at: t.opened_at,    color: 'var(--accent2)', show: t.opened    },
+      { key: 'clicked',   label: 'Link Clicked',           at: t.clicked_at,   color: 'var(--warn)',    show: t.clicked   },
+      { key: 'submitted', label: 'Credentials Submitted',  at: t.submitted_at, color: 'var(--danger)',  show: t.submitted },
+      { key: 'reported',  label: 'Reported as Phishing',   at: t.reported_at,  color: 'var(--success)', show: t.reported  },
+    ].filter(e => e.show);
+
+    if (events.length === 0)
+      return '<div class="tl-none">No activity recorded yet</div>';
+
+    return events.map((e, i) =>
+      '<div class="tl-item">' +
+        '<div class="tl-dot-wrap">' +
+          '<div class="tl-dot" style="background:' + e.color + '"></div>' +
+          (i < events.length - 1 ? '<div class="tl-line"></div>' : '') +
+        '</div>' +
+        '<div>' +
+          '<div class="tl-label" style="color:' + e.color + '">' + e.label + '</div>' +
+          '<div class="tl-time">' + (e.at ? new Date(e.at).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Time not recorded') + '</div>' +
+        '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  const tbody = document.getElementById('detailsTableBody');
+  if (page.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--muted)">No results match your search</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = page.map((t, idx) => {
+    const rowId    = start + idx;
+    const isOpen   = expandedRows.has(t.email);
+    const initials = ((t.first_name||'?')[0] + (t.last_name||t.email[0]||'?')[0]).toUpperCase();
+    const repIcon  = t.reported
+      ? '<span class="det-chk chk-rep">&#10003;</span>'
+      : '<span class="det-chk chk-no">&#8212;</span>';
+
+    // Grid row — 6 columns matching the header exactly
+    return '<div class="det-row" id="det-tr-' + rowId + '">' +
+        '<div class="det-row-main" data-email="' + t.email + '" data-row="' + rowId + '" onclick="toggleDetailRow(this)">' +
+          // Col 1: expand button
+          '<button class="det-expand-btn ' + (isOpen?'open':'') + '" id="det-btn-' + rowId + '">&#9654;</button>' +
+          // Col 2: name + avatar
+          '<div class="det-name-cell">' +
+            '<div class="det-name">' +
+              '<div class="det-avatar" style="background:' + avatarColour(t.email) + '">' + initials + '</div>' +
+              (t.first_name||'') + ' ' + (t.last_name||'') +
+            '</div>' +
+          '</div>' +
+          // Col 3: email
+          '<div class="det-email">' + t.email + '</div>' +
+          // Col 4: department
+          '<div class="det-dept">' + (t.department||'&mdash;') + '</div>' +
+          // Col 5: status
+          '<div class="det-status-cell">' + getStatus(t) + '</div>' +
+          // Col 6: reported
+          '<div class="det-reported">' + repIcon + '</div>' +
+        '</div>' +
+        '<div class="det-timeline ' + (isOpen?'open':'') + '" id="det-tl-' + rowId + '">' +
+          '<div class="tl-title">Activity Timeline</div>' +
+          '<div class="tl-items">' + buildTimeline(t) + '</div>' +
+        '</div>' +
+      '</div>';
+  }).join('');
+}
+
+function toggleDetailRow(el) {
+  const row   = el.closest('.det-row-main');
+  const email = row.dataset.email;
+  const rowId = row.dataset.row;
+  const tl    = document.getElementById('det-tl-' + rowId);
+  const btn   = document.getElementById('det-btn-' + rowId);
+  if (!tl) return;
+  const isNowOpen = !tl.classList.contains('open');
+  if (isNowOpen) { expandedRows.add(email); tl.classList.add('open'); btn.classList.add('open'); }
+  else           { expandedRows.delete(email); tl.classList.remove('open'); btn.classList.remove('open'); }
+}
+
+function goDetailsPage(delta) {
+  const tp = Math.max(1, Math.ceil(detailsFiltered.length / DET_PAGE_SIZE));
+  detailsPage = Math.max(1, Math.min(detailsPage + delta, tp));
+  expandedRows.clear();
+  renderDetailsTable();
+}
+
+function exportDetailsCsv() {
+  if (!detailsData) return;
+  const rows = [['First Name','Last Name','Email','Department','Status','Reported',
+                 'Opened At','Clicked At','Submitted At','Reported At']];
+  (detailsData.targets||[]).forEach(t => {
+    const status = t.submitted?'Submitted':t.clicked?'Clicked':t.opened?'Opened':'Sent';
+    rows.push([t.first_name,t.last_name,t.email,t.department,status,t.reported?'Yes':'No',
+               t.opened_at||'',t.clicked_at||'',t.submitted_at||'',t.reported_at||'']);
+  });
+  const csv  = rows.map(r => r.map(v => '"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = detailsData.name.replace(/[^a-z0-9]/gi,'_') + '_details.csv';
+  a.click(); URL.revokeObjectURL(url);
 }
 
 // ── View Results ──────────────────────────────────────────────────────────
