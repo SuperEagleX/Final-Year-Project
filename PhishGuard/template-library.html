@@ -159,6 +159,13 @@
     .diff-medium { background: #ffb30018; color: var(--warn); }
     .diff-hard   { background: #ff456018; color: var(--danger); }
     .lang-badge  { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: #4a709018; color: var(--text); border: 1px solid #4a709030; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .type-badge  { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .type-pick:hover { border-color: var(--accent2) !important; background: #0077ff08 !important; }
+    .type-link       { background: #0077ff18; color: var(--accent2); }
+    .type-landing    { background: #9b59b618; color: #c39bd3; }
+    .type-attachment { background: #ffb30018; color: var(--warn); }
+    .type-credential { background: #ff456018; color: var(--danger); }
+    .cat-sub { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
 
     /* ── Preview Modal ── */
     .modal-overlay { position: fixed; inset: 0; z-index: 200; background: #000000cc; backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -301,6 +308,14 @@
         <option value="Finance">Finance</option>
         <option value="Other">Other</option>
       </select>
+      <!-- Phishing type dropdown -->
+      <select class="filter-select" id="typeSelect" onchange="applyFilters()">
+        <option value="all">All Types</option>
+        <option value="link">&#128279; Phishing Link</option>
+        <option value="landing">&#128193; Link + Landing Page</option>
+        <option value="attachment">&#128206; File Attachment</option>
+        <option value="credential">&#128274; Credential Harvest</option>
+      </select>
       <!-- Language dropdown -->
       <select class="filter-select" id="languageSelect" onchange="applyFilters()">
         <option value="all">All Languages</option>
@@ -428,7 +443,9 @@ function buildCard(t, index) {
   const rate     = t.avg_click_rate || 0;
   const delay    = (index * 0.04).toFixed(2);
   const lang     = (t.language || 'english').toLowerCase();
-  const langLabel = lang === 'khmer' ? '&#127472;&#127469; Khmer' : '&#127468;&#127463; EN';
+  const langLabel  = lang === 'khmer' ? '&#127472;&#127469; Khmer' : '&#127468;&#127463; EN';
+  const ptype      = (t.phishing_type || 'link');
+  const typeLabel  = ptype === 'landing' ? '&#128193; Landing' : ptype === 'attachment' ? '&#128206; Attachment' : ptype === 'credential' ? '&#128274; Credential' : '&#128279; Link';
   const stripe   = STRIPE_COLOR[t.category] || 'var(--border)';
   const rateColor = rate >= 30 ? 'var(--danger)' : rate >= 15 ? 'var(--warn)' : 'var(--success)';
   const diffColor = (t.difficulty||'').toLowerCase() === 'hard'
@@ -437,9 +454,13 @@ function buildCard(t, index) {
   return '<tr class="template-card" style="animation-delay:' + delay + 's" data-id="' + t.id + '">' +
     '<td class="td-stripe"><div class="card-stripe" style="background:' + stripe + '"></div></td>' +
     '<td class="td-icon"><div class="tc-icon" style="background:' + ci.bg + ';color:' + ci.color + '">' + ci.icon + '</div></td>' +
-    '<td class="td-name"><div class="template-name">' + (t.name||'Unnamed') + '</div><div class="tc-subject-line">&#128231; ' + (t.subject||'(No subject)') + '</div></td>' +
+    '<td class="td-name">' +
+      '<div class="template-name">' + (t.name||'Unnamed') + '</div>' +
+      '<div class="cat-sub">' + (t.category||'') + '</div>' +
+      '<div class="tc-subject-line">&#128231; ' + (t.subject||'(No subject)') + '</div>' +
+    '</td>' +
     '<td class="td-c"><span class="lang-badge">' + langLabel + '</span></td>' +
-    '<td class="td-l"><span class="template-cat-badge ' + catCls + '">' + (t.category||'Other') + '</span></td>' +
+    '<td class="td-c"><span class="type-badge type-' + (t.phishing_type||'link') + '">' + typeLabel + '</span></td>' +
     '<td class="td-c"><div class="tstat-num" style="color:' + rateColor + '">' + rate + '%</div><div class="tstat-label">Click Rate</div></td>' +
     '<td class="td-c"><div class="tstat-num" style="color:var(--muted)">#' + t.id + '</div><div class="tstat-label">ID</div></td>' +
     '<td class="td-c"><span class="diff-badge ' + diffClass(t.difficulty) + '">' + (t.difficulty||'Med') + '</span></td>' +
@@ -539,7 +560,7 @@ function renderGrid(filtered) {
       '<th class="th-icon"></th>' +
       '<th class="th-name">Template</th>' +
       '<th class="th-c">Language</th>' +
-      '<th class="th-l">Category</th>' +
+      '<th class="th-c">Phishing Type</th>' +
       '<th class="th-c">Click Rate</th>' +
       '<th class="th-c">ID</th>' +
       '<th class="th-c">Difficulty</th>' +
@@ -553,6 +574,7 @@ function applyFilters() {
   const query    = document.getElementById('searchInput').value.toLowerCase().trim();
   const catVal   = document.getElementById('categorySelect').value;
   const langVal  = document.getElementById('languageSelect').value;
+  const typeVal  = document.getElementById('typeSelect')?.value || 'all';
   const lvlBtn   = document.querySelector('#levelFilter .filter-chip.active');
   const level    = lvlBtn ? lvlBtn.textContent.trim().toLowerCase() : 'all';
 
@@ -566,8 +588,9 @@ function applyFilters() {
     const matchCat  = catVal  === 'all' || (t.category || '') === catVal;
     const matchLang = langVal === 'all' || (t.language || 'english').toLowerCase() === langVal;
     const matchLevel = level  === 'all' || (t.difficulty || '').toLowerCase() === level;
+    const matchType  = typeVal === 'all' || (t.phishing_type || 'link') === typeVal;
 
-    return matchSearch && matchCat && matchLang && matchLevel;
+    return matchSearch && matchCat && matchLang && matchLevel && matchType;
   });
 
   renderGrid(filtered);
@@ -585,6 +608,7 @@ function clearTemplateFilters() {
   document.getElementById('searchInput').value    = '';
   document.getElementById('categorySelect').value = 'all';
   document.getElementById('languageSelect').value = 'all';
+  const ts = document.getElementById('typeSelect'); if (ts) ts.value = 'all';
   document.querySelectorAll('#levelFilter .filter-chip').forEach(c => c.classList.remove('active'));
   document.querySelector('#levelFilter .filter-chip').classList.add('active');
   renderGrid(allTemplates);
@@ -732,11 +756,18 @@ function closeModal() { document.getElementById('modalOverlay').classList.remove
 function closeBg(e)   { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
 // ── Create Template Modal ─────────────────────────────────────────────────
+// ── Create Template Wizard ────────────────────────────────────────────────
+let ctStep = 1;
+let ctType = null;
+
 function openCreateModal() {
+  ctStep = 1; ctType = null;
+  ctRenderStep();
   const o = document.getElementById('createOverlay');
   const m = document.getElementById('createModal');
   o.style.opacity = '1'; o.style.pointerEvents = 'all';
   m.style.transform = 'translateY(0)';
+  m.scrollTop = 0;
 }
 
 function closeCreateModal() {
@@ -746,49 +777,130 @@ function closeCreateModal() {
   m.style.transform = 'translateY(20px)';
 }
 
-async function saveTemplate() {
-  const btn         = document.getElementById('saveTemplateBtn');
-  const name        = document.getElementById('ct_name').value.trim();
-  const subject     = document.getElementById('ct_subject').value.trim();
-  const rawHtml     = document.getElementById('ct_html').value.trim();
-  const category    = document.getElementById('ct_category').value;
-  const difficulty  = document.getElementById('ct_difficulty').value;
-  const description = document.getElementById('ct_desc').value.trim();
-  const senderName  = document.getElementById('ct_sender').value.trim();
+function ctRenderStep() {
+  [1,2,3].forEach(i => {
+    const el = document.getElementById('ct_step' + i);
+    if (el) el.style.display = i === ctStep ? 'flex' : 'none';
+  });
+  const labels = ['Step 1 of 3 \u2014 Choose phishing type', 'Step 2 of 3 \u2014 Template details', 'Step 3 of 3 \u2014 Write email content'];
+  document.getElementById('ct_step_label').textContent = labels[ctStep - 1];
+  const back = document.getElementById('ct_back_btn');
+  const next = document.getElementById('ct_next_btn');
+  back.style.display = ctStep > 1 ? 'inline-flex' : 'none';
+  next.textContent   = ctStep === 3 ? '\u2714 Save Template' : 'Next \u2192';
+  next.disabled      = ctStep === 1 && !ctType;
+  // Show attachment field only for attachment type
+  const attRow = document.getElementById('ct_attachment_row');
+  if (attRow) attRow.style.display = (ctType === 'attachment') ? 'flex' : 'none';
+}
 
-  if (!name || !subject || !rawHtml) {
-    showToast('\u274C Name, subject and HTML body are required', 'error');
-    return;
+function selectPhishType(type, el) {
+  ctType = type;
+  document.querySelectorAll('.type-pick').forEach(c => {
+    c.style.borderColor = 'var(--border)';
+    c.style.background  = 'transparent';
+  });
+  el.style.borderColor = 'var(--accent)';
+  el.style.background  = '#00d4ff0a';
+  document.getElementById('ct_next_btn').disabled = false;
+}
+
+function ctNextStep() {
+  if (ctStep === 1 && !ctType) { showToast('Please select a phishing type', 'error'); return; }
+  if (ctStep === 2) {
+    if (!document.getElementById('ct_name').value.trim())    { showToast('Template name is required', 'error'); return; }
+    if (!document.getElementById('ct_subject').value.trim()) { showToast('Subject line is required', 'error');  return; }
+    if (!document.getElementById('ct_sender').value.trim())  { showToast('Sender name is required', 'error');   return; }
   }
+  if (ctStep === 3) { saveTemplate(); return; }
+  ctStep++;
+  ctRenderStep();
+  document.getElementById('createModal').scrollTop = 0;
+}
 
-  // Build formatted HTML using string concat to avoid template literal issues
-  const formattedHtml = '<!--\n  Template: ' + name + '\n  Category: ' + category +
-    '\n  Difficulty: ' + difficulty + '\n  Description: ' + description +
-    '\n-->\n<!DOCTYPE html>\n<html>\n<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:20px">\n' +
-    rawHtml + '\n</body>\n</html>';
+function ctPrevStep() {
+  if (ctStep > 1) { ctStep--; ctRenderStep(); document.getElementById('createModal').scrollTop = 0; }
+}
 
-  btn.textContent = '\u23F3 Saving...';
-  btn.disabled = true;
+// Build clean HTML from plain-text fields — no HTML knowledge needed
+function buildTemplateHtml(fields) {
+  const { senderName, greeting, body, cta, signoff, attachmentName, type } = fields;
+
+  // Replace user placeholders with GoPhish merge tags
+  const safeBody = body
+    .replace(/\{\{FirstName\}\}/g, '{{.FirstName}}')
+    .replace(/\{\{LINK\}\}/g, '<a href="{{.URL}}" style="color:#0052cc;font-weight:bold">{{.URL}}</a>');
+
+  const ctaBtn = cta
+    ? '<p style="margin:20px 0"><a href="{{.URL}}" style="display:inline-block;padding:11px 24px;background:#0052cc;color:#fff;border-radius:5px;text-decoration:none;font-weight:700;font-size:14px">' + cta + '</a></p>'
+    : '';
+
+  const attachBlock = (type === 'attachment' && attachmentName)
+    ? '<div style="margin:16px 0;padding:12px 16px;background:#f8f9fa;border:1px solid #ddd;border-radius:5px;display:inline-flex;align-items:center;gap:10px">' +
+      '<span style="font-size:20px">&#128206;</span>' +
+      '<div><div style="font-weight:700;color:#333">' + attachmentName + '</div>' +
+      '<div style="font-size:11px;color:#888">Click to open</div></div></div>'
+    : '';
+
+  const bodyLines = safeBody.split('\n').map(l => l.trim() ? '<p style="margin:0 0 12px">' + l + '</p>' : '').join('');
+  const signoffHtml = signoff ? '<p style="margin:20px 0 0">' + signoff.replace(/\n/g,'<br>') + '</p>' : '';
+  const greetHtml   = greeting ? '<p style="margin:0 0 16px;font-weight:600">' + greeting + '</p>' : '';
+
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head>' +
+    '<body style="font-family:Arial,sans-serif;color:#333;background:#f4f4f4;margin:0;padding:20px">' +
+    '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.1)">' +
+    '<div style="background:#0052cc;padding:18px 24px">' +
+    '<div style="color:#fff;font-weight:700;font-size:16px">' + senderName + '</div></div>' +
+    '<div style="padding:28px 24px">' +
+    greetHtml + bodyLines + ctaBtn + attachBlock + signoffHtml +
+    '</div>' +
+    '<div style="background:#f8f9fa;padding:12px 24px;font-size:11px;color:#999;border-top:1px solid #eee">' +
+    'This email was sent by ' + senderName + '. {{.Tracker}}</div>' +
+    '</div></body></html>';
+}
+
+async function saveTemplate() {
+  const btn = document.getElementById('ct_next_btn');
+  btn.textContent = '\u23F3 Saving...'; btn.disabled = true;
+
+  const name         = document.getElementById('ct_name').value.trim();
+  const subject      = document.getElementById('ct_subject').value.trim();
+  const senderName   = document.getElementById('ct_sender').value.trim();
+  const category     = document.getElementById('ct_category').value;
+  const difficulty   = document.getElementById('ct_difficulty').value;
+  const language     = document.getElementById('ct_language').value;
+  const description  = document.getElementById('ct_desc').value.trim();
+  const greeting     = document.getElementById('ct_greeting').value.trim();
+  const body         = document.getElementById('ct_body').value.trim();
+  const cta          = document.getElementById('ct_cta').value.trim();
+  const signoff      = document.getElementById('ct_signoff').value.trim();
+  const attachName   = document.getElementById('ct_attachment').value.trim();
+
+  if (!body) { showToast('Email body is required', 'error'); btn.textContent = '\u2714 Save Template'; btn.disabled = false; return; }
+
+  const html = buildTemplateHtml({ senderName, greeting, body, cta, signoff, attachmentName: attachName, type: ctType });
 
   try {
-    const result = await apiFetch('templates', 'POST', {
-      name, subject, category, difficulty, description,
+    await apiFetch('templates', 'POST', {
+      name, subject, category, difficulty, language, description,
       sender_name: senderName,
-      html: formattedHtml,
+      phishing_type: ctType,
+      html,
     });
-    showToast('\u2705 Template "' + name + '" saved!', 'success');
+    showToast('Template "' + name + '" created!', 'success');
     closeCreateModal();
-    ['ct_name','ct_sender','ct_subject','ct_desc','ct_html'].forEach(id => {
-      document.getElementById(id).value = '';
+    // Reset all fields
+    ['ct_name','ct_sender','ct_subject','ct_desc','ct_greeting','ct_body','ct_cta','ct_signoff','ct_attachment'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
     });
+    document.getElementById('ct_greeting').value = 'Dear {{FirstName}},';
+    document.getElementById('ct_cta').value      = 'Click Here';
     allTemplates = await apiFetch('templates');
     renderGrid(allTemplates);
   } catch(err) {
-    showToast('\u274C Failed to save: ' + err.message, 'error');
+    showToast('Save failed: ' + err.message, 'error');
   }
-
-  btn.textContent = 'Save Template \u2192';
-  btn.disabled = false;
+  btn.textContent = '\u2714 Save Template'; btn.disabled = false;
 }
 
 function logout() { clearSession(); window.location.href = 'login.html'; }
@@ -798,63 +910,135 @@ init();
 
 <!-- ── Create Template Modal ── -->
 <div id="createOverlay" onclick="if(event.target===this)closeCreateModal()" style="position:fixed;inset:0;z-index:300;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s">
-  <div id="createModal" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.4rem 1.6rem;border-bottom:1px solid var(--border)">
+  <div id="createModal" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1">
       <div>
-        <h2 style="font-size:1.1rem;font-weight:800;color:#fff">Create New Template</h2>
-        <p style="font-size:0.78rem;color:var(--muted);margin-top:3px">Build a custom phishing simulation email template</p>
+        <h2 style="font-size:1rem;font-weight:800;color:#fff">Create New Template</h2>
+        <p id="ct_step_label" style="font-size:0.75rem;color:var(--muted);margin-top:2px">Step 1 of 3 — Choose phishing type</p>
       </div>
       <button onclick="closeCreateModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div style="padding:1.6rem;display:flex;flex-direction:column;gap:1rem">
+
+    <!-- Step 1: Choose type -->
+    <div id="ct_step1" style="padding:1.6rem;display:flex;flex-direction:column;gap:0.8rem">
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem">What kind of phishing scenario does this template simulate?</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+        <div class="type-pick" onclick="selectPhishType('link',this)" data-type="link"
+          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
+          <div style="font-size:1.6rem;margin-bottom:8px">&#128279;</div>
+          <div style="font-weight:700;color:#fff;margin-bottom:4px">Phishing Link</div>
+          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Email contains a malicious link. Clicking it redirects to your tracking page.</div>
+        </div>
+        <div class="type-pick" onclick="selectPhishType('landing',this)" data-type="landing"
+          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
+          <div style="font-size:1.6rem;margin-bottom:8px">&#128193;</div>
+          <div style="font-weight:700;color:#fff;margin-bottom:4px">Link + Landing Page</div>
+          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Link leads to a fake login or form page that captures credential submissions.</div>
+        </div>
+        <div class="type-pick" onclick="selectPhishType('attachment',this)" data-type="attachment"
+          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
+          <div style="font-size:1.6rem;margin-bottom:8px">&#128206;</div>
+          <div style="font-weight:700;color:#fff;margin-bottom:4px">File Attachment</div>
+          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Email has a fake attachment (invoice, PDF, doc) that prompts the user to click a link.</div>
+        </div>
+        <div class="type-pick" onclick="selectPhishType('credential',this)" data-type="credential"
+          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
+          <div style="font-size:1.6rem;margin-bottom:8px">&#128274;</div>
+          <div style="font-weight:700;color:#fff;margin-bottom:4px">Credential Harvest</div>
+          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Email body itself contains a form or prompt asking for username and password.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Template details -->
+    <div id="ct_step2" style="padding:1.6rem;display:none;flex-direction:column;gap:1rem">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Template Name *</label>
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Template Name *</label>
           <input id="ct_name" type="text" placeholder="e.g. Fake Invoice Alert" class="form-input"/>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sender Display Name *</label>
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sender Name *</label>
           <input id="ct_sender" type="text" placeholder="e.g. Finance Team" class="form-input"/>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Subject Line *</label>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Subject Line *</label>
         <input id="ct_subject" type="text" placeholder="e.g. Invoice #INV-2026-0089 requires your approval" class="form-input"/>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
         <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Category *</label>
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Category</label>
           <select id="ct_category" class="form-input">
             <option>IT Support</option><option>HR</option>
             <option>Credential Harvest</option><option>Executive / BEC</option>
             <option>Delivery</option><option>Social Engineering</option>
-            <option>Finance</option><option>Sales</option><option>Other</option>
+            <option>Finance</option><option>Other</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Difficulty *</label>
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Difficulty</label>
           <select id="ct_difficulty" class="form-input">
             <option>Easy</option><option>Medium</option><option>Hard</option>
           </select>
         </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Language</label>
+          <select id="ct_language" class="form-input">
+            <option value="english">English</option>
+            <option value="khmer">Khmer</option>
+          </select>
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Description</label>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Description</label>
         <input id="ct_desc" type="text" placeholder="Brief description of this template's scenario" class="form-input"/>
       </div>
+    </div>
+
+    <!-- Step 3: Email content (no HTML needed) -->
+    <div id="ct_step3" style="padding:1.6rem;display:none;flex-direction:column;gap:1rem">
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.78rem;color:var(--muted);line-height:1.6">
+        &#128161; Just write the text. We'll generate clean HTML from what you enter below.
+        Use <strong style="color:var(--accent)">{{FirstName}}</strong> for the recipient's name and
+        <strong style="color:var(--accent)">{{LINK}}</strong> where you want the phishing link to appear.
+      </div>
       <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email HTML Body *</label>
-          <span style="font-size:0.68rem;color:var(--accent)">Use {{.FirstName}} &middot; {{.URL}} &middot; {{.Tracker}}</span>
+        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Greeting</label>
+        <input id="ct_greeting" type="text" placeholder="e.g. Dear {{FirstName}}," class="form-input" value="Dear {{FirstName}},"/>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Body *</label>
+        <textarea id="ct_body" rows="5" placeholder="Write the main message. Use {{FirstName}} and {{LINK}} as placeholders..." class="form-input" style="resize:vertical;line-height:1.6"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Call-to-Action Button Text</label>
+          <input id="ct_cta" type="text" placeholder="e.g. Reset Password Now" class="form-input" value="Click Here"/>
         </div>
-        <textarea id="ct_html" rows="10" placeholder="Paste your email HTML body content here..." class="form-input" style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;resize:vertical"></textarea>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sign-off</label>
+          <input id="ct_signoff" type="text" placeholder="e.g. Best regards, IT Support Team" class="form-input"/>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px" id="ct_attachment_row" style="display:none">
+        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Fake Attachment Name (for attachment type)</label>
+        <input id="ct_attachment" type="text" placeholder="e.g. Invoice_March_2026.pdf" class="form-input"/>
       </div>
     </div>
-    <div style="padding:1.2rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end">
-      <button onclick="closeCreateModal()" class="btn btn-ghost">Cancel</button>
-      <button onclick="saveTemplate()" class="btn btn-primary" id="saveTemplateBtn">Save Template &rarr;</button>
+
+    <!-- Footer with step navigation -->
+    <div style="padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--panel)">
+      <button id="ct_back_btn" onclick="ctPrevStep()" class="btn btn-ghost" style="display:none">&#8592; Back</button>
+      <span></span>
+      <div style="display:flex;gap:0.8rem">
+        <button onclick="closeCreateModal()" class="btn btn-ghost">Cancel</button>
+        <button id="ct_next_btn" onclick="ctNextStep()" class="btn btn-primary" disabled>Next &#8594;</button>
+      </div>
     </div>
   </div>
 </div>

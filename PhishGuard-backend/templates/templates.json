@@ -9,7 +9,8 @@
     "description": "Impersonates the IT helpdesk urging employees to reset their expiring password via a fake portal link.",
     "sender_name": "IT Support Team",
     "avg_click_rate": 34,
-    "landing_file": "it_password_reset_landing.html"
+    "landing_file": "it_password_reset_landing.html",
+    "phishing_type": "link"
   },
   {
     "id": 2,
@@ -21,7 +22,8 @@
     "description": "Mimics an urgent HR policy notice requiring employees to review and sign a document before a deadline.",
     "sender_name": "HR Department",
     "avg_click_rate": 41,
-    "landing_file": "hr_policy_update_landing.html"
+    "landing_file": "hr_policy_update_landing.html",
+    "phishing_type": "landing"
   },
   {
     "id": 3,
@@ -33,7 +35,8 @@
     "description": "Highly convincing Microsoft branding impersonation claiming account suspension to steal Office 365 credentials.",
     "sender_name": "Microsoft Account Security",
     "avg_click_rate": 28,
-    "landing_file": "microsoft_365_landing.html"
+    "landing_file": "microsoft_365_landing.html",
+    "phishing_type": "landing"
   },
   {
     "id": 4,
@@ -45,7 +48,8 @@
     "description": "Business Email Compromise style attack impersonating the CEO to trick finance staff into transferring funds.",
     "sender_name": "David Chen, CEO",
     "avg_click_rate": 22,
-    "landing_file": "ceo_wire_transfer_landing.html"
+    "landing_file": "ceo_wire_transfer_landing.html",
+    "phishing_type": "link"
   },
   {
     "id": 5,
@@ -57,7 +61,8 @@
     "description": "Fake delivery notification from a spoofed courier requesting payment or personal info to reschedule delivery.",
     "sender_name": "FedEx Delivery",
     "avg_click_rate": 9,
-    "landing_file": "package_delivery_landing.html"
+    "landing_file": "package_delivery_landing.html",
+    "phishing_type": "landing"
   },
   {
     "id": 6,
@@ -69,6 +74,7 @@
     "description": "Spoofs a LinkedIn notification about pending connection requests to lure employees into entering credentials.",
     "sender_name": "LinkedIn",
     "avg_click_rate": 36,
-    "landing_file": "linkedin_connection_landing.html"
+    "landing_file": "linkedin_connection_landing.html",
+    "phishing_type": "landing"
   }
 ]

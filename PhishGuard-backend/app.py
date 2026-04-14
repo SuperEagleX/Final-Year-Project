@@ -972,7 +972,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
@@ -1101,6 +1101,8 @@ def create_template():
             'description':    data.get('description', ''),
             'sender_name':    data.get('sender_name', 'IT Support'),
             'avg_click_rate': 0,
+            'language':       data.get('language', 'english'),
+            'phishing_type':  data.get('phishing_type', 'link'),
         }
         templates.append(new_template)
         with open(TEMPLATES_META, 'w') as f:
@@ -1141,7 +1143,7 @@ def update_template(template_id):
         tmpl      = next((t for t in templates if t['id'] == template_id), None)
         if not tmpl:
             return jsonify({'error': 'Template not found'}), 404
-        for field in ('name','subject','description','category','difficulty','language','sender_name'):
+        for field in ('name','subject','description','category','difficulty','language','sender_name','phishing_type'):
             if field in data:
                 tmpl[field] = data[field]
         with open(TEMPLATES_META, 'w') as f:
