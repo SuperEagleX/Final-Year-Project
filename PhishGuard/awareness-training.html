@@ -206,9 +206,89 @@
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
     @keyframes popIn  { 0%{transform:scale(0.8);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
+
+    /* ── Caught modal ── */
+    .caught-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.88);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1rem;
+    }
+    .caught-modal {
+      background: var(--panel);
+      border: 2px solid var(--danger);
+      border-radius: 20px;
+      max-width: 560px; width: 100%;
+      padding: 0;
+      overflow: hidden;
+      animation: popIn 0.5s ease both;
+      box-shadow: 0 0 60px rgba(255,69,96,0.3);
+    }
+    .caught-header {
+      background: linear-gradient(135deg, #ff456018, #ff806010);
+      padding: 2rem 2rem 1.4rem;
+      text-align: center;
+      border-bottom: 1px solid #ff456030;
+    }
+    .caught-icon { font-size: 3.5rem; margin-bottom: 1rem; display: block; }
+    .caught-title { font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; }
+    .caught-sub   { font-size: 0.85rem; color: #ff8060; font-weight: 600; }
+    .caught-body  { padding: 1.6rem 2rem; }
+    .caught-what  { background: var(--deep); border: 1px solid #ff456030; border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+    .caught-what-title { font-size: 0.68rem; font-weight: 700; color: var(--danger); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .caught-what-text  { font-size: 0.84rem; color: var(--text); line-height: 1.65; }
+    .caught-steps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.4rem; }
+    .caught-step  { display: flex; align-items: flex-start; gap: 12px; font-size: 0.82rem; color: var(--text); line-height: 1.5; }
+    .caught-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--danger); color: #fff; font-size: 0.7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .caught-btn {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      color: #000; font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 800;
+      border: none; border-radius: 10px; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .caught-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px #00d4ff40; }
+
+    /* When caught — hide non-essential page elements */
+    body.is-caught .hero-card,
+    body.is-caught .overall-progress,
+    body.is-caught .right-col,
+    body.is-caught .topbar-left p,
+    body.is-caught .two-col { display: block; }
+    body.is-caught .right-col { display: none; }
+    body.is-caught .two-col { display: flex; }
+    body.is-caught .modules-section { width: 100%; max-width: 760px; }
+    body.is-caught .sidebar .nav-item { display: none; }
+    body.is-caught .sidebar-section   { display: none; }
+    body.is-caught .hero-card,
+    body.is-caught .overall-progress  { display: none; }
   </style>
 </head>
 <body>
+
+<!-- ── Caught Popup Modal — shown when ?caught=1 ── -->
+<div class="caught-overlay" id="caughtOverlay" style="display:none">
+  <div class="caught-modal">
+    <div class="caught-header">
+      <span class="caught-icon">🎣</span>
+      <div class="caught-title" id="caughtTitle">You failed a phishing simulation</div>
+      <div class="caught-sub"  id="caughtSub">PhishGuard Security Awareness Training</div>
+    </div>
+    <div class="caught-body">
+      <div class="caught-what">
+        <div class="caught-what-title">What happened</div>
+        <div class="caught-what-text" id="caughtWhatText">You interacted with a simulated phishing email.</div>
+      </div>
+      <div class="caught-steps">
+        <div class="caught-step"><div class="caught-step-num">1</div><span>This was a <strong>controlled simulation</strong> run by your organisation's security team. No real data was at risk.</span></div>
+        <div class="caught-step"><div class="caught-step-num">2</div><span>You must complete the <strong>training modules below</strong> that are relevant to your case. They have been highlighted for you.</span></div>
+        <div class="caught-step"><div class="caught-step-num">3</div><span>Pass the quiz at the end of each required module. Your <strong>risk score</strong> will update when you complete them.</span></div>
+      </div>
+      <button class="caught-btn" onclick="dismissCaughtModal()">&#128218; Begin My Training &rarr;</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Sidebar (Employee view) ── -->
 <aside class="sidebar">
@@ -307,7 +387,7 @@
         <h3>Training Modules (6)</h3>
 
         <!-- Module 1 — Done -->
-        <div class="module-card" onclick="openModule(1)">
+        <div class="module-card" data-id="1" onclick="openModule(1)">
           <div class="module-inner">
             <div class="module-icon" style="background:#00d4ff15;font-size:1.4rem">🎣</div>
             <div class="module-info">
@@ -327,7 +407,7 @@
         </div>
 
         <!-- Module 2 — Done -->
-        <div class="module-card" onclick="openModule(2)" style="animation-delay:0.05s">
+        <div class="module-card" data-id="2" onclick="openModule(2)" style="animation-delay:0.05s">
           <div class="module-inner">
             <div class="module-icon" style="background:#00e5a015;font-size:1.4rem">🔗</div>
             <div class="module-info">
@@ -347,7 +427,7 @@
         </div>
 
         <!-- Module 3 — In Progress -->
-        <div class="module-card" onclick="openModule(3)" style="animation-delay:0.1s">
+        <div class="module-card" data-id="3" onclick="openModule(3)" style="animation-delay:0.1s">
           <div class="module-inner">
             <div class="module-icon" style="background:#ffb30015;font-size:1.4rem">⚡</div>
             <div class="module-info">
@@ -366,7 +446,7 @@
         </div>
 
         <!-- Module 4 — To Do -->
-        <div class="module-card" onclick="openModule(4)" style="animation-delay:0.15s">
+        <div class="module-card" data-id="4" onclick="openModule(4)" style="animation-delay:0.15s">
           <div class="module-inner">
             <div class="module-icon" style="background:#0077ff15;font-size:1.4rem">📧</div>
             <div class="module-info">
@@ -385,7 +465,7 @@
         </div>
 
         <!-- Module 5 — Locked -->
-        <div class="module-card locked" style="animation-delay:0.2s">
+        <div class="module-card locked" data-id="5" style="animation-delay:0.2s">
           <div class="module-inner">
             <div class="module-icon" style="background:#ffffff08;font-size:1.4rem">🏢</div>
             <div class="module-info">
@@ -404,7 +484,7 @@
         </div>
 
         <!-- Module 6 — Locked -->
-        <div class="module-card locked" style="animation-delay:0.25s">
+        <div class="module-card locked" data-id="6" style="animation-delay:0.25s">
           <div class="module-inner">
             <div class="module-icon" style="background:#ffffff08;font-size:1.4rem">🛡️</div>
             <div class="module-info">
@@ -862,15 +942,82 @@
     }
 
     if (caught === '1') {
-      // Show caught banner — employee clicked a phishing link
-      const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#ff4560,#ff8060);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;font-family:Syne,sans-serif;font-size:0.88rem;font-weight:600;box-shadow:0 4px 20px rgba(255,69,96,0.4)';
-      banner.innerHTML = '<span>🎣 You clicked a phishing simulation link! Complete the training below to improve your security awareness score.</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1.4rem;line-height:1;padding:0 4px">&times;</button>';
-      document.body.prepend(banner);
-      // Hide report card when caught — they already failed
+      const phishType = params.get('phishing_type') || '';
+      const category  = params.get('category')      || '';
+      const stage     = params.get('stage')         || 'clicked';
+
+      document.body.classList.add('is-caught');
+
+      // Populate modal
+      const typeMessages = {
+        'link':       stage === 'submitted' ? 'You clicked a phishing link and submitted your credentials.' : 'You clicked a malicious link inside a simulated phishing email.',
+        'attachment': 'You opened a simulated malicious file attachment and followed the link inside.',
+        'landing':    stage === 'submitted' ? 'You clicked a phishing link AND entered your credentials on a fake login page.' : 'You clicked a link in a phishing email that led to a fake login page.',
+        'credential': stage === 'submitted' ? 'You submitted your username and password on a fake credential harvesting page.' : 'You interacted with a credential harvesting phishing email.',
+      };
+      const whatText = typeMessages[phishType] || (stage === 'submitted' ? 'You clicked a phishing link and submitted your credentials.' : 'You clicked a phishing simulation link.');
+      const catLine  = category ? ' This was a <strong style="color:var(--warn)">' + category + '</strong> type attack.' : '';
+      document.getElementById('caughtWhatText').innerHTML = whatText + catLine;
+
+      if (stage === 'submitted') {
+        document.getElementById('caughtTitle').textContent = 'You submitted credentials to a phishing site';
+        document.getElementById('caughtSub').textContent   = 'High severity — credentials were captured';
+        document.getElementById('caughtSub').style.color   = 'var(--danger)';
+      } else {
+        document.getElementById('caughtTitle').textContent = 'You clicked a phishing simulation link';
+        document.getElementById('caughtSub').textContent   = 'Medium severity — link was followed';
+        document.getElementById('caughtSub').style.color   = '#ff8060';
+      }
+
+      document.getElementById('caughtOverlay').style.display = 'flex';
+
+      const moduleHighlightMap = {
+        'link':       [1, 2, 6],
+        'attachment': [1, 3, 6],
+        'landing':    [1, 2, 4, 6],
+        'credential': [1, 2, 4, 6],
+      };
+      const catHighlightMap = {
+        'Executive / BEC':    [1, 3, 5, 6],
+        'HR':                 [1, 3, 6],
+        'IT Support':         [1, 2, 4, 6],
+        'Credential Harvest': [1, 2, 4, 6],
+        'Delivery':           [1, 3, 6],
+        'Social Engineering': [1, 3, 6],
+        'Finance':            [1, 3, 5, 6],
+      };
+      window._requiredModules = new Set([
+        ...(moduleHighlightMap[phishType] || [1, 2, 6]),
+        ...(catHighlightMap[category]     || []),
+      ]);
+
       const card = document.getElementById('reportPhishingCard');
       if (card) card.style.display = 'none';
     }
+
+    window.dismissCaughtModal = function() {
+      document.getElementById('caughtOverlay').style.display = 'none';
+      if (window._requiredModules) {
+        document.querySelectorAll('.module-card').forEach(c => {
+          const id = parseInt(c.dataset.id || '0');
+          if (window._requiredModules.has(id)) {
+            c.style.borderColor = 'var(--danger)';
+            c.style.background  = '#ff456010';
+            const titleEl = c.querySelector('.module-title');
+            if (titleEl && !titleEl.querySelector('.req-badge')) {
+              const badge = document.createElement('span');
+              badge.className   = 'req-badge';
+              badge.textContent = '⚠ Required';
+              badge.style.cssText = 'font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:20px;background:#ff456020;color:var(--danger);border:1px solid #ff456035;margin-left:8px;vertical-align:middle;white-space:nowrap';
+              titleEl.appendChild(badge);
+            }
+          }
+        });
+        const first = document.querySelector('.module-card[style*="ff4560"]');
+        if (first) setTimeout(() => first.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      }
+    };
+
   })();
 
   // ── Submit report from the card ───────────────────────────────────────────

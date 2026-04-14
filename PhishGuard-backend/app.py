@@ -693,32 +693,48 @@ def track_click():
 
     from flask import redirect
 
-    # Look up which landing page to serve based on campaign's template
-    landing_page = 'it_password_reset_landing.html'  # default fallback
+    # Look up template metadata to determine routing by phishing_type
+    phishing_type = 'link'  # default
+    template_category = ''
+    landing_page  = None
+
     if campaign_id:
         try:
             conn2 = get_db()
-            camp  = conn2.execute(
-                'SELECT template FROM campaigns WHERE id=?', (campaign_id,)
-            ).fetchone()
+            camp  = conn2.execute('SELECT template FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
             conn2.close()
             if camp and camp['template']:
                 templates_meta = load_templates()
-                print(f'🔍 Looking up template: "{camp["template"]}"')
-                print(f'📋 Available templates: {[t["name"] for t in templates_meta]}')
                 match = next((t for t in templates_meta if t['name'] == camp['template']), None)
-                if match and match.get('landing_file'):
-                    landing_page = match['landing_file']
-                    print(f'✅ Landing page resolved: {landing_page}')
-                else:
-                    print(f'⚠️ No landing_file match for template: {camp["template"]}')
+                if match:
+                    phishing_type      = match.get('phishing_type', 'link')
+                    template_category  = match.get('category', '')
+                    if match.get('landing_file'):
+                        landing_page = match['landing_file']
+                    print(f'✅ Template type={phishing_type} category={template_category}')
         except Exception as e:
-            print(f'⚠️ Could not look up landing page: {e}')
+            print(f'⚠️ Could not resolve template: {e}')
 
-    return redirect(
-        f'http://127.0.0.1:5000/landing/{landing_page}'
-        f'?campaign_id={campaign_id}&email={email}'
-    )
+    # ── Route based on phishing type ────────────────────────────────────────
+    # link / attachment → go straight to training (no landing page)
+    # landing / credential → go to fake landing page first; submit → training
+    if phishing_type in ('link', 'attachment'):
+        # Straight to awareness training — mark as full fail immediately
+        training_url = (
+            f'http://127.0.0.1:8088/awareness-training.html'
+            f'?caught=1&stage=clicked&campaign_id={campaign_id}'
+            f'&phishing_type={phishing_type}&category={template_category}'
+        )
+        return redirect(training_url)
+    else:
+        # landing / credential → go to landing page first
+        if not landing_page:
+            landing_page = 'it_password_reset_landing.html'
+        return redirect(
+            f'http://127.0.0.1:5000/landing/{landing_page}'
+            f'?campaign_id={campaign_id}&email={email}'
+            f'&phishing_type={phishing_type}&category={template_category}'
+        )
 
 
 @app.route('/api/track/submit', methods=['POST'])
@@ -747,11 +763,27 @@ def track_submit():
     new_score = update_risk_score(email)
     print(f'🚨 Credentials submitted: {email} in campaign {campaign_id} | New risk score: {new_score}')
 
-    return jsonify({
-        'success':       True,
-        'new_risk_score': new_score,
-        'redirect':       f'http://127.0.0.1:8088/awareness-training.html?caught=1&campaign_id={campaign_id}'
-    })
+    # Look up phishing_type + category for context-aware training redirect
+    phishing_type_s = ''; category_s = ''
+    if campaign_id:
+        try:
+            conn3 = get_db()
+            camp3 = conn3.execute('SELECT template FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
+            conn3.close()
+            if camp3 and camp3['template']:
+                tmatch = next((t for t in load_templates() if t['name'] == camp3['template']), None)
+                if tmatch:
+                    phishing_type_s = tmatch.get('phishing_type', '')
+                    category_s      = tmatch.get('category', '')
+        except Exception:
+            pass
+
+    redirect_url = (
+        f'http://127.0.0.1:8088/awareness-training.html'
+        f'?caught=1&stage=submitted&campaign_id={campaign_id}'
+        f'&phishing_type={phishing_type_s}&category={category_s}'
+    )
+    return jsonify({'success': True, 'new_risk_score': new_score, 'redirect': redirect_url})
 
 
 @app.route('/api/track/report', methods=['POST'])
@@ -972,7 +1004,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = 'YOUR_GOPHISH_API_KEY_HERE'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'  # ← paste your GoPhish API key
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
