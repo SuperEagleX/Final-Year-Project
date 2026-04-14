@@ -1132,6 +1132,25 @@ def delete_template(template_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/templates/<int:template_id>', methods=['PUT'])
+def update_template(template_id):
+    """PUT /api/templates/<id> — Edit template metadata."""
+    try:
+        data      = request.get_json()
+        templates = load_templates()
+        tmpl      = next((t for t in templates if t['id'] == template_id), None)
+        if not tmpl:
+            return jsonify({'error': 'Template not found'}), 404
+        for field in ('name','subject','description','category','difficulty','language','sender_name'):
+            if field in data:
+                tmpl[field] = data[field]
+        with open(TEMPLATES_META, 'w') as f:
+            json.dump(templates, f, indent=2)
+        return jsonify({'success': True, 'template': tmpl})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # ── Campaign Send Route ────────────────────────────────────────────────────
 @app.route('/api/campaigns/<int:campaign_id>/send', methods=['POST'])
 def send_campaign_emails(campaign_id):

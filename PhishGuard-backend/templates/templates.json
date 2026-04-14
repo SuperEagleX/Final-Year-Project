@@ -70,16 +70,5 @@
     "sender_name": "LinkedIn",
     "avg_click_rate": 36,
     "landing_file": "linkedin_connection_landing.html"
-  },
-  {
-    "id": 7,
-    "name": "Test Tempalte",
-    "file": "test_tempalte.html",
-    "subject": "Test Tempalte",
-    "category": "Finance",
-    "difficulty": "Hard",
-    "description": "Test TempalteTest TempalteTest TempalteTest Tempalte",
-    "sender_name": "Test Tempalte",
-    "avg_click_rate": 0
   }
 ]
