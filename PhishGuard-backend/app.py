@@ -157,6 +157,57 @@ def init_db():
     except Exception:
         pass  # Column already exists
 
+    # Training learners — employees who register on the awareness training page
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS training_learners (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name    TEXT NOT NULL,
+            department   TEXT NOT NULL,
+            session_key  TEXT UNIQUE,
+            campaign_id  TEXT DEFAULT '',
+            registered_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Module content — full content + quiz stored as JSON
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS module_content (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            module_id    INTEGER UNIQUE NOT NULL,
+            content_html TEXT DEFAULT '',
+            quiz_json    TEXT DEFAULT '[]',
+            updated_at   TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (module_id) REFERENCES training_modules(id)
+        )
+    ''')
+
+    # Module completions — which learner passed which module
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS module_completions (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            learner_id    INTEGER NOT NULL,
+            module_id     INTEGER NOT NULL,
+            score         INTEGER DEFAULT 0,
+            total         INTEGER DEFAULT 5,
+            percentage    INTEGER DEFAULT 0,
+            passed        INTEGER DEFAULT 0,
+            completed_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (learner_id) REFERENCES training_learners(id),
+            FOREIGN KEY (module_id) REFERENCES training_modules(id)
+        )
+    ''')
+    # Upgrade: add missing columns to training_modules
+    for col_def in [
+        ("icon",        "TEXT DEFAULT '&#127908;'"),
+        ("color",       "TEXT DEFAULT '#00d4ff15'"),
+        ("meta_json",   "TEXT DEFAULT '[]'"),
+        ("category",    "TEXT DEFAULT 'general'"),
+    ]:
+        try:
+            c.execute(f"ALTER TABLE training_modules ADD COLUMN {col_def[0]} {col_def[1]}")
+        except Exception:
+            pass
+
     # Seed default admin user
     admin_password = hash_password('admin123')
     c.execute('''
@@ -171,19 +222,22 @@ def init_db():
         VALUES (?, ?, ?, ?, ?)
     ''', ('James Lim', 'employee@phishguard.com', emp_password, 'employee', 'Finance'))
 
-    # Seed training modules
+    # Seed training modules (8 modules)
     modules = [
-        ('What is Phishing?',                      'Learn the basics of phishing attacks',              '5 min',  'beginner',     1),
-        ('Spotting Suspicious Links & Domains',    'Learn to identify fake URLs and domains',           '7 min',  'beginner',     2),
-        ('Urgency & Social Engineering Tactics',   'Understand manipulation techniques used by hackers','8 min',  'intermediate', 3),
-        ('Analysing Email Headers & Sender Info',  'Learn to read and verify email headers',            '10 min', 'intermediate', 4),
-        ('Business Email Compromise (BEC)',        'Understand CEO fraud and BEC attacks',              '12 min', 'advanced',     5),
-        ('What To Do When You Are Phished',        'Steps to take after falling for a phishing attack', '6 min',  'beginner',     6),
+        (1, 'What is Phishing?',                      'Learn the basics of phishing attacks',              '5 min',  'beginner',     1, '&#127908;', '#00d4ff15', '["&#9201; 5 min","&#128221; 5 questions","&#128308; Beginner"]'),
+        (2, 'Spotting Suspicious Links & Domains',    'Learn to identify fake URLs and domains',           '7 min',  'beginner',     2, '&#128279;', '#00e5a015', '["&#9201; 7 min","&#128221; 5 questions","&#128308; Beginner"]'),
+        (3, 'Urgency & Social Engineering',           'Understand psychological manipulation tactics',     '8 min',  'beginner',     3, '&#9889;',   '#ffb30015', '["&#9201; 8 min","&#128221; 5 questions","&#128308; Beginner"]'),
+        (4, 'Email Headers & Sender Analysis',        'Learn to read and verify email headers',            '8 min',  'intermediate', 4, '&#128231;', '#0077ff15', '["&#9201; 8 min","&#128221; 5 questions","&#128992; Intermediate"]'),
+        (5, 'Business Email Compromise (BEC)',        'Understand CEO fraud and BEC attacks',              '8 min',  'advanced',     5, '&#127970;', '#9b59b618', '["&#9201; 8 min","&#128221; 5 questions","&#128308; Advanced"]'),
+        (6, 'Credential Phishing & Fake Login Pages', 'Recognise and avoid fake login pages',             '7 min',  'intermediate', 6, '&#128272;', '#ff456018', '["&#9201; 7 min","&#128221; 5 questions","&#128992; Intermediate"]'),
+        (7, 'Safe Email & Attachment Practices',      'Safe handling of emails and file attachments',     '7 min',  'beginner',     7, '&#128206;', '#2ecc7115', '["&#9201; 7 min","&#128221; 5 questions","&#128308; Beginner"]'),
+        (8, 'What To Do When You Are Phished',       'Steps to take after a phishing incident',          '6 min',  'beginner',     8, '&#128737;', '#ffffff08', '["&#9201; 6 min","&#128221; 5 questions","&#128308; Beginner"]'),
     ]
-    c.executemany('''
-        INSERT OR IGNORE INTO training_modules (title, description, duration, difficulty, order_num)
-        VALUES (?, ?, ?, ?, ?)
-    ''', modules)
+    for m in modules:
+        c.execute('''
+            INSERT OR IGNORE INTO training_modules (id, title, description, duration, difficulty, order_num, icon, color, meta_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', m)
 
     conn.commit()
     conn.close()
@@ -1183,6 +1237,149 @@ def update_template(template_id):
         return jsonify({'success': True, 'template': tmpl})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
+# -- Training Learner Routes ---------------------------------------------------
+@app.route('/api/training/register', methods=['POST'])
+def register_learner():
+    data = request.get_json()
+    full_name   = (data.get('full_name') or '').strip()
+    department  = (data.get('department') or '').strip()
+    campaign_id = str(data.get('campaign_id') or '')
+    if not full_name or not department:
+        return jsonify({'error': 'full_name and department are required'}), 400
+    import secrets as _sec
+    session_key = _sec.token_hex(16)
+    conn = get_db()
+    conn.execute(
+        'INSERT INTO training_learners (full_name, department, session_key, campaign_id) VALUES (?,?,?,?)',
+        (full_name, department, session_key, campaign_id)
+    )
+    learner_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+    conn.commit(); conn.close()
+    return jsonify({'success': True, 'session_key': session_key, 'learner_id': learner_id})
+
+
+@app.route('/api/training/modules/full', methods=['GET'])
+def get_modules_full():
+    conn = get_db()
+    modules = conn.execute('SELECT * FROM training_modules ORDER BY order_num').fetchall()
+    result  = []
+    for m in modules:
+        mc   = conn.execute('SELECT content_html, quiz_json FROM module_content WHERE module_id=?', (m['id'],)).fetchone()
+        keys = m.keys()
+        result.append({
+            'id':           m['id'],
+            'title':        m['title'],
+            'description':  m['description'],
+            'duration':     m['duration'],
+            'difficulty':   m['difficulty'],
+            'order_num':    m['order_num'],
+            'icon':         m['icon']      if 'icon'      in keys else '&#127908;',
+            'color':        m['color']     if 'color'     in keys else '#00d4ff15',
+            'meta_json':    m['meta_json'] if 'meta_json' in keys else '[]',
+            'content_html': mc['content_html'] if mc else '',
+            'quiz_json':    mc['quiz_json']    if mc else '[]',
+        })
+    conn.close()
+    return jsonify(result)
+
+
+@app.route('/api/training/modules', methods=['POST'])
+def create_module():
+    data = request.get_json()
+    if not data or not data.get('title'):
+        return jsonify({'error': 'title is required'}), 400
+    conn   = get_db()
+    cursor = conn.execute(
+        'INSERT INTO training_modules (title,description,duration,difficulty,order_num,icon,color,meta_json) VALUES (?,?,?,?,?,?,?,?)',
+        (data['title'], data.get('description',''), data.get('duration','5 min'),
+         data.get('difficulty','beginner'), data.get('order_num',99),
+         data.get('icon','&#127908;'), data.get('color','#00d4ff15'), data.get('meta_json','[]'))
+    )
+    module_id = cursor.lastrowid
+    conn.execute(
+        'INSERT OR REPLACE INTO module_content (module_id,content_html,quiz_json,updated_at) VALUES (?,?,?,CURRENT_TIMESTAMP)',
+        (module_id, data.get('content_html',''), data.get('quiz_json','[]'))
+    )
+    conn.commit(); conn.close()
+    return jsonify({'success': True, 'module_id': module_id}), 201
+
+
+@app.route('/api/training/modules/<int:module_id>', methods=['PUT'])
+def update_module(module_id):
+    data = request.get_json()
+    conn = get_db()
+    if not conn.execute('SELECT id FROM training_modules WHERE id=?', (module_id,)).fetchone():
+        conn.close(); return jsonify({'error': 'Not found'}), 404
+    for field in ('title','description','duration','difficulty','order_num','icon','color','meta_json'):
+        if field in data:
+            conn.execute('UPDATE training_modules SET ' + field + '=? WHERE id=?', (data[field], module_id))
+    if 'content_html' in data or 'quiz_json' in data:
+        if conn.execute('SELECT id FROM module_content WHERE module_id=?', (module_id,)).fetchone():
+            conn.execute('UPDATE module_content SET content_html=?,quiz_json=?,updated_at=CURRENT_TIMESTAMP WHERE module_id=?',
+                (data.get('content_html',''), data.get('quiz_json','[]'), module_id))
+        else:
+            conn.execute('INSERT INTO module_content (module_id,content_html,quiz_json) VALUES (?,?,?)',
+                (module_id, data.get('content_html',''), data.get('quiz_json','[]')))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/training/modules/<int:module_id>', methods=['DELETE'])
+def delete_module(module_id):
+    conn = get_db()
+    conn.execute('DELETE FROM module_content     WHERE module_id=?', (module_id,))
+    conn.execute('DELETE FROM module_completions WHERE module_id=?', (module_id,))
+    conn.execute('DELETE FROM training_modules   WHERE id=?',        (module_id,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/training/complete', methods=['POST'])
+def complete_module():
+    data        = request.get_json()
+    session_key = data.get('session_key','')
+    module_id   = data.get('module_id')
+    score       = int(data.get('score', 0))
+    total       = int(data.get('total', 5))
+    if not session_key or not module_id:
+        return jsonify({'error': 'session_key and module_id required'}), 400
+    conn    = get_db()
+    learner = conn.execute('SELECT id FROM training_learners WHERE session_key=?', (session_key,)).fetchone()
+    if not learner:
+        conn.close(); return jsonify({'error': 'Invalid session'}), 401
+    pct    = round(score / total * 100)
+    passed = 1 if pct >= 60 else 0
+    conn.execute('INSERT INTO module_completions (learner_id,module_id,score,total,percentage,passed) VALUES (?,?,?,?,?,?)',
+        (learner['id'], module_id, score, total, pct, passed))
+    conn.commit(); conn.close()
+    return jsonify({'success': True, 'passed': bool(passed), 'percentage': pct})
+
+
+@app.route('/api/training/completions', methods=['GET'])
+def get_all_completions():
+    conn = get_db()
+    completions = conn.execute('''
+        SELECT tl.full_name, tl.department, tl.campaign_id, tl.registered_at,
+               tm.title as module_title, tm.difficulty,
+               mc.score, mc.total, mc.percentage, mc.passed, mc.completed_at
+        FROM module_completions mc
+        JOIN training_learners  tl ON mc.learner_id = tl.id
+        JOIN training_modules   tm ON mc.module_id  = tm.id
+        ORDER BY mc.completed_at DESC
+    ''').fetchall()
+    learners = conn.execute('''
+        SELECT tl.id, tl.full_name, tl.department, tl.campaign_id, tl.registered_at,
+               COUNT(mc.id)   as modules_attempted,
+               SUM(mc.passed) as modules_passed
+        FROM training_learners tl
+        LEFT JOIN module_completions mc ON mc.learner_id = tl.id
+        GROUP BY tl.id ORDER BY tl.registered_at DESC
+    ''').fetchall()
+    conn.close()
+    return jsonify({'completions': [dict(r) for r in completions], 'learners': [dict(l) for l in learners]})
 
 
 # ── Campaign Send Route ────────────────────────────────────────────────────

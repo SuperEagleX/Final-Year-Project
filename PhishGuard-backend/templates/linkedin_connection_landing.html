@@ -141,43 +141,65 @@
   <br/><br/>
   LinkedIn Corporation © 2026
 </div>
-
 <script>
   const params      = new URLSearchParams(window.location.search);
   const campaignId  = params.get('campaign_id') || '';
   const targetEmail = params.get('email') || '';
-  if (targetEmail) document.getElementById('emailInput').value = targetEmail;
+  const phishType   = params.get('phishing_type') || 'landing';
+  const category    = params.get('category') || '';
+
+  // Pre-fill any email field on the page
+  const emailField = document.getElementById('emailInput') || document.querySelector('input[type="email"]');
+  if (emailField && targetEmail) emailField.value = targetEmail;
 
   let attempts = 0;
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    const btn    = document.getElementById('submitBtn');
-    const errMsg = document.getElementById('passError');
+    if (e) e.preventDefault();
+    const btn = document.getElementById('submitBtn') || document.querySelector('button[type="submit"]');
+    const errMsg = document.getElementById('currentPassError') || document.getElementById('errorMsg');
+
     attempts++;
 
+    // First submit — show fake error to seem realistic
     if (attempts === 1) {
-      errMsg.style.display = 'block';
-      document.getElementById('passwordInput').value = '';
-      document.getElementById('passwordInput').focus();
+      if (errMsg) errMsg.style.display = 'block';
+      const passField = document.getElementById('currentPass') || document.getElementById('passwordInput') || document.querySelector('input[type="password"]');
+      if (passField) { passField.value = ''; passField.focus(); }
       return;
     }
 
-    btn.textContent = 'Signing in...';
-    btn.disabled = true;
+    // Second submit — log and redirect to training
+    if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
+
+    const email = (emailField ? emailField.value : '') || targetEmail || 'unknown@phishguard.local';
 
     try {
-      const email = document.getElementById('emailInput').value || targetEmail;
-      await fetch('http://127.0.0.1:5000/api/track/submit', {
-        method: 'POST',
-        mode: 'cors',
+      const resp = await fetch('http://127.0.0.1:5000/api/track/submit', {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaignId, email }),
+        body:    JSON.stringify({ campaign_id: campaignId, email: email }),
       });
-    } catch(err) { console.warn(err); }
-
-    window.location.href = 'http://127.0.0.1:8088/awareness-training.html?caught=1&campaign_id=' + campaignId;
+      const data = await resp.json();
+      // Use redirect URL from backend (contains phishing_type + category)
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      } else {
+        window.location.href = 'http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id=' + campaignId + '&phishing_type=' + phishType + '&category=' + encodeURIComponent(category);
+      }
+    } catch (err) {
+      console.error('Submit tracking failed:', err);
+      window.location.href = 'http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id=' + campaignId + '&phishing_type=' + phishType + '&category=' + encodeURIComponent(category);
+    }
   }
+
+  // Wire up the form
+  const form = document.querySelector('form');
+  if (form) form.addEventListener('submit', handleSubmit);
+
+  // Support "Sign In" / "Next" buttons that might not be in a form
+  const submitBtn = document.getElementById('submitBtn') || document.getElementById('nextBtn');
+  if (submitBtn && !form) submitBtn.addEventListener('click', handleSubmit);
 </script>
 </body>
 </html>

@@ -264,98 +264,65 @@
     <a href="#">...</a>
   </div>
 </div>
-
 <script>
-  // ── Read campaign_id and email from URL params ──────────────────────────
-  const params     = new URLSearchParams(window.location.search);
-  const campaignId = params.get('campaign_id') || '';
+  const params      = new URLSearchParams(window.location.search);
+  const campaignId  = params.get('campaign_id') || '';
   const targetEmail = params.get('email') || '';
+  const phishType   = params.get('phishing_type') || 'landing';
+  const category    = params.get('category') || '';
 
-  // Pre-fill email if passed in URL (GoPhish passes {{.Email}})
-  if (targetEmail) {
-    document.getElementById('emailInput').value = targetEmail;
-  }
+  // Pre-fill any email field on the page
+  const emailField = document.getElementById('emailInput') || document.querySelector('input[type="email"]');
+  if (emailField && targetEmail) emailField.value = targetEmail;
 
-  // ── Step 1 → Step 2: show password field after email ───────────────────
-  function nextStep() {
-    const emailVal = document.getElementById('emailInput').value.trim();
-    const emailErr = document.getElementById('emailError');
-    const input    = document.getElementById('emailInput');
+  let attempts = 0;
 
-    if (!emailVal || !emailVal.includes('@')) {
-      emailErr.style.display = 'block';
-      input.classList.add('error-input');
-      return;
-    }
-
-    emailErr.style.display = 'none';
-    input.classList.remove('error-input');
-
-    // Update subtitle to show the entered email (like real Microsoft)
-    document.getElementById('subtitleText').textContent = emailVal;
-
-    document.getElementById('step1').style.display = 'none';
-    document.getElementById('step2').style.display  = 'block';
-    document.getElementById('passwordInput').focus();
-  }
-
-  // ── Form submit: log "submitted" event to YOUR backend ──────────────────
   async function handleSubmit(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    const btn = document.getElementById('submitBtn') || document.querySelector('button[type="submit"]');
+    const errMsg = document.getElementById('currentPassError') || document.getElementById('errorMsg');
 
-    const passwordVal = document.getElementById('passwordInput').value;
-    const passErr     = document.getElementById('passwordError');
-    const btn         = document.getElementById('signInBtn');
-    const btnText     = document.getElementById('btnText');
-    const spinner     = document.getElementById('btnSpinner');
+    attempts++;
 
-    if (!passwordVal) {
-      passErr.style.display = 'block';
-      document.getElementById('passwordInput').classList.add('error-input');
+    // First submit — show fake error to seem realistic
+    if (attempts === 1) {
+      if (errMsg) errMsg.style.display = 'block';
+      const passField = document.getElementById('currentPass') || document.getElementById('passwordInput') || document.querySelector('input[type="password"]');
+      if (passField) { passField.value = ''; passField.focus(); }
       return;
     }
 
-    // Show loading state
-    btn.disabled      = true;
-    btnText.style.display  = 'none';
-    spinner.style.display  = 'block';
+    // Second submit — log and redirect to training
+    if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
 
-    // First attempt shows "incorrect password" to seem realistic
-    if (!btn.dataset.secondAttempt) {
-      await new Promise(r => setTimeout(r, 1200));
-      btn.disabled         = false;
-      btnText.style.display  = 'block';
-      spinner.style.display  = 'none';
-      passErr.style.display  = 'block';
-      document.getElementById('passwordInput').classList.add('error-input');
-      document.getElementById('passwordInput').value = '';
-      document.getElementById('passwordInput').focus();
-      btn.dataset.secondAttempt = '1';
-      return;
-    }
+    const email = (emailField ? emailField.value : '') || targetEmail || 'unknown@phishguard.local';
 
-    // Second attempt — log the submission to your backend then redirect
     try {
-      const email = document.getElementById('emailInput').value.trim() || targetEmail;
-      await fetch('http://127.0.0.1:5000/api/track/submit', {
+      const resp = await fetch('http://127.0.0.1:5000/api/track/submit', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ campaign_id: campaignId, email: email }),
       });
-    } catch(err) {
-      // Even if API call fails, still redirect to awareness page
-      console.warn('Could not log submission:', err);
+      const data = await resp.json();
+      // Use redirect URL from backend (contains phishing_type + category)
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      } else {
+        window.location.href = 'http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id=' + campaignId + '&phishing_type=' + phishType + '&category=' + encodeURIComponent(category);
+      }
+    } catch (err) {
+      console.error('Submit tracking failed:', err);
+      window.location.href = 'http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id=' + campaignId + '&phishing_type=' + phishType + '&category=' + encodeURIComponent(category);
     }
-
-    // Redirect to awareness training
-    window.location.href =
-      'http://127.0.0.1:8088/awareness-training.html?caught=1&campaign_id=' + campaignId;
   }
 
-  // Allow pressing Enter on email field to proceed
-  document.getElementById('emailInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); nextStep(); }
-  });
+  // Wire up the form
+  const form = document.querySelector('form');
+  if (form) form.addEventListener('submit', handleSubmit);
+
+  // Support "Sign In" / "Next" buttons that might not be in a form
+  const submitBtn = document.getElementById('submitBtn') || document.getElementById('nextBtn');
+  if (submitBtn && !form) submitBtn.addEventListener('click', handleSubmit);
 </script>
 </body>
 </html>
