@@ -212,144 +212,8 @@
 
 <script src="config.js"></script>
 <script>
-const MODULES = [
-  { id:1, title:'What is Phishing?', icon:'&#127908;', color:'#00d4ff15',
-    meta:['&#9201; 5 min','&#128221; 5 questions','&#128308; Beginner'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>Defining Phishing</h3><p>Phishing is a cyber attack where criminals impersonate trusted organisations to trick you into revealing sensitive information or taking harmful actions. The word comes from "fishing" &mdash; attackers cast wide nets hoping someone takes the bait.</p></div>
-      <div class="reader-section"><h3>Why Phishing Works</h3><ul><li><strong>Trust:</strong> Emails look legitimate &mdash; correct logos, professional language.</li><li><strong>Volume:</strong> Billions sent daily. Even 0.1% success means millions of victims.</li><li><strong>Speed:</strong> Urgency makes you act before thinking.</li><li><strong>Targeting:</strong> Spear phishing uses your personal details for convincing attacks.</li></ul></div>
-      <div class="highlight-box">&#128202; <strong>Fact:</strong> Over 90% of all successful cyber attacks begin with a phishing email.</div>
-      <div class="reader-section"><h3>Types of Phishing</h3><ul><li><strong>Email Phishing</strong> &mdash; Mass emails impersonating banks, tech companies, HR.</li><li><strong>Spear Phishing</strong> &mdash; Targeted at a specific person using their details.</li><li><strong>Whaling</strong> &mdash; Targets senior executives for high-value attacks.</li><li><strong>Smishing</strong> &mdash; Phishing via SMS messages.</li><li><strong>Vishing</strong> &mdash; Phishing via phone calls.</li></ul></div>
-      <div class="reader-section"><h3>Common Workplace Scenarios</h3><ul><li>IT Support asking you to reset your password via a link</li><li>HR sending a policy update requiring your digital signature</li><li>Finance receiving a wire transfer request from the "CEO"</li><li>A delivery notification asking for payment</li></ul></div>
-    </div>`,
-    quiz:[
-      {q:'What is the primary goal of a phishing attack?',opts:['Infect your computer with a virus','Trick you into revealing sensitive information or taking a harmful action','Slow down your network','Steal your physical device'],correct:1,exp:'Phishing is fundamentally a deception attack targeting human behaviour, not software vulnerabilities.'},
-      {q:'What percentage of successful cyber attacks begin with a phishing email?',opts:['Around 30%','Around 50%','Over 90%','Around 70%'],correct:2,exp:'Over 90% of breaches start with phishing &mdash; making it the most critical attack vector to understand.'},
-      {q:'What is spear phishing?',opts:['A phishing attack via SMS','A targeted attack using personal details about the victim','A phone-based phishing attack','A mass email campaign'],correct:1,exp:'Spear phishing is highly personalised &mdash; attackers research their target to make the email far more convincing.'},
-      {q:'Which is a common workplace phishing scenario?',opts:['A computer error message','An IT email asking you to click a link to reset your password immediately','A colleague speaking in person','A calendar invite from your manager'],correct:1,exp:'IT password reset requests via email are one of the most common corporate phishing lures.'},
-      {q:'Why does phishing succeed even when people know about it?',opts:['Antivirus cannot detect it','Attackers exploit urgency, fear, and trust to bypass critical thinking','Phishing emails look identical to real ones','It only targets non-technical people'],correct:1,exp:'Phishing exploits human psychology. Urgency and authority make even careful people act without thinking.'}
-    ]
-  },
-  { id:2, title:'Spotting Suspicious Links & Domains', icon:'&#128279;', color:'#00e5a015',
-    meta:['&#9201; 7 min','&#128221; 5 questions','&#128308; Beginner'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>The URL is Your First Defence</h3><p>Before clicking any link, hover over it first. Your browser shows the real destination in the status bar. The displayed text can say anything &mdash; only the real URL matters.</p></div>
-      <div class="reader-section"><h3>How to Read a URL</h3><p>Structure: <strong style="color:var(--accent)">https://subdomain.domain.com/path</strong></p><ul><li>The <strong>real domain</strong> is the part immediately before the first slash</li><li>Subdomains before the domain can be anything: <em>paypal.com.evil.net</em> &mdash; the real domain is <em>evil.net</em></li></ul></div>
-      <div class="warning-box">&#9888;&#65039; <strong>paypal.com.account-verify.net</strong> &mdash; Looks like PayPal but the real domain is <em>account-verify.net</em>.</div>
-      <div class="reader-section"><h3>Common Domain Tricks</h3><ul><li><strong>Typosquatting:</strong> microsofft.com, paypa1.com</li><li><strong>Added words:</strong> microsoft-support.com, paypal-security.net</li><li><strong>Different TLD:</strong> company.net instead of company.com</li><li><strong>Subdomain abuse:</strong> login.microsoft.com.malicious.ru</li></ul></div>
-      <div class="reader-section"><h3>Shortened URLs</h3><p>Services like bit.ly hide the real destination. Never click shortened links in emails &mdash; use a URL expander to check first.</p></div>
-      <div class="highlight-box">&#128161; <strong>Hover test:</strong> Always hover before clicking. If the URL doesn\'t match the sender\'s official domain &mdash; do not click.</div>
-    </div>`,
-    quiz:[
-      {q:'You hover over a link claiming to be from your bank and see: bank.com.login-secure.ru. What is the real domain?',opts:['bank.com','login-secure.ru','secure.ru','bank.com.login'],correct:1,exp:'The real domain is always the last part before the path. login-secure.ru is the actual domain here.'},
-      {q:'Which domain is suspicious if the email claims to be from Microsoft?',opts:['microsoft.com','account.microsoft.com','microsoft-accounts.net','login.microsoft.com'],correct:2,exp:'microsoft-accounts.net is not owned by Microsoft. Official Microsoft domains end in .microsoft.com.'},
-      {q:'What should you do before clicking a link in a suspicious email?',opts:['Click quickly to check','Hover over the link and check the URL in the status bar','Copy and paste into Word','Check if it has a company logo'],correct:1,exp:'Hovering reveals the true destination URL before committing to clicking &mdash; the single most effective habit.'},
-      {q:'An email has a shortened URL (bit.ly/abc123). What is the risk?',opts:['No risk','The real destination is hidden and could lead to a malicious site','Shortened URLs only work on mobile','Antivirus scans them automatically'],correct:1,exp:'Shortened URLs hide the destination &mdash; attackers use them specifically to prevent the hover test from working.'},
-      {q:'Which is an example of typosquatting?',opts:['microsoft.com','microsofft.com','login.microsoft.com','accounts.microsoft.com'],correct:1,exp:'microsofft.com (double f) is registered to catch people who mistype or do not look carefully at domain names.'}
-    ]
-  },
-  { id:3, title:'Urgency & Social Engineering', icon:'&#9889;', color:'#ffb30015',
-    meta:['&#9201; 8 min','&#128221; 5 questions','&#128308; Beginner'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>What is Social Engineering?</h3><p>Social engineering is the manipulation of people into performing actions or divulging information. Attackers hack <em>humans</em> &mdash; exploiting emotions like fear, urgency, curiosity, and greed.</p></div>
-      <div class="reader-section"><h3>The 6 Weapons of Influence</h3><ul><li><strong>Urgency</strong> &mdash; "Your account will be deleted in 2 hours!" Forces hasty decisions.</li><li><strong>Authority</strong> &mdash; Impersonating the CEO, IT, HR, or government.</li><li><strong>Fear</strong> &mdash; "Your computer is infected!" Panic bypasses logic.</li><li><strong>Scarcity</strong> &mdash; "Only 1 action left before lockout."</li><li><strong>Social Proof</strong> &mdash; "All your colleagues already signed this."</li><li><strong>Reciprocity</strong> &mdash; Offering something free, then making a request.</li></ul></div>
-      <div class="highlight-box">&#128721; <strong>The Golden Rule:</strong> Any email making you feel you must act RIGHT NOW is almost certainly phishing. Slow down. Verify. Then act.</div>
-      <div class="reader-section"><h3>Red Flags</h3><ul><li>Deadlines shorter than 24 hours</li><li>Requests bypassing normal approval workflow</li><li>"Don\'t tell anyone" &mdash; secrecy is a manipulation tactic</li><li>Threats of job consequences for not acting immediately</li></ul></div>
-      <div class="reader-section"><h3>What To Do</h3><p>Pause. Call the person using a number from the company directory &mdash; never from the email. You will never get in trouble for verifying a legitimate request.</p></div>
-    </div>`,
-    quiz:[
-      {q:'Your "CEO" emails asking to urgently wire $15,000 and says "Don\'t tell anyone yet." What do you do?',opts:['Wire the money &mdash; it came from the CEO','Verify by calling the CEO on a known number','Reply asking for more details','Forward to a colleague'],correct:1,exp:'Always verify urgent financial requests by phone using a number from the company directory, never from the email.'},
-      {q:'Which is the strongest sign of social engineering in an email?',opts:['It has the company logo','Extreme urgency combined with threats of consequences','It was sent during working hours','It has a PDF attachment'],correct:1,exp:'Artificial urgency combined with threats is the hallmark of social engineering. Logos and timing are easily faked.'},
-      {q:'"Your account will be permanently deleted in 2 hours unless you verify now." Which tactic is this?',opts:['Reciprocity','Social Proof','Urgency combined with Fear','Authority alone'],correct:2,exp:'The countdown (urgency) combined with "permanently deleted" (fear) are classic social engineering pressure tactics used together.'},
-      {q:'An email says all colleagues signed a new HR policy and you\'re the last one. Which tactic?',opts:['Scarcity','Social Proof','Authority','Reciprocity'],correct:1,exp:'This is Social Proof &mdash; making you feel excluded or judged if you don\'t comply quickly.'},
-      {q:'Best first action for a suspicious urgent email from "IT"?',opts:['Click the link before lockout','Delete it without reporting','Call IT directly using the company directory number','Reply to the email to confirm'],correct:2,exp:'Calling IT using a number you already know is the gold standard response &mdash; never use contact info from a suspicious email.'}
-    ]
-  },
-  { id:4, title:'Email Headers & Sender Analysis', icon:'&#128231;', color:'#0077ff15',
-    meta:['&#9201; 8 min','&#128221; 5 questions','&#128992; Intermediate'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>Why Headers Matter</h3><p>The "From" name in your inbox is just a display name &mdash; it can say anything. The real sender is in the email headers. This is one of the most powerful phishing detection skills.</p></div>
-      <div class="reader-section"><h3>Key Things to Check</h3><ul><li><strong>Display Name vs Email Address:</strong> "IT Support" &lt;itsupport@company-helpdesk.net&gt; &mdash; name looks right, domain is wrong</li><li><strong>Domain Spelling:</strong> Typosquatting tricks &mdash; microsoft.com vs microsoft-accounts.net</li><li><strong>Reply-To:</strong> Sometimes different from From &mdash; replies go to the attacker</li><li><strong>SPF/DKIM/DMARC:</strong> Authentication failures are a strong warning sign</li></ul></div>
-      <div class="highlight-box">&#128161; In Gmail: three-dot menu &rarr; "Show original". In Outlook: File &rarr; Properties to view full headers.</div>
-      <div class="reader-section"><h3>Domain Spoofing Tricks</h3><ul><li>Adding words: microsoft-support.com, paypal-security.net</li><li>Swapping TLD: company.net instead of company.com</li><li>Homograph attacks: Unicode characters that look identical to real letters</li><li>Subdomains: paypal.com.phisher.net (real domain is phisher.net)</li></ul></div>
-    </div>`,
-    quiz:[
-      {q:'Email shows "From: Microsoft Support" but the address is no-reply@microsoft-accounts.net. What is this?',opts:['A legitimate Microsoft email','Display name spoofing','An SPF failure','A DMARC pass'],correct:1,exp:'Display name spoofing lets attackers show any name while the real address reveals their true identity.'},
-      {q:'Which domain is suspicious for an email claiming to be from PayPal?',opts:['paypal.com','accounts.paypal.com','paypal.com.account-verify.net','service.paypal.com'],correct:2,exp:'The real domain is account-verify.net &mdash; "paypal.com" before it is just a subdomain trick.'},
-      {q:'What does it mean if an email fails SPF and DKIM checks?',opts:['The email is 100% phishing','The email may not have come from who it claims','The email is safe','The attachment is infected'],correct:1,exp:'SPF/DKIM failures mean the email may not originate from the claimed domain &mdash; a strong warning sign.'},
-      {q:'You hover over a link and see: bank.com.login-secure.ru. What do you do?',opts:['Click &mdash; it starts with bank.com','Do not click &mdash; the real domain is login-secure.ru','Click only on secure WiFi','Forward to a colleague'],correct:1,exp:'The real domain is login-secure.ru. "bank.com" is just a subdomain of a Russian server.'},
-      {q:'Where do you find full email headers in Gmail?',opts:['Settings &rarr; Privacy','Three-dot menu &rarr; Show original','File &rarr; Properties','Right-click &rarr; View Source'],correct:1,exp:'Three-dot menu &rarr; "Show original" reveals full headers including SPF, DKIM, and DMARC results.'}
-    ]
-  },
-  { id:5, title:'Business Email Compromise (BEC)', icon:'&#127970;', color:'#9b59b618',
-    meta:['&#9201; 8 min','&#128221; 5 questions','&#128308; Advanced'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>What is BEC?</h3><p>Business Email Compromise is one of the most financially damaging forms of cybercrime. Attackers impersonate executives or vendors to authorise fraudulent wire transfers, steal data, or redirect payments. The FBI reported $2.7 billion in BEC losses in 2022 alone.</p></div>
-      <div class="reader-section"><h3>Common BEC Scenarios</h3><ul><li><strong>CEO Fraud:</strong> The "CEO" emails Finance to urgently wire money to a new account</li><li><strong>Vendor Impersonation:</strong> A familiar supplier sends updated bank details</li><li><strong>Payroll Redirect:</strong> An "employee" requests salary sent to a new account</li><li><strong>Account Takeover:</strong> A real hacked email account sends BEC messages</li></ul></div>
-      <div class="warning-box">&#128680; <strong>BEC Red Flags:</strong> Urgent wire transfer &middot; New bank account details &middot; Requests to keep confidential &middot; Bypasses normal approval channels</div>
-      <div class="reader-section"><h3>Protections</h3><ul><li>Verify payment requests by phone using a known number</li><li>Never use contact info from the suspicious email</li><li>Require dual-approval for large transfers</li><li>Check the actual From address, not just the display name</li><li>Be suspicious of any request asking for secrecy</li></ul></div>
-    </div>`,
-    quiz:[
-      {q:'Your CEO emails asking to wire $50,000 to a new supplier account &mdash; keep it confidential. What do you do?',opts:['Wire it immediately','Verify by calling the CEO on their known phone number','Reply asking for an invoice','Ask a colleague if they got a similar request'],correct:1,exp:'Always verify large financial requests via a separate channel. Urgency + secrecy + new account = classic BEC red flags.'},
-      {q:'What makes BEC attacks particularly dangerous?',opts:['They always contain malware','They use real/compromised accounts, are highly targeted, and contain no malware','They are sent in bulk','They are easy to detect with spam filters'],correct:1,exp:'BEC is dangerous because it often uses real accounts, is highly targeted, and contains no malware that security tools would detect.'},
-      {q:'A vendor emails new bank account details for future invoices. What do you do?',opts:['Update payment details immediately','Call the vendor using a number from your existing records to verify','Reply to the email to confirm','Check the email address and update if it looks right'],correct:1,exp:'Vendor payment detail changes are a common BEC vector. Always verify by calling a number from your existing records.'},
-      {q:'Which is NOT a BEC red flag?',opts:['Urgent wire transfer to a new account','Request to keep a transaction confidential','A regular invoice through the normal process','Senior executive emailing finance directly outside normal channels'],correct:2,exp:'A regular invoice through the normal process is expected. BEC is characterised by urgency, secrecy, new accounts, and bypassing normal procedures.'},
-      {q:'Best organisational defence against CEO fraud?',opts:['Training only the CEO','Requiring phone verification for large or unusual financial transactions','Using a different email provider','Blocking all external emails'],correct:1,exp:'Dual-channel verification (email request + phone confirmation using a known number) is the most effective defence against CEO fraud.'}
-    ]
-  },
-  { id:6, title:'Credential Phishing & Fake Login Pages', icon:'&#128272;', color:'#ff456018',
-    meta:['&#9201; 7 min','&#128221; 5 questions','&#128992; Intermediate'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>What is Credential Phishing?</h3><p>Credential phishing tricks you into entering your username and password on a fake login page that looks identical to a real one. The attacker captures your credentials the moment you submit them.</p></div>
-      <div class="reader-section"><h3>How It Works</h3><ul><li>Email creates urgency: "Your account has been suspended &mdash; verify now"</li><li>You click and land on a page that looks pixel-perfect like the real login</li><li>You enter credentials &mdash; sent directly to the attacker</li><li>A fake error is shown, then you\'re redirected to the real site so nothing seems wrong</li></ul></div>
-      <div class="warning-box">&#128273; <strong>If you entered credentials on a suspicious page:</strong> Change your password immediately on the real site. Enable MFA. Report to IT now.</div>
-      <div class="reader-section"><h3>How to Spot a Fake Login Page</h3><ul><li>Check the URL in the address bar &mdash; does it match the official domain exactly?</li><li>HTTPS and a padlock do NOT mean the site is legitimate</li><li>Did you arrive here via an email link rather than typing the URL yourself?</li></ul></div>
-      <div class="reader-section"><h3>Multi-Factor Authentication (MFA)</h3><p>Even if your password is stolen, MFA prevents login without the second factor. Enable MFA on every account that supports it.</p></div>
-      <div class="highlight-box">&#128737;&#65039; <strong>MFA stops over 99% of credential-based attacks</strong>, even when the password has been compromised.</div>
-    </div>`,
-    quiz:[
-      {q:'You land on what looks like your company\'s Microsoft 365 login after clicking an email link. What do you check first?',opts:['Whether it has a padlock icon','The URL in the address bar to verify it is the real Microsoft domain','Whether the page loaded quickly','Whether it has the Microsoft logo'],correct:1,exp:'The URL is the only reliable indicator. Logos, design, and even HTTPS can all be faked.'},
-      {q:'You entered your password on what turned out to be a fake login page. First action?',opts:['Wait and see if anything happens','Change your password immediately on the real site','Delete the phishing email','Restart your computer'],correct:1,exp:'Speed is critical. Change your password immediately. Attackers use stolen credentials within minutes.'},
-      {q:'A phishing page has HTTPS and a padlock. Is it safe?',opts:['Yes &mdash; HTTPS means trustworthy','No &mdash; HTTPS only means the connection is encrypted, not that the site is legitimate','Yes &mdash; only real companies get HTTPS certificates','Only if the certificate is from a major provider'],correct:1,exp:'HTTPS means your connection is encrypted &mdash; it says nothing about whether the site is legitimate. Phishing sites routinely use HTTPS.'},
-      {q:'What does MFA protect against?',opts:['Malware on your device','Credential theft &mdash; even if your password is stolen, a second factor prevents access','Email phishing','All types of cyber attacks'],correct:1,exp:'MFA is specifically designed to protect against credential theft. Even with your password, an attacker cannot log in without the second factor.'},
-      {q:'Safest way to access your company login portal?',opts:['Click the link in an IT email','Type the URL directly or use a saved bookmark','Search Google and click the first result','Ask a colleague to send you the link'],correct:1,exp:'Typing the URL directly or using a saved bookmark eliminates the risk of being redirected to a fake site.'}
-    ]
-  },
-  { id:7, title:'Safe Email & Attachment Practices', icon:'&#128206;', color:'#2ecc7115',
-    meta:['&#9201; 7 min','&#128221; 5 questions','&#128308; Beginner'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>Attachments as Attack Vectors</h3><p>Malicious attachments are one of the most common malware delivery methods. A file appearing to be an innocent PDF or Word document can contain code that installs malware when opened.</p></div>
-      <div class="reader-section"><h3>Dangerous File Types</h3><ul><li><strong>.exe, .bat, .cmd, .ps1</strong> &mdash; Executables. Should never arrive via email.</li><li><strong>.docm, .xlsm</strong> &mdash; Office files with macros. Never enable macros from untrusted sources.</li><li><strong>.iso, .img</strong> &mdash; Disk images often used to bypass email security scanning.</li><li><strong>.zip, .rar</strong> &mdash; Archives that may hide malicious files.</li><li><strong>.pdf</strong> &mdash; Can contain embedded malicious links.</li></ul></div>
-      <div class="warning-box">&#128680; <strong>Never enable macros</strong> in Office documents received via email. Legitimate organisational documents never require you to enable macros.</div>
-      <div class="reader-section"><h3>Before Opening Any Attachment</h3><ul><li>Did you expect this attachment from this sender?</li><li>Does the filename match what the email says?</li><li>Is the sender\'s email address legitimate?</li><li>If uncertain &mdash; contact the sender through a different channel</li></ul></div>
-      <div class="reader-section"><h3>Safe Email Habits</h3><ul><li>Never forward suspicious emails to colleagues</li><li>Don\'t reply to phishing emails &mdash; this confirms your address is active</li><li>Use your organisation\'s Report Phishing button</li><li>When in doubt &mdash; call the sender to verify</li></ul></div>
-    </div>`,
-    quiz:[
-      {q:'A Word document says "Enable macros to view content." What do you do?',opts:['Enable macros &mdash; the document asked','Do not enable macros &mdash; this is a common malware delivery technique','Enable only if from a colleague','Open on a mobile device instead'],correct:1,exp:'The "enable macros" prompt is a classic malware delivery technique. Legitimate documents never require it.'},
-      {q:'Which file type is MOST dangerous in an unexpected email?',opts:['.pdf','.txt','.exe','.jpg'],correct:2,exp:'.exe is executable &mdash; running it can immediately install malware. Executables should never be opened from email.'},
-      {q:'An invoice PDF from a known supplier asks you to click a link for payment details. What do you do?',opts:['Click &mdash; it is from a known supplier','Contact the supplier by phone using a known number to verify','Forward to finance','Print and read offline'],correct:1,exp:'PDFs can contain malicious links. Supplier impersonation via fake invoices is common. Always verify payment communications by phone.'},
-      {q:'Best way to handle a suspicious unexpected attachment?',opts:['Open quickly to see what it is','Do not open it &mdash; report to IT security','Open but don\'t save files','Delete without reporting'],correct:1,exp:'Report to IT without opening. They can analyse it safely. Deleting without reporting means the threat is undocumented.'},
-      {q:'Why should you NOT reply to a phishing email even to say you know it is phishing?',opts:['It is impolite','Replying confirms your email is active, making you a higher-priority target','The reply might not reach them','It wastes your time'],correct:1,exp:'Replying confirms your address is active and monitored &mdash; marking you as a valuable target for future attacks.'}
-    ]
-  },
-  { id:8, title:'What To Do When You\'re Phished', icon:'&#128737;', color:'#ffffff08',
-    meta:['&#9201; 6 min','&#128221; 5 questions','&#128308; Beginner'],
-    content:`<div class="reader-body">
-      <div class="reader-section"><h3>Don\'t Panic &mdash; Act Fast</h3><p>If you clicked a phishing link, submitted credentials, or opened a malicious attachment &mdash; act immediately. The speed of your response determines how much damage occurs.</p></div>
-      <div class="reader-section"><h3>Immediate Steps</h3><ul><li><strong>1. Stop clicking</strong> &mdash; close any suspicious pages or pop-ups</li><li><strong>2. Disconnect from the network</strong> &mdash; if you opened an attachment, disconnect from WiFi/ethernet immediately</li><li><strong>3. Change your password</strong> &mdash; if you entered credentials, change them NOW on the real site</li><li><strong>4. Enable MFA</strong> &mdash; if not already enabled, turn it on immediately</li><li><strong>5. Report to IT security</strong> &mdash; contact your IT team right away</li></ul></div>
-      <div class="highlight-box">&#9989; <strong>You will never get in trouble for reporting a phishing email</strong> &mdash; even if it turns out to be legitimate. The only mistake is NOT reporting it.</div>
-      <div class="reader-section"><h3>How to Report Phishing</h3><ul><li>Use your email client\'s "Report Phishing" button</li><li>Forward to your IT/security team\'s dedicated email</li><li>Do not forward to colleagues &mdash; send directly to IT only</li><li>Do not interact with the email further</li></ul></div>
-      <div class="reader-section"><h3>Long-Term Protective Habits</h3><ul><li>Use a password manager with unique passwords for every account</li><li>Enable MFA on all important accounts</li><li>Keep software and systems updated</li><li>Think before you click &mdash; one second of verification prevents most attacks</li><li>Share awareness with your team when you spot a phishing campaign</li></ul></div>
-    </div>`,
-    quiz:[
-      {q:'You just entered your password on a phishing page. First action?',opts:['Wait and see','Change your password on the real official website immediately','Delete the phishing email','Restart your computer'],correct:1,exp:'Speed is everything. Change your password immediately. Attackers use stolen credentials within minutes.'},
-      {q:'You opened an attachment and your computer is behaving strangely. What do you do immediately?',opts:['Restart and hope it fixes','Disconnect from the network and contact IT immediately','Run a virus scan and wait','Save your work and shut down'],correct:1,exp:'Disconnecting from the network prevents malware from spreading or sending your data to attackers. Contact IT immediately after.'},
-      {q:'A colleague received the same suspicious email. Should you discuss it?',opts:['No &mdash; keep it secret','Yes &mdash; warn them and ensure both of you have reported it to IT','Only if they ask','Only via the suspicious email thread'],correct:1,exp:'Warn colleagues immediately. Sharing awareness of active phishing campaigns protects the whole organisation.'},
-      {q:'Will you get in trouble for reporting an email that turned out to be legitimate?',opts:['Yes &mdash; you waste IT\'s time','No &mdash; reporting suspected phishing is always the right action','Only if you report it more than once','Yes &mdash; false reports count against your score'],correct:1,exp:'You will never get in trouble for reporting. IT teams prefer 100 false positives over one real breach going unreported.'},
-      {q:'What long-term habit gives the strongest protection against credential attacks?',opts:['Memorising strong passwords','Password manager with unique passwords + MFA on all important accounts','Changing passwords every week','Using one strong password across all work accounts'],correct:1,exp:'A password manager with unique passwords + MFA stops virtually all credential-based attacks even if one password is phished.'}
-    ]
-  }
-];
+let MODULES = []; // populated from API
+
 
 const STORE_KEY = 'pg_training_progress';
 let state = { completed:{}, scores:{} };
@@ -526,33 +390,28 @@ async function submitRegistration() {
 async function loadModulesFromAPI() {
   try {
     const resp = await fetch('http://127.0.0.1:5000/api/training/modules/full');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const apiModules = await resp.json();
-    // Merge API data into MODULES array
+    // Replace MODULES entirely with API data — no merging, no duplication
+    MODULES.length = 0;
     apiModules.forEach(apiM => {
-      const local = MODULES.find(m => m.id === apiM.id);
-      if (local) {
-        if (apiM.content_html) local.content = apiM.content_html;
-        if (apiM.quiz_json) {
-          try { local.quiz = JSON.parse(apiM.quiz_json); } catch(e) {}
-        }
-        if (apiM.icon)  local.icon  = apiM.icon;
-        if (apiM.color) local.color = apiM.color;
-        if (apiM.title) local.title = apiM.title;
-      } else if (apiM.id) {
-        // New module added by admin
-        let metaArr = [];
-        try { metaArr = JSON.parse(apiM.meta_json || '[]'); } catch(e) {}
-        MODULES.push({
-          id: apiM.id, title: apiM.title, icon: apiM.icon||'&#127908;',
-          color: apiM.color||'#00d4ff15', meta: metaArr,
-          content: apiM.content_html||'',
-          quiz: (() => { try { return JSON.parse(apiM.quiz_json||'[]'); } catch(e) { return []; } })()
-        });
-        MODULES.sort((a,b) => a.id - b.id);
-      }
+      let metaArr = [];
+      try { metaArr = JSON.parse(apiM.meta_json || '[]'); } catch(e) {}
+      let quiz = [];
+      try { quiz = typeof apiM.quiz_json === 'string' ? JSON.parse(apiM.quiz_json) : (apiM.quiz_json || []); } catch(e) {}
+      MODULES.push({
+        id:      apiM.id,
+        title:   apiM.title   || 'Module ' + apiM.id,
+        icon:    apiM.icon    || '&#127908;',
+        color:   apiM.color   || '#00d4ff15',
+        meta:    metaArr,
+        content: apiM.content_html || '<p style="color:var(--muted)">No content yet. An admin can add content from the Training Admin page.</p>',
+        quiz:    quiz,
+      });
     });
+    console.log('Loaded', MODULES.length, 'modules from API');
   } catch(e) {
-    console.warn('Could not load modules from API — using local content:', e.message);
+    console.warn('Could not load modules from API:', e.message);
   }
 }
 

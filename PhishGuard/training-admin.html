@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PhishGuard — Training Admin</title>
+  <title>PhishGuard &mdash; Training Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -19,12 +19,15 @@
     .nav-item:hover{background:var(--border);color:var(--text)}
     .nav-item.active{background:linear-gradient(90deg,#00d4ff18,#0077ff10);color:var(--accent);border-left:2px solid var(--accent);margin-left:calc(0.6rem - 2px)}
     .nav-item svg{width:17px;height:17px;flex-shrink:0}
+    .nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px}
     .sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
     .user-chip{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--deep);border:1px solid var(--border)}
     .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#000;flex-shrink:0}
     .user-name{font-size:0.82rem;font-weight:700;color:#fff}
     .user-role{font-size:0.7rem;color:var(--accent)}
-    .main{margin-left:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;overflow-y:auto}
+    .main{margin-left:var(--sidebar-w);min-height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+    .main::-webkit-scrollbar{width:5px}
+    .main::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
     .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:var(--navy);border-bottom:1px solid var(--border)}
     .topbar-left h1{font-size:1.3rem;font-weight:800;color:#fff}
     .topbar-left p{font-size:0.8rem;color:var(--muted);margin-top:2px}
@@ -34,64 +37,95 @@
     .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px #00d4ff30}
     .btn-ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
     .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
-    .btn-danger{background:#ff456015;color:var(--danger);border:1px solid #ff456030}
-    .btn-danger:hover{background:#ff456025}
     .tab-bar{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px;margin-bottom:1.6rem;width:fit-content}
     .tab{padding:7px 18px;border-radius:6px;font-size:0.82rem;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;font-family:'Syne',sans-serif;transition:all 0.2s}
     .tab.active{background:var(--border);color:var(--accent)}
-    .panel{display:none}
-    .panel.active{display:block}
-    .module-row{background:var(--card);border:1px solid var(--border);border-radius:10px;display:grid;grid-template-columns:40px 40px 1fr 100px 100px 120px;align-items:center;gap:0;margin-bottom:0.5rem;overflow:hidden;transition:border-color 0.2s;min-height:64px}
+    .panel{display:none}.panel.active{display:block}
+    /* Module rows */
+    .module-row{background:var(--card);border:1px solid var(--border);border-radius:10px;display:grid;grid-template-columns:4px 44px 1fr 120px 100px 130px;align-items:center;margin-bottom:0.5rem;overflow:hidden;transition:border-color 0.2s;min-height:68px}
     .module-row:hover{border-color:var(--accent2)}
-    .mr-stripe{height:100%;width:4px;align-self:stretch}
-    .mr-icon{text-align:center;font-size:1.2rem;padding:0 4px}
-    .mr-name{padding:12px 16px}
-    .mr-title{font-size:0.88rem;font-weight:700;color:#fff;margin-bottom:2px}
+    .mr-stripe{height:100%;align-self:stretch}
+    .mr-icon{text-align:center;font-size:1.3rem;padding:0 8px}
+    .mr-body{padding:12px 16px}
+    .mr-title{font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:3px}
     .mr-meta{font-size:0.7rem;color:var(--muted)}
-    .mr-diff{text-align:center;font-size:0.68rem;font-weight:700;padding:3px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
-    .diff-beginner{background:#00e5a018;color:var(--success)}
-    .diff-intermediate{background:#ffb30018;color:var(--warn)}
-    .diff-advanced{background:#ff456018;color:var(--danger)}
+    .mr-diff{text-align:center;padding:0 8px}
+    .diff-pill{font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+    .d-beginner{background:#00e5a018;color:var(--success)}
+    .d-intermediate{background:#ffb30018;color:var(--warn)}
+    .d-advanced{background:#ff456018;color:var(--danger)}
     .mr-completions{text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.82rem;color:var(--muted)}
     .mr-actions{display:flex;gap:6px;padding:0 12px;justify-content:flex-end}
-    .act-btn{padding:5px 10px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;white-space:nowrap}
+    .act-btn{padding:5px 11px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;cursor:pointer;border:none;transition:all 0.2s;white-space:nowrap}
     .act-edit{background:#ffb30015;color:var(--warn);border:1px solid #ffb30030}
     .act-edit:hover{background:#ffb30028}
     .act-del{background:#ff456015;color:var(--danger);border:1px solid #ff456030}
     .act-del:hover{background:#ff456028}
-    .col-header{display:grid;grid-template-columns:40px 40px 1fr 100px 100px 120px;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:6px}
-    .col-header span{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;padding:0 4px}
-    .col-header span:nth-child(3){padding:0 16px}
-    .col-header span:nth-child(4),.col-header span:nth-child(5){text-align:center}
-    .col-header span:nth-child(6){text-align:right;padding-right:16px}
-    .modal-overlay{position:fixed;inset:0;z-index:200;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s}
+    .col-hdr{display:grid;grid-template-columns:4px 44px 1fr 120px 100px 130px;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:6px}
+    .col-hdr span{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+    .col-hdr span:nth-child(3){padding:0 16px}
+    .col-hdr span:nth-child(4),.col-hdr span:nth-child(5){text-align:center}
+    .col-hdr span:nth-child(6){text-align:right;padding-right:14px}
+    /* Modal */
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;padding:1rem;overflow-y:auto}
     .modal-overlay.open{opacity:1;pointer-events:all}
-    .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s}
+    .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s}
     .modal-overlay.open .modal{transform:translateY(0)}
-    .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1}
+    .modal::-webkit-scrollbar{width:4px}
+    .modal::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1;border-radius:16px 16px 0 0}
     .modal-header h2{font-size:1rem;font-weight:800;color:#fff}
+    .modal-header p{font-size:0.75rem;color:var(--muted);margin-top:3px}
     .modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.3rem;padding:4px;line-height:1}
     .modal-close:hover{color:var(--text)}
-    .modal-body{padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1rem}
-    .modal-footer{padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end}
-    .form-group{display:flex;flex-direction:column;gap:6px}
-    .form-group label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
-    .form-input{background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.86rem;color:var(--text);outline:none;transition:border-color 0.2s;width:100%}
-    .form-input:focus{border-color:var(--accent)}
-    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-    .completion-table{width:100%;border-collapse:collapse;font-size:0.82rem}
-    .completion-table th{padding:9px 12px;text-align:left;font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border)}
-    .completion-table td{padding:10px 12px;border-bottom:1px solid #0d284740;color:var(--text)}
-    .completion-table tr:last-child td{border-bottom:none}
+    .modal-body{padding:1.4rem 1.6rem}
+    .modal-footer{padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end;position:sticky;bottom:0;background:var(--panel)}
+    .fg{display:flex;flex-direction:column;gap:6px;margin-bottom:1rem}
+    .fg label{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+    .fi{background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.86rem;color:var(--text);outline:none;transition:border-color 0.2s;width:100%}
+    .fi:focus{border-color:var(--accent)}
+    .fi-select option{background:var(--deep)}
+    .fg-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    /* Sections editor */
+    .sections-editor{display:flex;flex-direction:column;gap:0.6rem}
+    .section-block{background:var(--deep);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .section-block-header{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--card);border-bottom:1px solid var(--border)}
+    .section-block-header span{flex:1;font-size:0.78rem;font-weight:600;color:var(--text)}
+    .section-del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:2px 6px;transition:color 0.2s}
+    .section-del-btn:hover{color:var(--danger)}
+    .section-block textarea{width:100%;background:transparent;border:none;padding:10px 12px;font-family:'Syne',sans-serif;font-size:0.83rem;color:var(--text);outline:none;resize:vertical;min-height:70px;line-height:1.6}
+    .add-section-btn{background:var(--card);border:1px dashed var(--border);border-radius:8px;padding:8px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;text-align:center;width:100%}
+    .add-section-btn:hover{border-color:var(--accent);color:var(--accent)}
+    /* Quiz editor */
+    .quiz-q-block{background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:0.5rem}
+    .quiz-q-num{font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+    .quiz-q-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:'Syne',sans-serif;font-size:0.83rem;color:var(--text);outline:none;margin-bottom:8px}
+    .quiz-q-input:focus{border-color:var(--accent)}
+    .quiz-opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+    .quiz-opt-wrap{display:flex;align-items:center;gap:6px}
+    .quiz-opt-wrap input[type=radio]{accent-color:var(--accent);flex-shrink:0}
+    .quiz-opt-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:'Syne',sans-serif;font-size:0.8rem;color:var(--text);outline:none}
+    .quiz-opt-input:focus{border-color:var(--accent)}
+    .quiz-exp-input{width:100%;background:var(--card);border:1px solid #00e5a030;border-radius:6px;padding:8px 12px;font-family:'Syne',sans-serif;font-size:0.8rem;color:var(--text);outline:none}
+    .quiz-exp-input:focus{border-color:var(--success)}
+    .quiz-q-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+    .quiz-del-btn{background:#ff456015;color:var(--danger);border:1px solid #ff456025;padding:4px 10px;border-radius:5px;font-size:0.7rem;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif}
+    .quiz-del-btn:hover{background:#ff456028}
+    .add-q-btn{background:var(--card);border:1px dashed var(--border);border-radius:8px;padding:8px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;text-align:center;width:100%;margin-top:4px}
+    .add-q-btn:hover{border-color:var(--success);color:var(--success)}
+    /* Completions */
+    .comp-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+    .comp-table th{padding:9px 12px;text-align:left;font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border)}
+    .comp-table td{padding:10px 12px;border-bottom:1px solid #0d284740;color:var(--text)}
+    .comp-table tr:last-child td{border-bottom:none}
     .badge-pass{background:#00e5a018;color:var(--success);border:1px solid #00e5a030;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px}
     .badge-fail{background:#ff456018;color:var(--danger);border:1px solid #ff456030;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px}
-    .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.6rem}
+    .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.6rem}
     .stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.2rem}
-    .stat-num{font-family:'Share Tech Mono',monospace;font-size:1.5rem;color:#fff;margin-bottom:4px}
-    .stat-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
-    .learner-table{width:100%;border-collapse:collapse;font-size:0.82rem}
-    .learner-table th{padding:9px 12px;text-align:left;font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border)}
-    .learner-table td{padding:10px 12px;border-bottom:1px solid #0d284740;color:var(--text)}
+    .stat-num{font-family:'Share Tech Mono',monospace;font-size:1.4rem;color:#fff;margin-bottom:4px}
+    .stat-lbl{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+    .search-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--text);outline:none;width:260px}
+    .search-box:focus{border-color:var(--accent)}
     @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   </style>
 </head>
@@ -99,21 +133,15 @@
 
 <aside class="sidebar">
   <div class="sidebar-logo">
-    <svg viewBox="0 0 52 52" fill="none">
-      <path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/>
-      <path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/>
-      <path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
+    <svg viewBox="0 0 52 52" fill="none"><path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
     <div class="sidebar-logo-text">Phish<span>Guard</span></div>
   </div>
   <div class="sidebar-section">Main Menu</div>
   <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
   <a class="nav-item" href="campaign-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns</a>
   <a class="nav-item" href="template-library.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Templates</a>
-  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Employees</a>
-  <div class="sidebar-section">Training</div>
-  <a class="nav-item active" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training Modules</a>
-  <a class="nav-item" href="training-admin.html#completions" onclick="switchTab('completions')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Completion Report</a>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <a class="nav-item active" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training</a>
   <div class="sidebar-section">Reports</div>
   <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
   <div class="sidebar-section">System</div>
@@ -121,65 +149,70 @@
   <div class="sidebar-footer">
     <div class="user-chip">
       <div class="avatar">SA</div>
-      <div>
-        <div class="user-name">Super Admin</div>
-        <div class="user-role">Administrator</div>
-      </div>
+      <div><div class="user-name">Super Admin</div><div class="user-role">Administrator</div></div>
     </div>
   </div>
 </aside>
 
-<!-- Module Edit Modal -->
-<div class="modal-overlay" id="moduleModal" onclick="if(event.target===this)closeModuleModal()">
+<!-- Module Editor Modal -->
+<div class="modal-overlay" id="moduleModal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-header">
-      <h2 id="modalTitle">Add Module</h2>
-      <button class="modal-close" onclick="closeModuleModal()">&times;</button>
+      <div><h2 id="modalTitle">Add Module</h2><p id="modalSub">Fill in the module details below</p></div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group" style="grid-column:1/-1">
-          <label>Module Title *</label>
-          <input class="form-input" id="fm_title" placeholder="e.g. Password Security Best Practices"/>
+      <!-- Step indicator -->
+      <div style="display:flex;gap:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:4px;margin-bottom:1.4rem;width:fit-content">
+        <button class="tab active" id="step-tab-1" onclick="goStep(1)">1 &middot; Details</button>
+        <button class="tab" id="step-tab-2" onclick="goStep(2)">2 &middot; Content</button>
+        <button class="tab" id="step-tab-3" onclick="goStep(3)">3 &middot; Quiz</button>
+      </div>
+
+      <!-- Step 1: Details -->
+      <div id="step1">
+        <div class="fg"><label>Module Title *</label><input class="fi" id="fm_title" placeholder="e.g. Password Security Best Practices"/></div>
+        <div class="fg"><label>Description (shown on module card)</label><input class="fi" id="fm_desc" placeholder="Brief one-line description"/></div>
+        <div class="fg-grid">
+          <div class="fg"><label>Duration</label><input class="fi" id="fm_duration" value="5 min" placeholder="e.g. 7 min"/></div>
+          <div class="fg"><label>Difficulty</label>
+            <select class="fi fi-select" id="fm_difficulty">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+          <div class="fg"><label>Icon (emoji or HTML entity)</label><input class="fi" id="fm_icon" value="&#127908;" placeholder="e.g. &#128272;"/></div>
+          <div class="fg"><label>Order Number</label><input class="fi" id="fm_order" type="number" value="99" min="1"/></div>
         </div>
-        <div class="form-group" style="grid-column:1/-1">
-          <label>Description</label>
-          <input class="form-input" id="fm_desc" placeholder="Brief description for the module list"/>
+      </div>
+
+      <!-- Step 2: Content sections -->
+      <div id="step2" style="display:none">
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">Add content sections. Each section has a heading and body text. Use plain text &mdash; no HTML needed.</p>
+        <div class="sections-editor" id="sectionsEditor"></div>
+        <button class="add-section-btn" onclick="addSection()">+ Add Section</button>
+        <div style="margin-top:1rem">
+          <div class="fg"><label>Highlight Box (tip or key fact &mdash; optional)</label>
+            <textarea class="fi" id="fm_highlight" rows="2" placeholder="e.g. Fact: Over 90% of all successful cyber attacks begin with a phishing email." style="resize:vertical"></textarea>
+          </div>
+          <div class="fg"><label>Warning Box (danger callout &mdash; optional)</label>
+            <textarea class="fi" id="fm_warning" rows="2" placeholder="e.g. Never enable macros in Office documents received via email." style="resize:vertical"></textarea>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Duration</label>
-          <input class="form-input" id="fm_duration" placeholder="e.g. 7 min" value="5 min"/>
-        </div>
-        <div class="form-group">
-          <label>Difficulty</label>
-          <select class="form-input" id="fm_difficulty">
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Icon (HTML entity)</label>
-          <input class="form-input" id="fm_icon" placeholder="e.g. &#128272;" value="&#127908;"/>
-        </div>
-        <div class="form-group">
-          <label>Order Number</label>
-          <input class="form-input" id="fm_order" type="number" value="99"/>
-        </div>
-        <div class="form-group" style="grid-column:1/-1">
-          <label>Content HTML</label>
-          <textarea class="form-input" id="fm_content" rows="8" style="font-family:'Share Tech Mono',monospace;font-size:0.75rem;resize:vertical" placeholder="Enter the module content as HTML. Use &lt;div class=&quot;reader-section&quot;&gt;, &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt; etc."></textarea>
-        </div>
-        <div class="form-group" style="grid-column:1/-1">
-          <label>Quiz JSON (array of question objects)</label>
-          <textarea class="form-input" id="fm_quiz" rows="8" style="font-family:'Share Tech Mono',monospace;font-size:0.73rem;resize:vertical" placeholder='[{"q":"Question text?","opts":["A","B","C","D"],"correct":1,"exp":"Explanation text"}]'></textarea>
-          <span style="font-size:0.68rem;color:var(--muted)">Each object: q (string), opts (array of 4), correct (0-3 index), exp (explanation)</span>
-        </div>
+      </div>
+
+      <!-- Step 3: Quiz questions -->
+      <div id="step3" style="display:none">
+        <p style="font-size:0.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.6">Add quiz questions. Select the radio button next to the correct answer. You need at least 1 question (5 recommended).</p>
+        <div id="quizEditor"></div>
+        <button class="add-q-btn" onclick="addQuestion()">+ Add Question</button>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModuleModal()">Cancel</button>
-      <button class="btn btn-primary" id="saveModuleBtn" onclick="saveModule()">Save Module</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-ghost" id="prevBtn" onclick="prevStep()" style="display:none">&#8592; Back</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Next &rarr;</button>
     </div>
   </div>
 </div>
@@ -188,7 +221,7 @@
   <div class="topbar">
     <div class="topbar-left">
       <h1>Training Administration</h1>
-      <p>Manage training modules and track employee completion</p>
+      <p>Manage security awareness training modules and track completion</p>
     </div>
     <button class="btn btn-primary" onclick="openAddModal()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -202,52 +235,34 @@
       <button class="tab"        id="tab-completions" onclick="switchTab('completions')">Completion Report</button>
     </div>
 
-    <!-- Modules panel -->
+    <!-- Modules -->
     <div class="panel active" id="panel-modules">
-      <div class="col-header">
-        <span></span><span></span>
-        <span>Module</span>
-        <span>Difficulty</span>
-        <span>Completions</span>
-        <span>Actions</span>
+      <div class="col-hdr">
+        <span></span><span></span><span style="padding:0 16px">Module</span>
+        <span>Difficulty</span><span>Completions</span><span>Actions</span>
       </div>
-      <div id="modulesList">
-        <div style="text-align:center;padding:3rem;color:var(--muted)">Loading modules...</div>
-      </div>
+      <div id="modulesList"><div style="text-align:center;padding:3rem;color:var(--muted)">Loading modules...</div></div>
     </div>
 
-    <!-- Completions panel -->
+    <!-- Completions -->
     <div class="panel" id="panel-completions">
-      <div class="stat-row" id="compStats">
-        <div class="stat-card"><div class="stat-num" id="statLearners">—</div><div class="stat-label">Total Learners</div></div>
-        <div class="stat-card"><div class="stat-num" id="statCompleted">—</div><div class="stat-label">Modules Passed</div></div>
-        <div class="stat-card"><div class="stat-num" id="statPassRate" style="color:var(--success)">—</div><div class="stat-label">Pass Rate</div></div>
-        <div class="stat-card"><div class="stat-num" id="statDepts">—</div><div class="stat-label">Departments</div></div>
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-num" id="statTotal">-</div><div class="stat-lbl">Total Attempts</div></div>
+        <div class="stat-card"><div class="stat-num" id="statPassed" style="color:var(--success)">-</div><div class="stat-lbl">Passed</div></div>
+        <div class="stat-card"><div class="stat-num" id="statRate" style="color:var(--accent)">-</div><div class="stat-lbl">Pass Rate</div></div>
       </div>
-
-      <h3 style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)">Learners</h3>
-      <div style="overflow-x:auto;margin-bottom:2rem">
-        <table class="learner-table">
-          <thead><tr>
-            <th>Name</th><th>Department</th><th>Campaign</th>
-            <th style="text-align:center">Modules Attempted</th>
-            <th style="text-align:center">Modules Passed</th>
-            <th>Registered</th>
-          </tr></thead>
-          <tbody id="learnersBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody>
-        </table>
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+        <input class="search-box" id="compSearch" placeholder="Search by name or module..." oninput="filterCompletions()"/>
       </div>
-
-      <h3 style="font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)">All Completions</h3>
       <div style="overflow-x:auto">
-        <table class="completion-table">
+        <table class="comp-table">
           <thead><tr>
             <th>Name</th><th>Department</th><th>Module</th>
             <th style="text-align:center">Score</th>
             <th style="text-align:center">Result</th>
             <th>Completed</th>
           </tr></thead>
-          <tbody id="completionsBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody>
+          <tbody id="completionsBody"></tbody>
         </table>
       </div>
     </div>
@@ -258,68 +273,145 @@
 <script>
 let allModules = [];
 let editingId  = null;
-let compData   = null;
+let modalStep  = 1;
+let allCompletions = [];
 
 function init() {
   const user = requireAuth('admin');
   if (!user) return;
+  document.querySelector('.user-name') && (document.querySelector('.user-name').textContent = user.name);
   loadModules();
-  // Check hash for direct tab navigation
   if (window.location.hash === '#completions') switchTab('completions');
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 function switchTab(tab) {
   ['modules','completions'].forEach(t => {
-    document.getElementById('tab-'  + t).classList.toggle('active', t === tab);
-    document.getElementById('panel-'+ t).classList.toggle('active', t === tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('panel-'+t).classList.toggle('active', t===tab);
   });
-  if (tab === 'completions' && !compData) loadCompletions();
+  if (tab === 'completions') loadCompletions();
 }
 
 // ── Load modules ──────────────────────────────────────────────────────────
 async function loadModules() {
   try {
-    const data = await apiFetch('training/modules/full');
-    allModules = data;
+    allModules = await apiFetch('training/modules/full');
     renderModules();
   } catch(e) {
-    document.getElementById('modulesList').innerHTML = '<div style="color:var(--danger);padding:2rem;text-align:center">Failed to load — is app.py running?</div>';
+    document.getElementById('modulesList').innerHTML = '<div style="color:var(--danger);padding:2rem;text-align:center">Failed to load &mdash; is app.py running?</div>';
   }
 }
 
-const STRIPE_COLORS = ['var(--accent)','var(--success)','var(--warn)','var(--accent2)','#c39bd3','var(--danger)','#2ecc71','var(--muted)','#e67e22','#1abc9c'];
+const STRIPES = ['var(--accent)','var(--success)','var(--warn)','var(--accent2)','#c39bd3','var(--danger)','#2ecc71','var(--muted)'];
 
 function renderModules() {
   const list = document.getElementById('modulesList');
-  if (!allModules.length) { list.innerHTML = '<div style="color:var(--muted);padding:2rem;text-align:center">No modules yet. Click Add Module to create one.</div>'; return; }
+  if (!allModules.length) {
+    list.innerHTML = '<div style="color:var(--muted);padding:2rem;text-align:center">No modules yet. Click Add Module to create one.</div>';
+    return;
+  }
   list.innerHTML = allModules.map((m,i) => {
-    const diffCls = {beginner:'diff-beginner',intermediate:'diff-intermediate',advanced:'diff-advanced'}[m.difficulty] || 'diff-beginner';
-    const stripe  = STRIPE_COLORS[(m.id-1) % STRIPE_COLORS.length];
-    return '<div class="module-row" style="animation-delay:' + (i*0.04) + 's">' +
-      '<div class="mr-stripe" style="background:' + stripe + '"></div>' +
-      '<div class="mr-icon">' + (m.icon||'&#127908;') + '</div>' +
-      '<div class="mr-name"><div class="mr-title">' + m.title + '</div><div class="mr-meta">' + m.duration + ' &middot; Order #' + m.order_num + (m.content_html ? '' : ' &middot; <span style="color:var(--danger)">No content</span>') + '</div></div>' +
-      '<div class="mr-diff"><span class="' + diffCls + '">' + m.difficulty + '</span></div>' +
-      '<div class="mr-completions">—</div>' +
+    const diffCls = {beginner:'d-beginner',intermediate:'d-intermediate',advanced:'d-advanced'}[m.difficulty]||'d-beginner';
+    const hasContent = m.content_html && m.content_html.length > 10;
+    let quizCount = 0;
+    try { quizCount = (typeof m.quiz_json==='string' ? JSON.parse(m.quiz_json) : m.quiz_json||[]).length; } catch(e){}
+    return '<div class="module-row" style="animation-delay:'+i*0.04+'s">' +
+      '<div class="mr-stripe" style="background:'+STRIPES[i%STRIPES.length]+'"></div>' +
+      '<div class="mr-icon">'+(m.icon||'&#127908;')+'</div>' +
+      '<div class="mr-body"><div class="mr-title">'+m.title+'</div>' +
+      '<div class="mr-meta">'+m.duration+' &middot; '+quizCount+' quiz questions'+(hasContent?'':' &middot; <span style="color:var(--danger)">No content</span>')+'</div></div>' +
+      '<div class="mr-diff"><span class="diff-pill '+diffCls+'">'+m.difficulty+'</span></div>' +
+      '<div class="mr-completions">&mdash;</div>' +
       '<div class="mr-actions">' +
-        '<button class="act-btn act-edit" onclick="openEditModal(' + m.id + ')">&#9998; Edit</button>' +
-        '<button class="act-btn act-del"  onclick="deleteModule(' + m.id + ')">&#128465;</button>' +
-      '</div>' +
-    '</div>';
+        '<button class="act-btn act-edit" onclick="openEditModal('+m.id+')">&#9998; Edit</button>' +
+        '<button class="act-btn act-del"  onclick="deleteModule('+m.id+')">&#128465;</button>' +
+      '</div></div>';
   }).join('');
 }
 
-// ── Module modal ──────────────────────────────────────────────────────────
+// ── Modal steps ───────────────────────────────────────────────────────────
+function goStep(n) {
+  modalStep = n;
+  [1,2,3].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n ? 'block' : 'none';
+    document.getElementById('step-tab-'+i).classList.toggle('active', i===n);
+  });
+  document.getElementById('prevBtn').style.display = n > 1 ? 'inline-flex' : 'none';
+  document.getElementById('nextBtn').textContent = n === 3 ? 'Save Module' : 'Next \u2192';
+}
+function nextStep() {
+  if (modalStep < 3) goStep(modalStep + 1);
+  else saveModule();
+}
+function prevStep() {
+  if (modalStep > 1) goStep(modalStep - 1);
+}
+
+// ── Section editor ────────────────────────────────────────────────────────
+let sectionCount = 0;
+function addSection(heading='', body='') {
+  sectionCount++;
+  const id = 'sec_' + sectionCount;
+  const div = document.createElement('div');
+  div.className = 'section-block';
+  div.id = id;
+  div.innerHTML =
+    '<div class="section-block-header">' +
+      '<input style="flex:1;background:transparent;border:none;font-family:\'Syne\',sans-serif;font-size:0.82rem;font-weight:600;color:#fff;outline:none" placeholder="Section heading (e.g. Why Phishing Works)" value="'+heading+'" class="sec-heading"/>' +
+      '<button class="section-del-btn" onclick="document.getElementById(\''+id+'\').remove()">&times;</button>' +
+    '</div>' +
+    '<textarea class="sec-body" placeholder="Write the section content here. Use plain text &mdash; no HTML needed.">' + body + '</textarea>';
+  document.getElementById('sectionsEditor').appendChild(div);
+}
+
+// ── Quiz editor ───────────────────────────────────────────────────────────
+let qCount = 0;
+function addQuestion(q='', opts=['','','',''], correct=0, exp='') {
+  qCount++;
+  const id = 'q_' + qCount;
+  const div = document.createElement('div');
+  div.className = 'quiz-q-block';
+  div.id = id;
+  div.innerHTML =
+    '<div class="quiz-q-num">Question ' + qCount + '</div>' +
+    '<input class="quiz-q-input" placeholder="Enter the question text" value="'+q+'"/>' +
+    '<div class="quiz-opts-grid">' +
+      opts.map((o,i) =>
+        '<div class="quiz-opt-wrap">' +
+          '<input type="radio" name="correct_'+id+'" value="'+i+'"'+(i===correct?' checked':'')+'/>' +
+          '<input class="quiz-opt-input" placeholder="Option '+(i+1)+'" value="'+o+'"/>' +
+        '</div>'
+      ).join('') +
+    '</div>' +
+    '<input class="quiz-exp-input" placeholder="Explanation shown after answering (e.g. Correct! Because...)" value="'+exp+'"/>' +
+    '<div class="quiz-q-footer"><span style="font-size:0.7rem;color:var(--muted)">Select the radio button next to the correct answer</span>' +
+      '<button class="quiz-del-btn" onclick="document.getElementById(\''+id+'\').remove()">Remove</button>' +
+    '</div>';
+  document.getElementById('quizEditor').appendChild(div);
+}
+
+// ── Open modals ───────────────────────────────────────────────────────────
+function resetModal() {
+  document.getElementById('fm_title').value    = '';
+  document.getElementById('fm_desc').value     = '';
+  document.getElementById('fm_duration').value = '5 min';
+  document.getElementById('fm_difficulty').value = 'beginner';
+  document.getElementById('fm_icon').value     = '&#127908;';
+  document.getElementById('fm_order').value    = String(allModules.length + 1);
+  document.getElementById('fm_highlight').value = '';
+  document.getElementById('fm_warning').value  = '';
+  document.getElementById('sectionsEditor').innerHTML = '';
+  document.getElementById('quizEditor').innerHTML     = '';
+  sectionCount = 0; qCount = 0;
+  goStep(1);
+}
+
 function openAddModal() {
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Add New Module';
-  document.getElementById('saveModuleBtn').textContent = 'Create Module';
-  ['fm_title','fm_desc','fm_content','fm_quiz'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('fm_duration').value  = '5 min';
-  document.getElementById('fm_difficulty').value = 'beginner';
-  document.getElementById('fm_icon').value       = '&#127908;';
-  document.getElementById('fm_order').value      = String(allModules.length + 1);
+  document.getElementById('modalSub').textContent   = 'Step 1 of 3 \u2014 Fill in module details';
+  resetModal();
   document.getElementById('moduleModal').classList.add('open');
 }
 
@@ -328,52 +420,114 @@ function openEditModal(id) {
   if (!m) return;
   editingId = id;
   document.getElementById('modalTitle').textContent = 'Edit Module';
-  document.getElementById('saveModuleBtn').textContent = 'Save Changes';
-  document.getElementById('fm_title').value     = m.title      || '';
-  document.getElementById('fm_desc').value      = m.description|| '';
-  document.getElementById('fm_duration').value  = m.duration   || '5 min';
-  document.getElementById('fm_difficulty').value= m.difficulty || 'beginner';
-  document.getElementById('fm_icon').value      = m.icon       || '&#127908;';
-  document.getElementById('fm_order').value     = m.order_num  || '';
-  document.getElementById('fm_content').value   = m.content_html|| '';
-  try {
-    document.getElementById('fm_quiz').value = typeof m.quiz_json === 'string'
-      ? JSON.stringify(JSON.parse(m.quiz_json), null, 2)
-      : JSON.stringify(m.quiz_json||[], null, 2);
-  } catch(e) {
-    document.getElementById('fm_quiz').value = m.quiz_json || '[]';
+  document.getElementById('modalSub').textContent   = m.title;
+  resetModal();
+
+  document.getElementById('fm_title').value      = m.title      || '';
+  document.getElementById('fm_desc').value       = m.description|| '';
+  document.getElementById('fm_duration').value   = m.duration   || '5 min';
+  document.getElementById('fm_difficulty').value = m.difficulty || 'beginner';
+  document.getElementById('fm_icon').value       = m.icon       || '&#127908;';
+  document.getElementById('fm_order').value      = m.order_num  || '';
+
+  // Parse content HTML back into sections
+  if (m.content_html) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = m.content_html;
+    // Extract reader-sections
+    tmp.querySelectorAll('.reader-section').forEach(sec => {
+      const h = sec.querySelector('h3');
+      const heading = h ? h.textContent.trim() : '';
+      h && h.remove();
+      const body = sec.textContent.trim();
+      addSection(heading, body);
+    });
+    // Extract highlight + warning boxes
+    const hb = tmp.querySelector('.highlight-box');
+    if (hb) document.getElementById('fm_highlight').value = hb.textContent.trim();
+    const wb = tmp.querySelector('.warning-box');
+    if (wb) document.getElementById('fm_warning').value = wb.textContent.trim();
   }
+
+  // Parse quiz JSON back into question blocks
+  try {
+    const quiz = typeof m.quiz_json === 'string' ? JSON.parse(m.quiz_json) : (m.quiz_json || []);
+    quiz.forEach(q => addQuestion(q.q || '', q.opts || ['','','',''], q.correct || 0, q.exp || ''));
+  } catch(e) {}
+
   document.getElementById('moduleModal').classList.add('open');
 }
 
-function closeModuleModal() {
+function closeModal() {
   document.getElementById('moduleModal').classList.remove('open');
   editingId = null;
 }
 
+// ── Build HTML from sections ──────────────────────────────────────────────
+function buildContentHtml() {
+  let html = '<div class="reader-body">';
+  document.querySelectorAll('.section-block').forEach(sec => {
+    const heading = sec.querySelector('.sec-heading').value.trim();
+    const body    = sec.querySelector('.sec-body').value.trim();
+    if (!heading && !body) return;
+    html += '<div class="reader-section">';
+    if (heading) html += '<h3>' + heading + '</h3>';
+    // Split body into paragraphs
+    body.split(/\n\n+/).forEach(para => {
+      const p = para.trim();
+      if (p) {
+        // If line starts with - or * treat as list items
+        if (/^[-*]\s/.test(p)) {
+          html += '<ul>' + p.split('\n').filter(l=>l.trim()).map(l=>'<li>'+l.replace(/^[-*]\s*/,'')+'</li>').join('') + '</ul>';
+        } else {
+          html += '<p>' + p.replace(/\n/g,'<br>') + '</p>';
+        }
+      }
+    });
+    html += '</div>';
+  });
+  const highlight = document.getElementById('fm_highlight').value.trim();
+  if (highlight) html += '<div class="highlight-box">&#128161; ' + highlight + '</div>';
+  const warning   = document.getElementById('fm_warning').value.trim();
+  if (warning)   html += '<div class="warning-box">&#9888;&#65039; ' + warning + '</div>';
+  html += '</div>';
+  return html;
+}
+
+function buildQuizJson() {
+  const questions = [];
+  document.querySelectorAll('.quiz-q-block').forEach(block => {
+    const q    = block.querySelector('.quiz-q-input').value.trim();
+    const opts = Array.from(block.querySelectorAll('.quiz-opt-input')).map(i => i.value.trim());
+    const radios = block.querySelectorAll('input[type=radio]');
+    let correct = 0;
+    radios.forEach((r,i) => { if (r.checked) correct = i; });
+    const exp  = block.querySelector('.quiz-exp-input').value.trim();
+    if (q) questions.push({ q, opts, correct, exp });
+  });
+  return questions;
+}
+
+// ── Save module ───────────────────────────────────────────────────────────
 async function saveModule() {
-  const btn = document.getElementById('saveModuleBtn');
   const title = document.getElementById('fm_title').value.trim();
-  if (!title) { showToast('Module title is required', 'error'); return; }
+  if (!title) { goStep(1); showToast('Module title is required', 'error'); return; }
 
-  // Validate quiz JSON
-  let quizJson = '[]';
-  const quizRaw = document.getElementById('fm_quiz').value.trim();
-  if (quizRaw) {
-    try { JSON.parse(quizRaw); quizJson = quizRaw; }
-    catch(e) { showToast('Quiz JSON is invalid: ' + e.message, 'error'); return; }
-  }
+  const quiz = buildQuizJson();
+  if (quiz.length === 0) { showToast('Add at least one quiz question', 'error'); return; }
 
+  const btn = document.getElementById('nextBtn');
   btn.textContent = 'Saving...'; btn.disabled = true;
+
   const payload = {
     title,
     description:  document.getElementById('fm_desc').value.trim(),
-    duration:     document.getElementById('fm_duration').value.trim(),
+    duration:     document.getElementById('fm_duration').value.trim() || '5 min',
     difficulty:   document.getElementById('fm_difficulty').value,
-    icon:         document.getElementById('fm_icon').value.trim(),
+    icon:         document.getElementById('fm_icon').value.trim() || '&#127908;',
     order_num:    parseInt(document.getElementById('fm_order').value) || 99,
-    content_html: document.getElementById('fm_content').value.trim(),
-    quiz_json:    quizJson,
+    content_html: buildContentHtml(),
+    quiz_json:    JSON.stringify(quiz),
   };
 
   try {
@@ -384,18 +538,17 @@ async function saveModule() {
       await apiFetch('training/modules', 'POST', payload);
       showToast('Module created', 'success');
     }
-    closeModuleModal();
+    closeModal();
     await loadModules();
   } catch(e) {
     showToast('Save failed: ' + e.message, 'error');
   }
-  btn.textContent = editingId ? 'Save Changes' : 'Create Module';
-  btn.disabled = false;
+  btn.textContent = 'Save Module'; btn.disabled = false;
 }
 
 async function deleteModule(id) {
   const m = allModules.find(m => m.id === id);
-  if (!confirm('Delete module "' + (m?m.title:id) + '"?\nThis will also remove all completion records for this module.')) return;
+  if (!confirm('Delete "' + (m?m.title:id) + '"?\nThis also removes all completion records for this module.')) return;
   try {
     await apiFetch('training/modules/' + id, 'DELETE');
     showToast('Module deleted', 'success');
@@ -405,50 +558,44 @@ async function deleteModule(id) {
 
 // ── Completions ───────────────────────────────────────────────────────────
 async function loadCompletions() {
+  document.getElementById('completionsBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr>';
   try {
-    compData = await apiFetch('training/completions');
-    renderCompletions();
+    const data = await apiFetch('training/completions');
+    allCompletions = data.completions || [];
+    renderCompletions(allCompletions);
   } catch(e) {
     document.getElementById('completionsBody').innerHTML = '<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:2rem">Failed to load</td></tr>';
   }
 }
 
-function renderCompletions() {
-  if (!compData) return;
-  const { completions, learners } = compData;
+function renderCompletions(list) {
+  const total  = list.length;
+  const passed = list.filter(c => c.passed).length;
+  const rate   = total ? Math.round(passed/total*100) : 0;
+  document.getElementById('statTotal').textContent  = total;
+  document.getElementById('statPassed').textContent = passed;
+  document.getElementById('statRate').textContent   = rate + '%';
 
-  // Stats
-  const depts = new Set(learners.map(l => l.department)).size;
-  const totalPassed = completions.filter(c => c.passed).length;
-  const passRate = completions.length ? Math.round(totalPassed/completions.length*100) : 0;
-  document.getElementById('statLearners').textContent  = learners.length;
-  document.getElementById('statCompleted').textContent = totalPassed;
-  document.getElementById('statPassRate').textContent  = passRate + '%';
-  document.getElementById('statDepts').textContent     = depts;
-
-  // Learners table
-  document.getElementById('learnersBody').innerHTML = learners.length
-    ? learners.map(l => '<tr>' +
-        '<td style="font-weight:600;color:#fff">' + l.full_name + '</td>' +
-        '<td>' + l.department + '</td>' +
-        '<td style="color:var(--muted)">' + (l.campaign_id||'—') + '</td>' +
-        '<td style="text-align:center">' + (l.modules_attempted||0) + '</td>' +
-        '<td style="text-align:center;color:var(--success)">' + (l.modules_passed||0) + '</td>' +
-        '<td style="color:var(--muted);font-size:0.75rem">' + new Date(l.registered_at).toLocaleDateString('en-GB') + '</td>' +
-      '</tr>').join('')
-    : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No learners yet</td></tr>';
-
-  // Completions table
-  document.getElementById('completionsBody').innerHTML = completions.length
-    ? completions.map(c => '<tr>' +
+  document.getElementById('completionsBody').innerHTML = list.length
+    ? list.map(c =>
+        '<tr>' +
         '<td style="font-weight:600;color:#fff">' + c.full_name + '</td>' +
         '<td>' + c.department + '</td>' +
         '<td>' + c.module_title + '</td>' +
         '<td style="text-align:center;font-family:\'Share Tech Mono\',monospace">' + c.percentage + '%</td>' +
         '<td style="text-align:center"><span class="' + (c.passed?'badge-pass':'badge-fail') + '">' + (c.passed?'Passed':'Failed') + '</span></td>' +
-        '<td style="color:var(--muted);font-size:0.75rem">' + new Date(c.completed_at).toLocaleDateString('en-GB') + '</td>' +
-      '</tr>').join('')
+        '<td style="color:var(--muted);font-size:0.75rem">' + new Date(c.completed_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + '</td>' +
+        '</tr>'
+      ).join('')
     : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">No completions yet</td></tr>';
+}
+
+function filterCompletions() {
+  const q = document.getElementById('compSearch').value.toLowerCase();
+  const filtered = q ? allCompletions.filter(c =>
+    c.full_name.toLowerCase().includes(q) || c.module_title.toLowerCase().includes(q) || c.department.toLowerCase().includes(q)
+  ) : allCompletions;
+  renderCompletions(filtered);
 }
 
 init();
