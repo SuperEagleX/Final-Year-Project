@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard &mdash; Landing Pages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+  
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:   #020b18; --deep:   #040f1f; --panel:  #071628; --card:   #081a30;
+      --border: #0d2847; --accent: #00d4ff; --accent2:#0077ff; --danger: #ff4560;
+      --warn:   #ffb300; --success:#00e5a0; --text:   #cde4f8; --muted:  #4a7090;
+      --sidebar-w: 240px;
+    }
+    html, body { height: 100%; background: var(--navy); font-family: 'Syne', sans-serif; color: var(--text); overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; }
+    .sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 1.6rem 1.4rem; border-bottom: 1px solid var(--border); }
+    .sidebar-logo svg { width: 36px; height: 36px; }
+    .sidebar-logo-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+    .sidebar-logo-text span { color: var(--accent); }
+    .sidebar-section { padding: 1.2rem 1rem 0.4rem; font-size: 0.65rem; font-weight: 700; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+    .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 1.2rem; margin: 2px 0.6rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; text-decoration: none; }
+    .nav-item:hover { background: var(--border); color: var(--text); }
+    .nav-item.active { background: linear-gradient(90deg, #00d4ff18, #0077ff10); color: var(--accent); border-left: 2px solid var(--accent); margin-left: calc(0.6rem - 2px); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .nav-badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+    .sidebar-footer { margin-top: auto; padding: 1rem; border-top: 1px solid var(--border); }
+    .user-chip { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; background: var(--deep); border: 1px solid var(--border); }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--accent2), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #000; flex-shrink: 0; }
+    .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; }
+    .user-role { font-size: 0.7rem; color: var(--accent); }
+
+    /* ── Main ── */
+    .main { margin-left: var(--sidebar-w); height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .main::-webkit-scrollbar { width: 5px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* Topbar */
+    .topbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; background: var(--navy); border-bottom: 1px solid var(--border); }
+    .topbar-left h1 { font-size: 1.3rem; font-weight: 800; color: #fff; }
+    .topbar-left p  { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+    .topbar-right { display: flex; gap: 0.8rem; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: none; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px #00d4ff30; }
+    .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Content ── */
+    .content { padding: 1.8rem 2rem; flex: 1; }
+
+    /* Stats strip */
+    .stats-strip { display: flex; gap: 1rem; margin-bottom: 1.8rem; animation: fadeUp 0.4s ease both; }
+    .strip-stat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1.3rem; display: flex; align-items: center; gap: 12px; flex: 1; }
+    .strip-stat-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+    .strip-stat-num { font-family: 'Share Tech Mono', monospace; font-size: 1.3rem; color: #fff; }
+    .strip-stat-label { font-size: 0.72rem; color: var(--muted); }
+
+    /* Filter bar */
+    .filter-bar { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.5rem; flex-wrap: wrap; animation: fadeUp 0.4s 0.05s ease both; }
+    .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 260px; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; color: var(--muted); pointer-events: none; }
+    .search-input { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 36px; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; color: var(--text); outline: none; transition: border-color 0.2s; }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); }
+    .filter-select { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-family: 'Syne', sans-serif; font-size: 0.8rem; color: var(--text); outline: none; cursor: pointer; transition: border-color 0.2s; }
+    .filter-select:focus { border-color: var(--accent); }
+    .filter-select option { background: var(--deep); }
+    .filter-group { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px; }
+    .filter-chip { padding: 6px 12px; border-radius: 6px; font-size: 0.76rem; font-weight: 600; cursor: pointer; color: var(--muted); border: none; background: none; font-family: 'Syne', sans-serif; transition: all 0.2s; white-space: nowrap; }
+    .filter-chip.active { background: var(--border); color: var(--accent); }
+    .filter-clear-btn { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 9px 14px; font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .filter-clear-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Section heading */
+    .section-heading { font-size: 0.72rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.9rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+    /* ── Template table ── */
+    .template-grid { width: 100%; border-collapse: separate; border-spacing: 0 6px; margin-bottom: 2rem; display: table; }
+    .template-grid thead th {
+      font-size: 0.62rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0 12px 10px; border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .template-grid thead th:first-child { padding-left: 0; width: 4px; }
+    .template-grid thead th.th-icon { width: 72px; text-align: center; }
+    .template-grid thead th.th-name { text-align: left; }
+    .template-grid thead th.th-c    { text-align: center; }
+    .template-grid thead th.th-l    { text-align: left; }
+
+    /* Each row = one card */
+    .template-card {
+      background: var(--card);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.35s ease both;
+      cursor: default;
+    }
+    .template-card td {
+      padding: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      height: 88px;
+      vertical-align: middle;
+    }
+    .template-card td:first-child { border-left: 1px solid var(--border); border-radius: 10px 0 0 10px; padding: 0; width: 4px; }
+    .template-card td:last-child  { border-right: 1px solid var(--border); border-radius: 0 10px 10px 0; }
+    .template-card:hover td { border-color: var(--accent2); }
+    .template-card:hover td:first-child { box-shadow: -4px 0 20px #00d4ff10; }
+
+    /* Stripe cell */
+    .td-stripe { width: 4px !important; padding: 0 !important; }
+
+    /* Icon cell */
+    .td-icon { width: 72px; text-align: center; padding: 0 12px !important; }
+    .tc-icon { width: 48px; height: 48px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+
+    /* Name cell */
+    .td-name { padding: 0 16px !important; max-width: 260px; }
+    .template-name { font-size: 0.92rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+    .tc-subject-line { font-size: 0.7rem; color: var(--muted); font-family: 'Share Tech Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Centered stat cells */
+    .td-c { text-align: center; padding: 0 16px !important; white-space: nowrap; }
+    .tstat-num   { font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; font-weight: 700; }
+    .tstat-label { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 3px; }
+
+    /* Left-aligned cells */
+    .td-l { padding: 0 16px !important; white-space: nowrap; }
+
+    /* Actions cell */
+    .td-actions { padding: 0 16px !important; white-space: nowrap; }
+    .tc-actions { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+    .t-btn { padding: 6px 11px; border-radius: 7px; font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: none; transition: all 0.2s; white-space: nowrap; }
+    .t-btn-preview { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+    .t-btn-preview:hover { border-color: var(--accent); color: var(--accent); }
+    .t-btn-use { background: linear-gradient(135deg, var(--accent2), var(--accent)); color: #000; font-weight: 700; }
+    .t-btn-use:hover { box-shadow: 0 3px 12px #00d4ff35; }
+    .t-btn-edit { background: #ffb30015; color: var(--warn); border: 1px solid #ffb30030; }
+    .t-btn-edit:hover { background: #ffb30028; }
+    .t-btn-delete { background: #ff456015; color: var(--danger); border: 1px solid #ff456030; }
+    .t-btn-delete:hover { background: #ff456028; }
+
+    /* Badges */
+    .template-cat-badge { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+    .cat-it       { background: #0077ff18; color: var(--accent2); }
+    .cat-hr       { background: #ffb30018; color: var(--warn); }
+    .cat-cred     { background: #ff456018; color: var(--danger); }
+    .cat-exec     { background: #9b59b618; color: #c39bd3; }
+    .cat-delivery { background: #00e5a018; color: var(--success); }
+    .cat-social   { background: #1da1f218; color: #1da1f2; }
+    .cat-sales    { background: #2ecc7118; color: #2ecc71; }
+    .diff-badge { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+    .diff-easy   { background: #00e5a018; color: var(--success); }
+    .diff-medium { background: #ffb30018; color: var(--warn); }
+    .diff-hard   { background: #ff456018; color: var(--danger); }
+    .lang-badge  { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; background: #4a709018; color: var(--text); border: 1px solid #4a709030; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .type-badge  { font-size: 0.68rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .type-pick:hover { border-color: var(--accent2) !important; background: #0077ff08 !important; }
+    .type-link       { background: #0077ff18; color: var(--accent2); }
+    .type-landing    { background: #9b59b618; color: #c39bd3; }
+    .type-attachment { background: #ffb30018; color: var(--warn); }
+    .type-credential { background: #ff456018; color: var(--danger); }
+    .cat-sub { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── Preview Modal ── */
+    .modal-overlay { position: fixed; inset: 0; z-index: 200; background: #000000cc; backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 620px; max-height: 88vh; overflow-y: auto; transform: translateY(20px); transition: transform 0.3s; display: flex; flex-direction: column; }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal::-webkit-scrollbar { width: 4px; }
+    .modal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.6rem; border-bottom: 1px solid var(--border); }
+    .modal-header h2 { font-size: 1rem; font-weight: 800; color: #fff; }
+    .modal-header p  { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+    .modal-close { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px; border-radius: 6px; transition: color 0.2s; }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 1.4rem; }
+
+    /* Full email preview in modal */
+    .full-email-preview {
+      background: #fff; border-radius: 10px; overflow: hidden;
+      font-family: Arial, sans-serif; font-size: 13px; color: #222;
+    }
+    .fep-topbar { background: #f1f3f4; padding: 10px 14px; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 8px; }
+    .fep-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .fep-header { padding: 14px 16px; border-bottom: 1px solid #eee; }
+    .fep-subject { font-size: 16px; font-weight: 700; color: #111; margin-bottom: 8px; }
+    .fep-from { font-size: 12px; color: #666; }
+    .fep-body { padding: 16px; line-height: 1.7; color: #333; font-size: 13px; }
+    .fep-body .fep-cta { display: inline-block; margin: 12px 0; padding: 10px 22px; background: #0052cc; color: #fff; border-radius: 5px; text-decoration: none; font-weight: 700; font-size: 13px; }
+    .fep-body .fep-warning { font-size: 11px; color: #999; margin-top: 14px; border-top: 1px solid #eee; padding-top: 12px; }
+    .fep-footer { background: #f8f9fa; padding: 12px 16px; font-size: 11px; color: #999; border-top: 1px solid #eee; }
+
+    /* Red flags panel */
+    .red-flags-panel { display: flex; flex-direction: column; gap: 0.8rem; }
+    .red-flags-panel h3 { font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+    .red-flag-item { background: #ff456010; border: 1px solid #ff456030; border-radius: 8px; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+    .red-flag-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .red-flag-text { font-size: 0.78rem; color: var(--text); line-height: 1.5; }
+    .red-flag-text strong { color: var(--danger); }
+
+    .template-info-row { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .info-pill { font-size: 0.72rem; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: var(--deep); border: 1px solid var(--border); color: var(--muted); }
+
+    .modal-footer { padding: 1.2rem 1.6rem; border-top: 1px solid var(--border); display: flex; gap: 0.8rem; justify-content: flex-end; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+  
+  
+    .toggle-switch { position:relative;width:40px;height:22px;flex-shrink:0 }
+    .toggle-switch input { opacity:0;width:0;height:0 }
+    .toggle-track { position:absolute;inset:0;background:var(--border);border-radius:22px;cursor:pointer;transition:0.3s }
+    .toggle-track:before { position:absolute;content:"";width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s }
+    .toggle-switch input:checked + .toggle-track { background:var(--accent2) }
+    .toggle-switch input:checked + .toggle-track:before { transform:translateX(18px) }
+    .form-group { margin-bottom:0.8rem }
+    .form-label { display:block;font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px }
+    .form-input { width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Syne',sans-serif;font-size:0.84rem;color:var(--text);outline:none;transition:border-color 0.2s }
+    .form-input:focus { border-color:var(--accent) }
+    .form-input option { background:var(--deep) }
+    .modal-footer { padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end }
+
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none"><path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a class="nav-item" href="campaign-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns</a>
+  <a class="nav-item" href="email-templates.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Templates</a>
+  <a class="nav-item active" href="landing-pages.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Landing Pages</a>
+  <a class="nav-item" href="inbox.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox</a>
+  <a class="nav-item" href="employees.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <a class="nav-item" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training</a>
+  <div class="sidebar-section">System</div>
+  <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar" id="sidebarAv">SA</div>
+      <div>
+        <div class="user-name" id="sidebarName">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+<!-- ── Preview Modal ── -->
+<div class="modal-overlay" id="previewOverlay" onclick="closeBg(event)">
+  <div class="modal" style="max-width:900px;max-height:92vh">
+    <div class="modal-header">
+      <div>
+        <h2 id="previewTitle">Preview</h2>
+        <p id="previewSubject"></p>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.8rem;margin-left:auto">
+        <a id="previewOpenLink" href="#" target="_blank" style="font-size:0.75rem;color:var(--accent);text-decoration:none;font-family:'Syne',sans-serif;font-weight:600">&#8599; Open in tab</a>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+    </div>
+    <div style="padding:0">
+      <iframe id="previewFrame" style="width:100%;height:580px;border:none;border-radius:0 0 16px 16px" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+    </div>
+  </div>
+</div>
+<!-- ── Edit Landing Page Modal ── -->
+<div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header" style="position:sticky;top:0;background:var(--panel);z-index:1">
+      <div><h2>Edit Landing Page</h2><p id="editId"></p></div>
+      <button class="modal-close" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div style="padding:1.4rem 1.6rem">
+      <!-- Details -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128203; Page Details</div>
+        <div class="form-group"><label class="form-label">Page Name *</label><input class="form-input" id="editName" placeholder="e.g. Microsoft 365 Login"/></div>
+        <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="editDescription" placeholder="What this page simulates"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem">
+          <div class="form-group"><label class="form-label">Category</label>
+            <select class="form-input" id="editCategory">
+              <option>IT Support</option><option>HR</option><option>Finance</option>
+              <option>Executive / BEC</option><option>Credential Harvest</option>
+              <option>Delivery</option><option>Social Engineering</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Difficulty</label>
+            <select class="form-input" id="editDifficulty">
+              <option>Easy</option><option selected>Medium</option><option>Hard</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Linked Template</label>
+            <select class="form-input" id="editLinkedTemplate"><option value="">None</option></select>
+          </div>
+        </div>
+      </div>
+      <!-- Capture -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128273; Data Capture</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <div><div style="font-size:0.84rem;font-weight:600;color:var(--text)">Capture Submitted Data</div><div style="font-size:0.72rem;color:var(--muted)">Record form submissions (usernames, emails)</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="editCaptureCreds" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+          <div><div style="font-size:0.84rem;font-weight:600;color:var(--text)">Capture Passwords</div><div style="font-size:0.72rem;color:var(--muted)">Also record password field values (FYP demo only)</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="editCapturePw"/><span class="toggle-track"></span></label>
+        </div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Redirect URL after submission</label><input class="form-input" id="editRedirectUrl" placeholder="https://real-company.com (optional)"/></div>
+      </div>
+      <!-- HTML editor -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128187; Page HTML</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="insertBoilerplate()" class="filter-clear-btn" style="font-size:0.72rem;padding:4px 10px">&#128295; Login Form</button>
+            <button onclick="insertSimpleBoilerplate()" class="filter-clear-btn" style="font-size:0.72rem;padding:4px 10px">&#128295; Simple Form</button>
+          </div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem">Placeholders: <code style="background:var(--card);padding:2px 5px;border-radius:3px;color:var(--accent)">{{.Email}}</code> <code style="background:var(--card);padding:2px 5px;border-radius:3px;color:var(--accent)">{{.FirstName}}</code></div>
+        <textarea id="editHtml" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);outline:none;resize:vertical;min-height:240px;line-height:1.7" placeholder="Paste your landing page HTML here..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="position:sticky;bottom:0;background:var(--panel)">
+      <button class="btn" onclick="closeEditModal()" style="background:var(--panel);color:var(--text);border:1px solid var(--border)">Cancel</button>
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditPage()">Save Page</button>
+    </div>
+  </div>
+</div>
+<!-- ── New Landing Page Modal ── -->
+<div class="modal-overlay" id="createOverlay" onclick="if(event.target===this)closeCreateModal()">
+  <div class="modal" style="max-width:720px;max-height:90vh;overflow-y:auto">
+    <div class="modal-header" style="position:sticky;top:0;background:var(--panel);z-index:1">
+      <div><h2>New Landing Page</h2><p id="createId"></p></div>
+      <button class="modal-close" onclick="closeCreateModal()">&times;</button>
+    </div>
+    <div style="padding:1.4rem 1.6rem">
+      <!-- Details -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128203; Page Details</div>
+        <div class="form-group"><label class="form-label">Page Name *</label><input class="form-input" id="createName" placeholder="e.g. Microsoft 365 Login"/></div>
+        <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="createDescription" placeholder="What this page simulates"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem">
+          <div class="form-group"><label class="form-label">Category</label>
+            <select class="form-input" id="createCategory">
+              <option>IT Support</option><option>HR</option><option>Finance</option>
+              <option>Executive / BEC</option><option>Credential Harvest</option>
+              <option>Delivery</option><option>Social Engineering</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Difficulty</label>
+            <select class="form-input" id="createDifficulty">
+              <option>Easy</option><option selected>Medium</option><option>Hard</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Linked Template</label>
+            <select class="form-input" id="createLinkedTemplate"><option value="">None</option></select>
+          </div>
+        </div>
+      </div>
+      <!-- Capture -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128273; Data Capture</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">
+          <div><div style="font-size:0.84rem;font-weight:600;color:var(--text)">Capture Submitted Data</div><div style="font-size:0.72rem;color:var(--muted)">Record form submissions (usernames, emails)</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="createCaptureCreds" checked/><span class="toggle-track"></span></label>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+          <div><div style="font-size:0.84rem;font-weight:600;color:var(--text)">Capture Passwords</div><div style="font-size:0.72rem;color:var(--muted)">Also record password field values (FYP demo only)</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="createCapturePw"/><span class="toggle-track"></span></label>
+        </div>
+        <div class="form-group" style="margin-bottom:0"><label class="form-label">Redirect URL after submission</label><input class="form-input" id="createRedirectUrl" placeholder="https://real-company.com (optional)"/></div>
+      </div>
+      <!-- HTML editor -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128187; Page HTML</div>
+          <div style="display:flex;gap:6px">
+            <button onclick="insertBoilerplate()" class="filter-clear-btn" style="font-size:0.72rem;padding:4px 10px">&#128295; Login Form</button>
+            <button onclick="insertSimpleBoilerplate()" class="filter-clear-btn" style="font-size:0.72rem;padding:4px 10px">&#128295; Simple Form</button>
+          </div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem">Placeholders: <code style="background:var(--card);padding:2px 5px;border-radius:3px;color:var(--accent)">{{.Email}}</code> <code style="background:var(--card);padding:2px 5px;border-radius:3px;color:var(--accent)">{{.FirstName}}</code></div>
+        <textarea id="createHtml" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Share Tech Mono',monospace;font-size:0.75rem;color:var(--text);outline:none;resize:vertical;min-height:240px;line-height:1.7" placeholder="Paste your landing page HTML here..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="position:sticky;bottom:0;background:var(--panel)">
+      <button class="btn" onclick="closeCreateModal()" style="background:var(--panel);color:var(--text);border:1px solid var(--border)">Cancel</button>
+      <button class="btn btn-primary" id="createSaveBtn" onclick="saveCreatePage()">Save Page</button>
+    </div>
+  </div>
+</div>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Landing Pages</h1>
+      <p>Design and manage phishing landing pages that capture credentials</p>
+    </div>
+    <div style="display:flex;gap:0.7rem">
+      <div style="display:flex;gap:0.7rem">
+        <label class="btn btn-ghost" style="cursor:pointer" title="Import an existing HTML file as a new landing page">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import HTML
+          <input type="file" id="importHtmlInput" accept=".html,.htm" style="display:none" onchange="importHtmlFile(event)"/>
+        </label>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Landing Page
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="strip-stat"><div class="strip-stat-icon" style="background:#0077ff18">&#128196;</div><div><div class="strip-stat-num" id="statTotal">&#8212;</div><div class="strip-stat-label">Total Pages</div></div></div>
+      <div class="strip-stat"><div class="strip-stat-icon" style="background:#00e5a018">&#128273;</div><div><div class="strip-stat-num" id="statCapture" style="color:var(--success)">&#8212;</div><div class="strip-stat-label">Capture Data</div></div></div>
+      <div class="strip-stat"><div class="strip-stat-icon" style="background:#ffb30018">&#128231;</div><div><div class="strip-stat-num" id="statLinked" style="color:var(--warn)">&#8212;</div><div class="strip-stat-label">Linked to Template</div></div></div>
+    </div>
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="searchInput" placeholder="Search landing pages..." oninput="applyFilters()"/>
+      </div>
+      <select class="filter-select" id="categorySelect" onchange="applyFilters()"><option value="all">All Categories</option></select>
+      <select class="filter-select" id="diffSelect" onchange="applyFilters()">
+        <option value="all">All Difficulties</option>
+        <option>Easy</option><option>Medium</option><option>Hard</option>
+      </select>
+      <button class="filter-clear-btn" onclick="clearFilters()">Clear Filters</button>
+    </div>
+    <div class="section-heading" id="gridHeading">All Landing Pages</div>
+    <table class="template-grid" id="lpGrid" style="display:none"></table>
+    <div id="emptyState" style="display:none;text-align:center;padding:3rem;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:1rem">&#128196;</div>
+      <p style="margin-bottom:1rem">No landing pages yet.</p>
+      <button class="btn btn-primary" onclick="openCreateModal()">Create Landing Page</button>
+    </div>
+  </div>
+</main>
+<script src="config.js"></script>
+<script>
+const CAT_ICON = {
+  'IT Support':         { icon:'&#128187;', bg:'#0077ff18', color:'var(--accent2)' },
+  'HR':                 { icon:'&#128101;', bg:'#ffb30018', color:'var(--warn)'    },
+  'Credential Harvest': { icon:'&#128274;', bg:'#ff456018', color:'var(--danger)'  },
+  'Executive / BEC':    { icon:'&#128084;', bg:'#9b59b618', color:'#c39bd3'        },
+  'Delivery':           { icon:'&#128230;', bg:'#00e5a018', color:'var(--success)' },
+  'Social Engineering': { icon:'&#127760;', bg:'#1da1f218', color:'#1da1f2'        },
+  'Finance':            { icon:'&#128180;', bg:'#2ecc7118', color:'#2ecc71'        },
+  'Other':              { icon:'&#128196;', bg:'#4a709018', color:'var(--muted)'   },
+};
+const STRIPE_COLOR = {
+  'IT Support':         'linear-gradient(180deg,var(--accent2),var(--accent))',
+  'HR':                 'linear-gradient(180deg,var(--warn),#ff8c00)',
+  'Credential Harvest': 'linear-gradient(180deg,var(--danger),#ff8060)',
+  'Executive / BEC':    'linear-gradient(180deg,#8e44ad,#c39bd3)',
+  'Delivery':           'linear-gradient(180deg,var(--success),#00c896)',
+  'Social Engineering': 'linear-gradient(180deg,#0a66c2,#1da1f2)',
+  'Finance':            'linear-gradient(180deg,#27ae60,#2ecc71)',
+  'Other':              'var(--border)',
+};
+function diffClass(diff) {
+  const d = (diff || '').toLowerCase();
+  if (d === 'easy') return 'diff-easy';
+  if (d === 'hard') return 'diff-hard';
+  return 'diff-medium';
+}
+const BOILERPLATE_LOGIN = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\"/>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/>\n<title>Sign In</title>\n<style>\n  *{box-sizing:border-box;margin:0;padding:0}\n  body{font-family:Segoe UI,Arial,sans-serif;background:#f3f4f6;display:flex;align-items:center;justify-content:center;min-height:100vh}\n  .card{background:#fff;border-radius:8px;padding:40px;width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.1)}\n  .logo{text-align:center;margin-bottom:28px;font-size:1.4rem;font-weight:700;color:#0052cc}\n  label{display:block;font-size:0.82rem;font-weight:600;color:#333;margin-bottom:5px}\n  input{width:100%;padding:10px 14px;border:1px solid #ddd;border-radius:5px;font-family:inherit;font-size:0.9rem;margin-bottom:16px;outline:none}\n  input:focus{border-color:#0052cc}\n  button{width:100%;padding:12px;background:#0052cc;color:#fff;border:none;border-radius:5px;font-size:0.95rem;font-weight:600;cursor:pointer}\n  .error{color:#c0392b;font-size:0.78rem;margin-bottom:12px;display:none}\n</style>\n</head>\n<body>\n<div class=\"card\">\n  <div class=\"logo\">&#128274; Secure Portal</div>\n  <form id=\"loginForm\" onsubmit=\"handleSubmit(event)\">\n    <label>Email Address</label>\n    <input type=\"email\" id=\"emailInput\" value=\"{{.Email}}\" placeholder=\"your.email@company.com\"/>\n    <label>Password</label>\n    <input type=\"password\" id=\"passwordInput\" placeholder=\"Enter your password\"/>\n    <div class=\"error\" id=\"errorMsg\">Incorrect credentials. Please try again.</div>\n    <button type=\"submit\" id=\"submitBtn\">Sign In</button>\n  </form>\n</div>\n\u003cscript\u003e\nconst params = new URLSearchParams(window.location.search);\nconst cid = params.get('campaign_id')||'';\nconst em  = params.get('email')||'';\nif(em) document.getElementById('emailInput').value = em;\nlet attempts = 0;\nasync function handleSubmit(e){\n  e.preventDefault();\n  attempts++;\n  if(attempts===1){document.getElementById('errorMsg').style.display='block';document.getElementById('passwordInput').value='';return;}\n  const btn=document.getElementById('submitBtn'); btn.textContent='Signing in...'; btn.disabled=true;\n  const email=document.getElementById('emailInput').value||em;\n  try{\n    const r=await fetch('http://127.0.0.1:5000/api/track/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campaign_id:cid,email:email})});\n    const d=await r.json();\n    if(d.redirect) window.location.href=d.redirect;\n    else window.location.href='http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id='+cid;\n  }catch(err){window.location.href='http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id='+cid;}\n}\n\\u003c/script\\u003e\n</body>\n</html>";
+
+const BOILERPLATE_SIMPLE = "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\"/>\n<title>Verification Required</title>\n<style>\n  body{font-family:Arial,sans-serif;background:#fff;padding:40px;max-width:500px;margin:0 auto}\n  h2{color:#333;margin-bottom:20px}\n  input{width:100%;padding:10px;border:1px solid #ccc;border-radius:4px;margin-bottom:14px;font-size:0.9rem}\n  button{padding:12px 28px;background:#0077cc;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.9rem}\n</style>\n</head>\n<body>\n<h2>Verify Your Identity</h2>\n<p style=\"color:#666;margin-bottom:20px\">Please enter your details to continue.</p>\n<form id=\"f\" onsubmit=\"sub(event)\">\n  <input type=\"email\" id=\"em\" placeholder=\"Email address\" value=\"{{.Email}}\"/>\n  <input type=\"password\" id=\"pw\" placeholder=\"Password\"/>\n  <button type=\"submit\">Verify</button>\n</form>\n\u003cscript\u003e\nconst p=new URLSearchParams(window.location.search),cid=p.get('campaign_id')||'',em=p.get('email')||'';\nif(em)document.getElementById('em').value=em;\nlet n=0;\nasync function sub(e){\n  e.preventDefault(); n++;\n  if(n<2)return;\n  const email=document.getElementById('em').value||em;\n  try{const r=await fetch('http://127.0.0.1:5000/api/track/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({campaign_id:cid,email})});const d=await r.json();if(d.redirect)window.location.href=d.redirect;else window.location.href='http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id='+cid;}catch(err){window.location.href='http://127.0.0.1:8088/awareness-training.html?caught=1&stage=submitted&campaign_id='+cid;}\n}\n\\u003c/script\\u003e\n</body>\n</html>";
+
+
+// ── State ──────────────────────────────────────────────────────────────────
+let allPages = [];
+let editingId = null;
+let emailTemplates = [];
+
+// ── Build a landing page row ───────────────────────────────────────────────
+function buildRow(p, index) {
+  const ci     = CAT_ICON[p.category] || CAT_ICON['Other'];
+  const stripe = STRIPE_COLOR[p.category] || 'var(--border)';
+  const delay  = (index * 0.04).toFixed(2);
+
+  return '<tr class="template-card" style="animation-delay:' + delay + 's" data-id="' + p.id + '">' +
+    '<td class="td-stripe"><div class="card-stripe" style="background:' + stripe + '"></div></td>' +
+    '<td class="td-icon"><div class="tc-icon" style="background:' + ci.bg + ';color:' + ci.color + '">' + ci.icon + '</div></td>' +
+    '<td class="td-name">' +
+      '<div class="template-name">' + (p.name || 'Unnamed') + '</div>' +
+      '<div class="cat-sub">' + (p.category || '') + '</div>' +
+      '<div class="tc-subject-line">&#128196; ' + (p.file || '') + '</div>' +
+    '</td>' +
+    '<td class="td-c"><span class="diff-badge ' + diffClass(p.difficulty) + '">' + (p.difficulty || 'Med') + '</span></td>' +
+    '<td class="td-c"><div class="tstat-num" style="color:var(--muted)">#' + p.id + '</div><div class="tstat-label">ID</div></td>' +
+    '<td class="td-c">' +
+      (p.capture_credentials
+        ? '<span class="type-badge type-credential">&#128273; Captures Data</span>'
+        : '<span class="lang-badge">No Capture</span>') +
+    '</td>' +
+    '<td class="td-actions"><div class="tc-actions">' +
+      '<button class="t-btn t-btn-preview" onclick="previewPage(' + p.id + ')">&#128065; Preview</button>' +
+      '<button class="t-btn t-btn-use"     onclick="usePage(' + p.id + ')">Use &#8594;</button>' +
+      '<button class="t-btn t-btn-edit"    onclick="openEditModal(' + p.id + ')">&#9998; Edit</button>' +
+      '<button class="t-btn t-btn-delete"  onclick="deletePage(' + p.id + ')">&#128465; Delete</button>' +
+    '</div></td>' +
+  '</tr>';
+}
+
+function renderGrid(filtered) {
+  const grid    = document.getElementById('lpGrid');
+  const empty   = document.getElementById('emptyState');
+  const heading = document.getElementById('gridHeading');
+  if (!filtered.length) {
+    grid.style.display  = 'none';
+    empty.style.display = 'block';
+    heading.textContent = 'No landing pages match your filters';
+    return;
+  }
+  grid.style.display  = 'table';
+  empty.style.display = 'none';
+  heading.textContent = 'All Landing Pages (' + filtered.length + ')';
+  grid.innerHTML =
+    '<thead><tr>' +
+      '<th style="width:4px;padding:0"></th>' +
+      '<th class="th-icon"></th>' +
+      '<th class="th-name">Page</th>' +
+      '<th class="th-c">Difficulty</th>' +
+      '<th class="th-c">ID</th>' +
+      '<th class="th-c">Capture</th>' +
+      '<th></th>' +
+    '</tr></thead>' +
+    '<tbody>' + filtered.map((p, i) => buildRow(p, i)).join('') + '</tbody>';
+}
+
+function applyFilters() {
+  const q   = document.getElementById('searchInput').value.toLowerCase().trim();
+  const cat = document.getElementById('categorySelect').value;
+  const diff = document.getElementById('diffSelect') ? document.getElementById('diffSelect').value : 'all';
+  const filtered = allPages.filter(p => {
+    if (q && !(p.name||'').toLowerCase().includes(q) && !(p.description||'').toLowerCase().includes(q) && !(p.linked_template||'').toLowerCase().includes(q)) return false;
+    if (cat !== 'all' && p.category !== cat) return false;
+    if (diff !== 'all' && (p.difficulty||'Medium') !== diff) return false;
+    return true;
+  });
+  renderGrid(filtered);
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('categorySelect').value = 'all';
+  if (document.getElementById('diffSelect')) document.getElementById('diffSelect').value = 'all';
+  applyFilters();
+}
+
+// ── Preview ────────────────────────────────────────────────────────────────
+async function previewPage(id) {
+  const p = allPages.find(p => p.id === id);
+  if (!p) return;
+  const url = 'http://127.0.0.1:5000/landing/' + p.file + '?preview=1';
+  const overlay = document.getElementById('previewOverlay');
+  const iframe  = document.getElementById('previewFrame');
+  const title   = document.getElementById('previewTitle');
+  const sub     = document.getElementById('previewSubject');
+  title.textContent = p.name;
+  sub.textContent   = 'File: ' + p.file + (p.capture_credentials ? ' • Captures credentials' : '');
+  iframe.src = url;
+  overlay.classList.add('open');
+}
+function closeModal()  { document.getElementById('previewOverlay').classList.remove('open'); document.getElementById('previewFrame').src=''; }
+function closeBg(e)    { if (e.target === document.getElementById('previewOverlay')) closeModal(); }
+
+// ── Edit / Create modal ────────────────────────────────────────────────────
+async function openEditModal(id) {
+  const p = await apiFetch('landing-pages/' + id);
+  editingId = id;
+  document.getElementById('editId').textContent              = '#' + id;
+  document.getElementById('editName').value                  = p.name          || '';
+  document.getElementById('editDescription').value          = p.description   || '';
+  document.getElementById('editCategory').value             = p.category      || 'IT Support';
+  document.getElementById('editDifficulty').value           = p.difficulty    || 'Medium';
+  document.getElementById('editLinkedTemplate').value       = p.linked_template || '';
+  document.getElementById('editCaptureCreds').checked       = !!p.capture_credentials;
+  document.getElementById('editCapturePw').checked          = !!p.capture_passwords;
+  document.getElementById('editRedirectUrl').value          = p.redirect_url  || '';
+  document.getElementById('editHtml').value                 = p.html          || '';
+  document.getElementById('editOverlay').classList.add('open');
+}
+function closeEditModal() { document.getElementById('editOverlay').classList.remove('open'); editingId = null; }
+
+async function saveEditPage() {
+  const btn = document.getElementById('editSaveBtn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  try {
+    await apiFetch('landing-pages/' + editingId, 'PUT', {
+      name:                document.getElementById('editName').value.trim(),
+      description:         document.getElementById('editDescription').value.trim(),
+      category:            document.getElementById('editCategory').value,
+      difficulty:          document.getElementById('editDifficulty').value,
+      linked_template:     document.getElementById('editLinkedTemplate').value,
+      capture_credentials: document.getElementById('editCaptureCreds').checked,
+      capture_passwords:   document.getElementById('editCapturePw').checked,
+      redirect_url:        document.getElementById('editRedirectUrl').value.trim(),
+      html:                document.getElementById('editHtml').value,
+    });
+    const updated = await apiFetch('landing-pages');
+    allPages = updated;
+    closeEditModal();
+    applyFilters();
+    showToast('Landing page updated', 'success');
+  } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
+  btn.textContent = 'Save Changes'; btn.disabled = false;
+}
+
+// ── Create modal ───────────────────────────────────────────────────────────
+function openCreateModal() {
+  editingId = null;
+  ['createName','createDescription','createRedirectUrl','createHtml'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('createCaptureCreds').checked = true;
+  document.getElementById('createCapturePw').checked    = false;
+  document.getElementById('createCategory').value       = 'IT Support';
+  document.getElementById('createDifficulty').value     = 'Medium';
+  document.getElementById('createLinkedTemplate').value = '';
+  document.getElementById('createOverlay').classList.add('open');
+}
+function closeCreateModal() { document.getElementById('createOverlay').classList.remove('open'); }
+
+function insertBoilerplate() {
+  const html = document.getElementById('createHtml') || document.getElementById('editHtml');
+  if (html) {
+    html.value = BOILERPLATE_LOGIN;
+    showToast('Login boilerplate inserted', 'success');
+  }
+}
+function insertSimpleBoilerplate() {
+  const html = document.getElementById('createHtml') || document.getElementById('editHtml');
+  if (html) { html.value = BOILERPLATE_SIMPLE; showToast('Simple form inserted','success'); }
+}
+
+async function saveCreatePage() {
+  const btn  = document.getElementById('createSaveBtn');
+  const name = document.getElementById('createName').value.trim();
+  const html = document.getElementById('createHtml').value.trim();
+  if (!name) { showToast('Page name is required','error'); return; }
+  if (!html) { showToast('Page HTML is required','error'); return; }
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  try {
+    await apiFetch('landing-pages', 'POST', {
+      name, html,
+      description:         document.getElementById('createDescription').value.trim(),
+      category:            document.getElementById('createCategory').value,
+      difficulty:          document.getElementById('createDifficulty').value,
+      linked_template:     document.getElementById('createLinkedTemplate').value,
+      capture_credentials: document.getElementById('createCaptureCreds').checked,
+      capture_passwords:   document.getElementById('createCapturePw').checked,
+      redirect_url:        document.getElementById('createRedirectUrl').value.trim(),
+    });
+    allPages = await apiFetch('landing-pages');
+    closeCreateModal();
+    applyFilters();
+    showToast('Landing page created', 'success');
+  } catch(e) { showToast('Save failed: ' + e.message, 'error'); }
+  btn.textContent = 'Save Page'; btn.disabled = false;
+}
+
+function usePage(id) {
+  const p = allPages.find(p => p.id === id);
+  if (p) sessionStorage.setItem('selectedLandingPage', JSON.stringify(p));
+  showToast('Landing page "' + (p ? p.name : id) + '" selected — redirecting to campaigns', 'success');
+  setTimeout(() => window.location.href = 'campaign-management.html', 1200);
+}
+
+async function deletePage(id) {
+  const p = allPages.find(p => p.id === id);
+  if (!confirm('Delete landing page "' + (p?p.name:id) + '"?\nThis permanently removes the HTML file.')) return;
+  try {
+    await apiFetch('landing-pages/' + id, 'DELETE');
+    allPages = allPages.filter(p => p.id !== id);
+    applyFilters();
+    showToast('Landing page deleted', 'success');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// ── Boilerplate strings ────────────────────────────────────────────────────
+
+
+
+// ── Import HTML file as a new landing page ─────────────────────────────────
+function importHtmlFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const html = e.target.result;
+    // Pre-fill the create modal with the imported HTML
+    openCreateModal();
+    // Set the name from filename
+    const name = file.name.replace(/\.html?$/i, '').replace(/[_-]/g, ' ').replace(/␈\w/g, l => l.toUpperCase());
+    document.getElementById('createName').value = name;
+    document.getElementById('createHtml').value = html;
+    document.getElementById('createDescription').value = 'Imported from ' + file.name;
+    showToast('HTML imported — review details and save', 'success');
+    // Reset the input so the same file can be re-imported
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  if (user.name) {
+    document.getElementById('sidebarName').textContent = user.name;
+    document.getElementById('sidebarAv').textContent   = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+  }
+  // Load email templates for the "linked template" dropdown
+  try {
+    emailTemplates = await apiFetch('templates');
+    const opts = '<option value="">None</option>' + emailTemplates.map(t=>'<option value="'+t.name+'">'+t.name+'</option>').join('');
+    ['editLinkedTemplate','createLinkedTemplate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = opts;
+    });
+  } catch(e) {}
+  // Load landing pages
+  try {
+    allPages = await apiFetch('landing-pages');
+    // Build category filter
+    const cats = [...new Set(allPages.map(p=>p.category).filter(Boolean))];
+    const catSel = document.getElementById('categorySelect');
+    cats.forEach(c => catSel.innerHTML += '<option value="'+c+'">'+c+'</option>');
+    // Stats
+    document.getElementById('statTotal').textContent   = allPages.length;
+    document.getElementById('statCapture').textContent = allPages.filter(p=>p.capture_credentials).length;
+    document.getElementById('statLinked').textContent  = allPages.filter(p=>p.linked_template).length;
+    applyFilters();
+  } catch(e) {
+    document.getElementById('lpGrid').innerHTML = '<tbody><tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--danger)">Failed to load &mdash; is the backend running?</td></tr></tbody>';
+    document.getElementById('lpGrid').style.display = 'table';
+  }
+}
+init();
+
+</script>
+</body>
+</html>

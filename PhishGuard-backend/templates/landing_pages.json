@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "name": "IT Password Reset Portal",
+    "file": "it_password_reset_landing.html",
+    "description": "Fake IT password reset portal with credential capture",
+    "capture_credentials": true,
+    "capture_passwords": false,
+    "redirect_url": "",
+    "linked_template": "IT Password Reset",
+    "category": "IT Support",
+    "difficulty": "Medium"
+  },
+  {
+    "id": 2,
+    "name": "HR Policy Sign-off Portal",
+    "file": "hr_policy_update_landing.html",
+    "description": "Fake HR document sign-off page",
+    "capture_credentials": true,
+    "capture_passwords": false,
+    "redirect_url": "",
+    "linked_template": "HR Policy Update",
+    "category": "HR",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 3,
+    "name": "Microsoft 365 Login",
+    "file": "microsoft_365_landing.html",
+    "description": "Fake Microsoft 365 login page for credential harvest",
+    "capture_credentials": true,
+    "capture_passwords": true,
+    "redirect_url": "https://microsoft.com",
+    "linked_template": "Microsoft 365 Suspension",
+    "category": "Credential Harvest",
+    "difficulty": "Hard"
+  },
+  {
+    "id": 4,
+    "name": "CEO Wire Transfer Form",
+    "file": "ceo_wire_transfer_landing.html",
+    "description": "Fake finance portal for wire transfer approval",
+    "capture_credentials": true,
+    "capture_passwords": false,
+    "redirect_url": "",
+    "linked_template": "CEO Wire Transfer",
+    "category": "Executive / BEC",
+    "difficulty": "Hard"
+  },
+  {
+    "id": 5,
+    "name": "Package Delivery Payment",
+    "file": "package_delivery_landing.html",
+    "description": "Fake delivery re-scheduling and payment page",
+    "capture_credentials": true,
+    "capture_passwords": false,
+    "redirect_url": "",
+    "linked_template": "Package Delivery Alert",
+    "category": "Delivery",
+    "difficulty": "Easy"
+  },
+  {
+    "id": 6,
+    "name": "LinkedIn Login",
+    "file": "linkedin_connection_landing.html",
+    "description": "Fake LinkedIn login page to harvest credentials",
+    "capture_credentials": true,
+    "capture_passwords": true,
+    "redirect_url": "https://linkedin.com",
+    "linked_template": "LinkedIn Connection",
+    "category": "Social Engineering",
+    "difficulty": "Medium"
+  }
+]

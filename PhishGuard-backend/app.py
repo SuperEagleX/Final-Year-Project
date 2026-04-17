@@ -1182,7 +1182,18 @@ def gophish_request(endpoint, method='GET', data=None):
 
 # ── Template File Loader ───────────────────────────────────────────────────
 TEMPLATES_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-TEMPLATES_META = os.path.join(TEMPLATES_DIR, 'templates.json')
+TEMPLATES_META  = os.path.join(TEMPLATES_DIR, 'templates.json')
+LANDING_META    = os.path.join(TEMPLATES_DIR, 'landing_pages.json')
+
+def load_landing_pages():
+    if not os.path.exists(LANDING_META):
+        return []
+    with open(LANDING_META, 'r') as f:
+        return json.load(f)
+
+def save_landing_pages(pages):
+    with open(LANDING_META, 'w') as f:
+        json.dump(pages, f, indent=2)
 
 def load_templates():
     """Load all template metadata from templates.json."""
@@ -1290,12 +1301,15 @@ def create_template():
             'file':           filename,
             'subject':        data['subject'],
             'category':       data['category'],
-            'difficulty':     data['difficulty'],
+            'difficulty':     data.get('difficulty','Medium'),
             'description':    data.get('description', ''),
             'sender_name':    data.get('sender_name', 'IT Support'),
+            'sender_email':   data.get('sender_email', ''),
             'avg_click_rate': 0,
             'language':       data.get('language', 'english'),
             'phishing_type':  data.get('phishing_type', 'link'),
+            'template_type':  'email',
+            'landing_file':   data.get('landing_file', ''),
         }
         templates.append(new_template)
         with open(TEMPLATES_META, 'w') as f:
@@ -1336,15 +1350,128 @@ def update_template(template_id):
         tmpl      = next((t for t in templates if t['id'] == template_id), None)
         if not tmpl:
             return jsonify({'error': 'Template not found'}), 404
-        for field in ('name','subject','description','category','difficulty','language','sender_name','phishing_type'):
+        for field in ('name','subject','description','category','difficulty','language','sender_name','sender_email','phishing_type','landing_file','template_type'):
             if field in data:
                 tmpl[field] = data[field]
+        # Update HTML file if provided
+        if data.get('html'):
+            fpath = os.path.join(TEMPLATES_DIR, tmpl['file'])
+            with open(fpath, 'w') as hf:
+                hf.write(data['html'])
         with open(TEMPLATES_META, 'w') as f:
             json.dump(templates, f, indent=2)
         return jsonify({'success': True, 'template': tmpl})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ── Landing Page Routes ────────────────────────────────────────────────────
+@app.route('/api/landing-pages', methods=['GET'])
+def get_landing_pages():
+    try:
+        pages = load_landing_pages()
+        return jsonify(pages)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/landing-pages/<int:page_id>', methods=['GET'])
+def get_landing_page(page_id):
+    try:
+        pages = load_landing_pages()
+        page  = next((p for p in pages if p['id'] == page_id), None)
+        if not page:
+            return jsonify({'error': 'Not found'}), 404
+        fpath = os.path.join(TEMPLATES_DIR, page['file'])
+        page['html'] = open(fpath).read() if os.path.exists(fpath) else ''
+        return jsonify(page)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/landing-pages', methods=['POST'])
+def create_landing_page():
+    data = request.get_json()
+    if not data.get('name'):
+        return jsonify({'error': 'name is required'}), 400
+    try:
+        pages    = load_landing_pages()
+        slug     = data['name'].lower().replace(' ','_').replace('/','_')
+        filename = slug + '_landing.html'
+        fpath    = os.path.join(TEMPLATES_DIR, filename)
+        # Save HTML
+        html_content = data.get('html', '<html><body><h1>Landing Page</h1></body></html>')
+        with open(fpath, 'w') as f:
+            f.write(html_content)
+        new_page = {
+            'id':                  max(p['id'] for p in pages) + 1 if pages else 1,
+            'name':                data['name'],
+            'file':                filename,
+            'description':         data.get('description', ''),
+            'capture_credentials': data.get('capture_credentials', False),
+            'capture_passwords':   data.get('capture_passwords', False),
+            'redirect_url':        data.get('redirect_url', ''),
+            'linked_template':     data.get('linked_template', ''),
+            'category':            data.get('category', ''),
+            'difficulty':          data.get('difficulty', 'Medium'),
+        }
+        pages.append(new_page)
+        save_landing_pages(pages)
+        return jsonify({'success': True, 'page': new_page}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/landing-pages/<int:page_id>', methods=['PUT'])
+def update_landing_page(page_id):
+    data = request.get_json()
+    try:
+        pages = load_landing_pages()
+        page  = next((p for p in pages if p['id'] == page_id), None)
+        if not page:
+            return jsonify({'error': 'Not found'}), 404
+        for field in ('name','description','capture_credentials','capture_passwords','redirect_url','linked_template','category','difficulty'):
+            if field in data:
+                page[field] = data[field]
+        if data.get('html'):
+            fpath = os.path.join(TEMPLATES_DIR, page['file'])
+            with open(fpath, 'w') as f:
+                f.write(data['html'])
+        save_landing_pages(pages)
+        return jsonify({'success': True, 'page': page})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/landing-pages/<int:page_id>', methods=['DELETE'])
+def delete_landing_page(page_id):
+    try:
+        pages = load_landing_pages()
+        page  = next((p for p in pages if p['id'] == page_id), None)
+        if not page:
+            return jsonify({'error': 'Not found'}), 404
+        fpath = os.path.join(TEMPLATES_DIR, page['file'])
+        if os.path.exists(fpath):
+            os.remove(fpath)
+        save_landing_pages([p for p in pages if p['id'] != page_id])
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/landing-pages/<int:page_id>/preview', methods=['GET'])
+def preview_landing_page(page_id):
+    try:
+        pages = load_landing_pages()
+        page  = next((p for p in pages if p['id'] == page_id), None)
+        if not page:
+            return jsonify({'error': 'Not found'}), 404
+        fpath = os.path.join(TEMPLATES_DIR, page['file'])
+        html  = open(fpath).read() if os.path.exists(fpath) else '<p>No content</p>'
+        from flask import Response
+        return Response(html, mimetype='text/html')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # -- Training Learner Routes ---------------------------------------------------
