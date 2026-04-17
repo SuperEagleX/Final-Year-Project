@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard &mdash; Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#020b18;--deep:#040f1f;--panel:#071628;--card:#081a30;--border:#0d2847;--accent:#00d4ff;--accent2:#0077ff;--danger:#ff4560;--warn:#ffb300;--success:#00e5a0;--text:#cde4f8;--muted:#4a7090;--sidebar-w:240px}
+    html,body{height:100%;background:var(--navy);font-family:'Syne',sans-serif;color:var(--text)}
+    /* ── Sidebar ── */
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
+    .sidebar-logo{display:flex;align-items:center;gap:12px;padding:1.6rem 1.4rem;border-bottom:1px solid var(--border)}
+    .sidebar-logo svg{width:36px;height:36px}
+    .sidebar-logo-text{font-size:1.1rem;font-weight:800;color:#fff}
+    .sidebar-logo-text span{color:var(--accent)}
+    .sidebar-section{padding:1.2rem 1rem 0.4rem;font-size:0.65rem;font-weight:700;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:11px 1.2rem;margin:2px 0.6rem;border-radius:8px;font-size:0.88rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;text-decoration:none}
+    .nav-item:hover{background:var(--border);color:var(--text)}
+    .nav-item.active{background:linear-gradient(90deg,#00d4ff18,#0077ff10);color:var(--accent);border-left:2px solid var(--accent);margin-left:calc(0.6rem - 2px)}
+    .nav-item svg{width:17px;height:17px;flex-shrink:0}
+    .sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+    .user-chip{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--deep);border:1px solid var(--border)}
+    .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#000;flex-shrink:0}
+    .user-name{font-size:0.82rem;font-weight:700;color:#fff}
+    .user-role{font-size:0.7rem;color:var(--accent)}
+    /* ── Main ── */
+    .main{margin-left:var(--sidebar-w);min-height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+    .main::-webkit-scrollbar{width:5px}
+    .main::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:var(--navy);border-bottom:1px solid var(--border)}
+    .topbar-left h1{font-size:1.3rem;font-weight:800;color:#fff}
+    .topbar-left p{font-size:0.8rem;color:var(--muted);margin-top:2px}
+    .content{padding:1.8rem 2rem;flex:1;max-width:860px}
+    /* ── Settings layout ── */
+    .settings-grid{display:flex;flex-direction:column;gap:1.6rem}
+    .settings-section{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;animation:fadeUp 0.4s ease both}
+    .settings-section-header{padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+    .settings-section-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .settings-section-title{font-size:0.95rem;font-weight:800;color:#fff}
+    .settings-section-sub{font-size:0.75rem;color:var(--muted);margin-top:2px}
+    .settings-body{padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.1rem}
+    .setting-row{display:flex;align-items:center;justify-content:space-between;gap:2rem;padding-bottom:1.1rem;border-bottom:1px solid #0d284750}
+    .setting-row:last-child{border-bottom:none;padding-bottom:0}
+    .setting-label{font-size:0.88rem;font-weight:700;color:#fff;margin-bottom:3px}
+    .setting-desc{font-size:0.74rem;color:var(--muted);line-height:1.55}
+    .setting-control{flex-shrink:0}
+    /* Toggle switch */
+    .toggle{position:relative;width:42px;height:24px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:24px;cursor:pointer;transition:0.3s}
+    .toggle-slider:before{position:absolute;content:"";width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s}
+    .toggle input:checked + .toggle-slider{background:var(--accent2)}
+    .toggle input:checked + .toggle-slider:before{transform:translateX(18px)}
+    /* Input / select */
+    .fi{background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-family:'Syne',sans-serif;font-size:0.84rem;color:var(--text);outline:none;transition:border-color 0.2s;min-width:200px}
+    .fi:focus{border-color:var(--accent)}
+    .fi-select option{background:var(--deep)}
+    .fi-small{min-width:120px}
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:none;white-space:nowrap}
+    .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px #00d4ff30}
+    .btn-ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-danger{background:#ff456015;color:var(--danger);border:1px solid #ff456030}
+    .btn-danger:hover{background:#ff456025}
+    /* Danger zone */
+    .danger-zone{background:linear-gradient(135deg,#ff45600a,transparent);border-color:#ff456030}
+    .danger-zone .settings-section-header{border-bottom-color:#ff456025}
+    /* Connection status */
+    .conn-status{display:inline-flex;align-items:center;gap:6px;font-size:0.74rem;font-weight:600;padding:4px 10px;border-radius:20px}
+    .conn-ok{background:#00e5a015;color:var(--success);border:1px solid #00e5a030}
+    .conn-fail{background:#ff456015;color:var(--danger);border:1px solid #ff456030}
+    .conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    .spinning{animation:spin 1s linear infinite}
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none"><path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a class="nav-item" href="campaign-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns</a>
+  <a class="nav-item" href="template-library.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Templates</a>
+  <a class="nav-item" href="inbox.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox</a>
+  <a class="nav-item" href="employees.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <a class="nav-item" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training</a>
+  <div class="sidebar-section">System</div>
+  <a class="nav-item active" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar" id="sidebarAv">SA</div>
+      <div>
+        <div class="user-name" id="sidebarName">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Settings</h1>
+      <p>Configure PhishGuard, manage your account, and set up integrations</p>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="settings-grid">
+
+      <!-- ── Backend Connection ── -->
+      <div class="settings-section" style="animation-delay:0s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#00d4ff15">&#128268;</div>
+          <div>
+            <div class="settings-section-title">Backend Connection</div>
+            <div class="settings-section-sub">Flask API server and GoPhish integration status</div>
+          </div>
+          <div style="margin-left:auto">
+            <button class="btn btn-ghost" style="font-size:0.75rem" onclick="checkConnections()">
+              <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Flask Backend</div>
+              <div class="setting-desc">Python API server at <span style="font-family:'Share Tech Mono',monospace;color:var(--accent)">http://127.0.0.1:5000</span></div>
+            </div>
+            <div class="setting-control"><span class="conn-status" id="flaskStatus"><span class="conn-dot"></span>Checking...</span></div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">GoPhish Server</div>
+              <div class="setting-desc">Email delivery engine at <span style="font-family:'Share Tech Mono',monospace;color:var(--accent)">http://127.0.0.1:3333</span></div>
+            </div>
+            <div class="setting-control"><span class="conn-status" id="gophishStatus"><span class="conn-dot"></span>Checking...</span></div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Mailhog SMTP</div>
+              <div class="setting-desc">Test email catcher at <span style="font-family:'Share Tech Mono',monospace;color:var(--accent)">http://127.0.0.1:8025</span> &middot; SMTP port 1025</div>
+            </div>
+            <div class="setting-control"><span class="conn-status" id="mailhogStatus"><span class="conn-dot"></span>Checking...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Account ── -->
+      <div class="settings-section" style="animation-delay:0.05s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#0077ff15">&#128100;</div>
+          <div>
+            <div class="settings-section-title">Account</div>
+            <div class="settings-section-sub">Update your admin profile and credentials</div>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Display Name</div>
+              <div class="setting-desc">Shown in the sidebar and activity logs</div>
+            </div>
+            <div class="setting-control">
+              <input class="fi fi-small" id="settingName" placeholder="Super Admin" value="Super Admin"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Admin Email</div>
+              <div class="setting-desc">Used for login and system notifications</div>
+            </div>
+            <div class="setting-control">
+              <input class="fi" id="settingEmail" type="email" placeholder="admin@phishguard.com" value="admin@phishguard.com"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Change Password</div>
+              <div class="setting-desc">Leave blank to keep your current password</div>
+            </div>
+            <div class="setting-control" style="display:flex;gap:8px">
+              <input class="fi fi-small" id="settingPw" type="password" placeholder="New password"/>
+              <button class="btn btn-ghost" onclick="saveAccount()" style="font-size:0.78rem">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Campaign Defaults ── -->
+      <div class="settings-section" style="animation-delay:0.1s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#ffb30015">&#127919;</div>
+          <div>
+            <div class="settings-section-title">Campaign Defaults</div>
+            <div class="settings-section-sub">Default values used when creating new phishing campaigns</div>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Default Sender Name</div>
+              <div class="setting-desc">The "From" display name used in phishing emails</div>
+            </div>
+            <div class="setting-control">
+              <input class="fi" id="defSenderName" placeholder="IT Support" value="IT Support"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Default Sender Email</div>
+              <div class="setting-desc">The "From" email address shown to recipients</div>
+            </div>
+            <div class="setting-control">
+              <input class="fi" id="defSenderEmail" type="email" placeholder="it-support@company.com"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Training Page URL</div>
+              <div class="setting-desc">Where employees are redirected after a phishing event</div>
+            </div>
+            <div class="setting-control">
+              <input class="fi" id="trainingUrl" value="http://127.0.0.1:8088/awareness-training.html"/>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="saveCampaignDefaults()">Save Defaults</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Notifications ── -->
+      <div class="settings-section" style="animation-delay:0.15s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#00e5a015">&#128276;</div>
+          <div>
+            <div class="settings-section-title">Notifications</div>
+            <div class="settings-section-sub">Control what events trigger in-app alerts</div>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Campaign activity alerts</div>
+              <div class="setting-desc">Show toast when an employee clicks, submits, or reports during an active campaign</div>
+            </div>
+            <div class="setting-control">
+              <label class="toggle"><input type="checkbox" id="notifActivity" checked/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">High risk employee alerts</div>
+              <div class="setting-desc">Notify when an employee risk score exceeds 70</div>
+            </div>
+            <div class="setting-control">
+              <label class="toggle"><input type="checkbox" id="notifHighRisk" checked/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Training completion alerts</div>
+              <div class="setting-desc">Notify when employees complete training modules</div>
+            </div>
+            <div class="setting-control">
+              <label class="toggle"><input type="checkbox" id="notifTraining"/><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="saveNotifications()">Save Preferences</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Risk Score ── -->
+      <div class="settings-section" style="animation-delay:0.2s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#ff456015">&#128209;</div>
+          <div>
+            <div class="settings-section-title">Risk Score Weights</div>
+            <div class="settings-section-sub">Points added or deducted per employee action</div>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div><div class="setting-label">&#128214; Email opened</div><div class="setting-desc">Employee opened a phishing simulation email</div></div>
+            <div class="setting-control" style="display:flex;align-items:center;gap:8px">
+              <span style="color:var(--danger);font-size:0.8rem;font-weight:700">+</span>
+              <input class="fi fi-small" id="wOpen" type="number" value="5" min="0" max="50" style="width:80px;text-align:center"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">&#128279; Link clicked</div><div class="setting-desc">Employee clicked the phishing link</div></div>
+            <div class="setting-control" style="display:flex;align-items:center;gap:8px">
+              <span style="color:var(--danger);font-size:0.8rem;font-weight:700">+</span>
+              <input class="fi fi-small" id="wClick" type="number" value="25" min="0" max="100" style="width:80px;text-align:center"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">&#128272; Credentials submitted</div><div class="setting-desc">Employee submitted data on a phishing page</div></div>
+            <div class="setting-control" style="display:flex;align-items:center;gap:8px">
+              <span style="color:var(--danger);font-size:0.8rem;font-weight:700">+</span>
+              <input class="fi fi-small" id="wSubmit" type="number" value="35" min="0" max="100" style="width:80px;text-align:center"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">&#128737; Phishing reported</div><div class="setting-desc">Employee correctly identified and reported a phishing email</div></div>
+            <div class="setting-control" style="display:flex;align-items:center;gap:8px">
+              <span style="color:var(--success);font-size:0.8rem;font-weight:700">&minus;</span>
+              <input class="fi fi-small" id="wReport" type="number" value="10" min="0" max="50" style="width:80px;text-align:center"/>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">&#127891; Training quiz passed</div><div class="setting-desc">Employee passed a training module quiz</div></div>
+            <div class="setting-control" style="display:flex;align-items:center;gap:8px">
+              <span style="color:var(--success);font-size:0.8rem;font-weight:700">&minus;</span>
+              <input class="fi fi-small" id="wQuiz" type="number" value="15" min="0" max="50" style="width:80px;text-align:center"/>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn btn-primary" onclick="saveRiskWeights()">Save Weights</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Danger Zone ── -->
+      <div class="settings-section danger-zone" style="animation-delay:0.25s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#ff456018">&#9888;</div>
+          <div>
+            <div class="settings-section-title" style="color:var(--danger)">Danger Zone</div>
+            <div class="settings-section-sub">Irreversible actions &mdash; proceed with caution</div>
+          </div>
+        </div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Reset All Risk Scores</div>
+              <div class="setting-desc">Set every employee risk score back to 0. This cannot be undone.</div>
+            </div>
+            <div class="setting-control">
+              <button class="btn btn-danger" onclick="confirmReset('risk')">Reset Scores</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Clear Tracking Events</div>
+              <div class="setting-desc">Delete all click, open, submit, and report events from all campaigns.</div>
+            </div>
+            <div class="setting-control">
+              <button class="btn btn-danger" onclick="confirmReset('tracking')">Clear Events</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div class="setting-label">Sign Out</div>
+              <div class="setting-desc">Log out of this admin session and return to the login page.</div>
+            </div>
+            <div class="setting-control">
+              <button class="btn btn-danger" onclick="signOut()">Sign Out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  if (user.name) {
+    document.getElementById('sidebarName').textContent = user.name;
+    document.getElementById('sidebarAv').textContent   = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('settingName').value  = user.name;
+    document.getElementById('settingEmail').value = user.email || '';
+  }
+  loadSavedSettings();
+  checkConnections();
+}
+
+// ── Load / save settings from localStorage ────────────────────────────────
+function loadSavedSettings() {
+  const s = JSON.parse(localStorage.getItem('pg_settings') || '{}');
+  if (s.defSenderName)  document.getElementById('defSenderName').value  = s.defSenderName;
+  if (s.defSenderEmail) document.getElementById('defSenderEmail').value = s.defSenderEmail;
+  if (s.trainingUrl)    document.getElementById('trainingUrl').value    = s.trainingUrl;
+  if (s.wOpen  !== undefined) document.getElementById('wOpen').value   = s.wOpen;
+  if (s.wClick !== undefined) document.getElementById('wClick').value  = s.wClick;
+  if (s.wSubmit!== undefined) document.getElementById('wSubmit').value = s.wSubmit;
+  if (s.wReport!== undefined) document.getElementById('wReport').value = s.wReport;
+  if (s.wQuiz  !== undefined) document.getElementById('wQuiz').value   = s.wQuiz;
+  if (s.notifActivity !== undefined) document.getElementById('notifActivity').checked = s.notifActivity;
+  if (s.notifHighRisk !== undefined) document.getElementById('notifHighRisk').checked = s.notifHighRisk;
+  if (s.notifTraining !== undefined) document.getElementById('notifTraining').checked = s.notifTraining;
+}
+
+function saveSetting(key, val) {
+  const s = JSON.parse(localStorage.getItem('pg_settings') || '{}');
+  s[key] = val;
+  localStorage.setItem('pg_settings', JSON.stringify(s));
+}
+
+// ── Connection checks ─────────────────────────────────────────────────────
+async function checkConnections() {
+  const icon = document.getElementById('refreshIcon');
+  icon.classList.add('spinning');
+
+  // Flask
+  setStatus('flaskStatus', 'checking');
+  try {
+    const r = await fetch('http://127.0.0.1:5000/api/dashboard/full', { signal: AbortSignal.timeout(3000) });
+    setStatus('flaskStatus', r.ok ? 'ok' : 'fail');
+  } catch(e) { setStatus('flaskStatus', 'fail'); }
+
+  // GoPhish (via our backend proxy check)
+  setStatus('gophishStatus', 'checking');
+  try {
+    const r = await fetch('http://127.0.0.1:3333', { signal: AbortSignal.timeout(2000), mode: 'no-cors' });
+    setStatus('gophishStatus', 'ok');
+  } catch(e) { setStatus('gophishStatus', 'fail'); }
+
+  // Mailhog
+  setStatus('mailhogStatus', 'checking');
+  try {
+    const r = await fetch('http://127.0.0.1:8025', { signal: AbortSignal.timeout(2000), mode: 'no-cors' });
+    setStatus('mailhogStatus', 'ok');
+  } catch(e) { setStatus('mailhogStatus', 'fail'); }
+
+  icon.classList.remove('spinning');
+}
+
+function setStatus(id, state) {
+  const el = document.getElementById(id);
+  const labels = { checking: 'Checking...', ok: 'Connected', fail: 'Unreachable' };
+  el.className = 'conn-status ' + (state === 'ok' ? 'conn-ok' : state === 'fail' ? 'conn-fail' : '');
+  el.innerHTML = '<span class="conn-dot"></span>' + labels[state];
+}
+
+// ── Account save ──────────────────────────────────────────────────────────
+async function saveAccount() {
+  const name  = document.getElementById('settingName').value.trim();
+  const email = document.getElementById('settingEmail').value.trim();
+  const pw    = document.getElementById('settingPw').value;
+  if (!name || !email) { showToast('Name and email are required', 'error'); return; }
+  try {
+    const user = getUser();
+    const body = { name, email };
+    if (pw) body.password = pw;
+    // Update via API
+    await apiFetch('auth/update-profile', 'PUT', body);
+    // Update stored session
+    const updated = { ...user, name, email };
+    localStorage.setItem('pg_user', JSON.stringify(updated));
+    document.getElementById('sidebarName').textContent = name;
+    document.getElementById('sidebarAv').textContent   = name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('settingPw').value = '';
+    showToast('Account updated', 'success');
+  } catch(e) {
+    // Store locally even if API fails
+    const user = getUser();
+    const updated = { ...user, name, email };
+    localStorage.setItem('pg_user', JSON.stringify(updated));
+    document.getElementById('sidebarName').textContent = name;
+    showToast('Profile saved locally', 'success');
+  }
+}
+
+// ── Campaign defaults ─────────────────────────────────────────────────────
+function saveCampaignDefaults() {
+  saveSetting('defSenderName',  document.getElementById('defSenderName').value.trim());
+  saveSetting('defSenderEmail', document.getElementById('defSenderEmail').value.trim());
+  saveSetting('trainingUrl',    document.getElementById('trainingUrl').value.trim());
+  showToast('Campaign defaults saved', 'success');
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────
+function saveNotifications() {
+  saveSetting('notifActivity', document.getElementById('notifActivity').checked);
+  saveSetting('notifHighRisk', document.getElementById('notifHighRisk').checked);
+  saveSetting('notifTraining', document.getElementById('notifTraining').checked);
+  showToast('Notification preferences saved', 'success');
+}
+
+// ── Risk weights ──────────────────────────────────────────────────────────
+function saveRiskWeights() {
+  ['wOpen','wClick','wSubmit','wReport','wQuiz'].forEach(id => {
+    saveSetting(id, parseInt(document.getElementById(id).value) || 0);
+  });
+  showToast('Risk score weights saved', 'success');
+}
+
+// ── Danger zone ───────────────────────────────────────────────────────────
+async function confirmReset(type) {
+  const msgs = {
+    risk:     'Reset ALL employee risk scores to 0?\n\nThis cannot be undone.',
+    tracking: 'Delete ALL tracking events (opens, clicks, submits, reports)?\n\nThis cannot be undone.',
+  };
+  if (!confirm(msgs[type])) return;
+  try {
+    if (type === 'risk') {
+      await apiFetch('employees/reset-risk', 'POST');
+      showToast('All risk scores reset to 0', 'success');
+    } else if (type === 'tracking') {
+      await apiFetch('tracking/clear', 'POST');
+      showToast('All tracking events cleared', 'success');
+    }
+  } catch(e) {
+    showToast('Action failed: ' + e.message, 'error');
+  }
+}
+
+function signOut() {
+  if (!confirm('Sign out of PhishGuard?')) return;
+  clearSession();
+  window.location.href = 'login.html';
+}
+
+init();
+</script>
+</body>
+</html>

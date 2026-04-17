@@ -6,11 +6,9 @@ const API_URL = 'http://127.0.0.1:5000/api';
 // ── Core fetch helper ──────────────────────────────────────────────────────
 async function apiFetch(endpoint, method = 'GET', body = null) {
   const options = {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors',
-      credentials: 'omit',
-    };
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
 
   const token = localStorage.getItem('pg_token');
   if (token) options.headers['Authorization'] = `Bearer ${token}`;
