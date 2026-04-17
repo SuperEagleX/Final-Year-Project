@@ -239,6 +239,21 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', m)
 
+    # ── Deduplicate training_modules — keep only the 8 canonical rows (id 1-8)
+    # Remove any rows with id > 8 that have the same title as a canonical row
+    c.execute('''
+        DELETE FROM training_modules
+        WHERE id > 8
+        AND title IN (
+            SELECT title FROM training_modules WHERE id <= 8
+        )
+    ''')
+    # Also remove any extra rows beyond the 8 we seeded
+    c.execute('''
+        DELETE FROM training_modules
+        WHERE id NOT IN (1,2,3,4,5,6,7,8)
+    ''')
+
     conn.commit()
     conn.close()
     print('✅ Database initialised successfully')
@@ -605,15 +620,19 @@ def update_campaign_status(campaign_id):
 # ── Employee Routes ────────────────────────────────────────────────────────
 @app.route('/api/employees', methods=['GET'])
 def get_employees():
-    """GET /api/employees — List all employees with risk scores."""
     conn = get_db()
     employees = conn.execute('''
-        SELECT id, name, email, department, risk_score
-        FROM users WHERE role='employee'
-        ORDER BY risk_score DESC
+        SELECT u.id, u.name, u.email, u.department, u.risk_score, u.created_at,
+               COUNT(DISTINCT ct.campaign_id) as campaigns_targeted,
+               COUNT(DISTINCT CASE WHEN te.event_type='clicked'   THEN te.campaign_id END) as campaigns_clicked,
+               COUNT(DISTINCT CASE WHEN te.event_type='submitted' THEN te.campaign_id END) as campaigns_submitted
+        FROM users u
+        LEFT JOIN campaign_targets ct ON ct.email = u.email
+        LEFT JOIN tracking_events  te ON te.email = u.email
+        WHERE u.role='employee'
+        GROUP BY u.id ORDER BY u.risk_score DESC, u.name
     ''').fetchall()
     conn.close()
-
     return jsonify([dict(e) for e in employees])
 
 
@@ -669,6 +688,94 @@ def upload_employees():
         'added':   added,
         'message': f'{added} employees uploaded successfully'
     }), 201
+
+
+@app.route('/api/employees', methods=['POST'])
+def create_employee():
+    data  = request.get_json()
+    email = (data.get('email') or '').strip()
+    name  = (data.get('name')  or '').strip()
+    dept  = (data.get('department') or '').strip()
+    position = (data.get('position') or '').strip()
+    if not email or not name:
+        return jsonify({'error': 'name and email are required'}), 400
+    conn = get_db()
+    if conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone():
+        conn.close(); return jsonify({'error': 'Email already exists'}), 409
+    default_pw = hash_password('changeme123')
+    conn.execute('INSERT INTO users (name, email, password, role, department) VALUES (?,?,?,?,?)',
+        (name, email, default_pw, 'employee', dept))
+    conn.commit(); conn.close()
+    return jsonify({'success': True}), 201
+
+
+@app.route('/api/employees/<int:emp_id>', methods=['PUT'])
+def update_employee(emp_id):
+    data = request.get_json()
+    conn = get_db()
+    for field in ('name', 'email', 'department'):
+        if field in data:
+            conn.execute('UPDATE users SET ' + field + "=? WHERE id=? AND role='employee'", (data[field], emp_id))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/employees/<int:emp_id>', methods=['DELETE'])
+def delete_employee(emp_id):
+    conn = get_db()
+    conn.execute("DELETE FROM users WHERE id=? AND role='employee'", (emp_id,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/employees/stats', methods=['GET'])
+def get_employee_stats():
+    conn = get_db()
+    total    = conn.execute("SELECT COUNT(*) FROM users WHERE role='employee'").fetchone()[0]
+    high_risk = conn.execute("SELECT COUNT(*) FROM users WHERE role='employee' AND risk_score>=70").fetchone()[0]
+    med_risk  = conn.execute("SELECT COUNT(*) FROM users WHERE role='employee' AND risk_score>=30 AND risk_score<70").fetchone()[0]
+    low_risk  = conn.execute("SELECT COUNT(*) FROM users WHERE role='employee' AND risk_score<30").fetchone()[0]
+    depts     = conn.execute("SELECT department, COUNT(*) as cnt FROM users WHERE role='employee' GROUP BY department ORDER BY cnt DESC").fetchall()
+    # Campaigns each employee has been targeted in
+    most_targeted = conn.execute('''
+        SELECT u.name, u.email, u.department, u.risk_score,
+               COUNT(DISTINCT ct.campaign_id) as campaigns
+        FROM users u
+        LEFT JOIN campaign_targets ct ON ct.email = u.email
+        WHERE u.role='employee'
+        GROUP BY u.id ORDER BY campaigns DESC, u.risk_score DESC LIMIT 5
+    ''').fetchall()
+    conn.close()
+    return jsonify({
+        'total': total, 'high_risk': high_risk, 'med_risk': med_risk, 'low_risk': low_risk,
+        'departments': [dict(d) for d in depts],
+        'most_targeted': [dict(m) for m in most_targeted],
+    })
+
+
+@app.route('/api/employees/export-csv', methods=['GET'])
+def export_employees_csv():
+    import csv, io
+    conn = get_db()
+    emps = conn.execute('''
+        SELECT u.name, u.email, u.department, u.risk_score,
+               COUNT(DISTINCT ct.campaign_id) as campaigns_targeted,
+               COUNT(DISTINCT CASE WHEN te.event_type='clicked' THEN te.campaign_id END) as campaigns_clicked
+        FROM users u
+        LEFT JOIN campaign_targets ct ON ct.email=u.email
+        LEFT JOIN tracking_events  te ON te.email=u.email
+        WHERE u.role='employee'
+        GROUP BY u.id ORDER BY u.name
+    ''').fetchall()
+    conn.close()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Name','Email','Department','Risk Score','Campaigns Targeted','Campaigns Clicked'])
+    for e in emps:
+        writer.writerow([e['name'],e['email'],e['department'],e['risk_score'],e['campaigns_targeted'],e['campaigns_clicked']])
+    from flask import Response
+    return Response(output.getvalue(), mimetype='text/csv',
+        headers={'Content-Disposition': 'attachment;filename=employees.csv'})
 
 
 # ── Tracking Routes ────────────────────────────────────────────────────────
@@ -1264,7 +1371,12 @@ def register_learner():
 @app.route('/api/training/modules/full', methods=['GET'])
 def get_modules_full():
     conn = get_db()
-    modules = conn.execute('SELECT * FROM training_modules ORDER BY order_num').fetchall()
+    # Guard against duplicate titles — keep only the lowest id per title
+    modules = conn.execute('''
+        SELECT * FROM training_modules
+        WHERE id IN (SELECT MIN(id) FROM training_modules GROUP BY title)
+        ORDER BY order_num, id
+    ''').fetchall()
     result  = []
     for m in modules:
         mc   = conn.execute('SELECT content_html, quiz_json FROM module_content WHERE module_id=?', (m['id'],)).fetchone()

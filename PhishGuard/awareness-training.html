@@ -394,7 +394,13 @@ async function loadModulesFromAPI() {
     const apiModules = await resp.json();
     // Replace MODULES entirely with API data — no merging, no duplication
     MODULES.length = 0;
+    const seenIds    = new Set();
+    const seenTitles = new Set();
     apiModules.forEach(apiM => {
+      // Skip duplicates by id or title
+      if (seenIds.has(apiM.id) || seenTitles.has(apiM.title)) return;
+      seenIds.add(apiM.id);
+      seenTitles.add(apiM.title);
       let metaArr = [];
       try { metaArr = JSON.parse(apiM.meta_json || '[]'); } catch(e) {}
       let quiz = [];

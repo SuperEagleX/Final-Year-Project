@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PhishGuard &mdash; Employees</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#020b18;--deep:#040f1f;--panel:#071628;--card:#081a30;--border:#0d2847;--accent:#00d4ff;--accent2:#0077ff;--danger:#ff4560;--warn:#ffb300;--success:#00e5a0;--text:#cde4f8;--muted:#4a7090;--sidebar-w:240px}
+    html,body{height:100%;background:var(--navy);font-family:'Syne',sans-serif;color:var(--text)}
+    .sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
+    .sidebar-logo{display:flex;align-items:center;gap:12px;padding:1.6rem 1.4rem;border-bottom:1px solid var(--border)}
+    .sidebar-logo svg{width:36px;height:36px}
+    .sidebar-logo-text{font-size:1.1rem;font-weight:800;color:#fff}
+    .sidebar-logo-text span{color:var(--accent)}
+    .sidebar-section{padding:1.2rem 1rem 0.4rem;font-size:0.65rem;font-weight:700;color:var(--muted);letter-spacing:0.12em;text-transform:uppercase}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:11px 1.2rem;margin:2px 0.6rem;border-radius:8px;font-size:0.88rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.2s;text-decoration:none}
+    .nav-item:hover{background:var(--border);color:var(--text)}
+    .nav-item.active{background:linear-gradient(90deg,#00d4ff18,#0077ff10);color:var(--accent);border-left:2px solid var(--accent);margin-left:calc(0.6rem - 2px)}
+    .nav-item svg{width:17px;height:17px;flex-shrink:0}
+    .sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+    .user-chip{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:var(--deep);border:1px solid var(--border)}
+    .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#000;flex-shrink:0}
+    .user-name{font-size:0.82rem;font-weight:700;color:#fff}
+    .user-role{font-size:0.7rem;color:var(--accent)}
+    .main{margin-left:var(--sidebar-w);min-height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+    .main::-webkit-scrollbar{width:5px}
+    .main::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+    .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:var(--navy);border-bottom:1px solid var(--border)}
+    .topbar-left h1{font-size:1.3rem;font-weight:800;color:#fff}
+    .topbar-left p{font-size:0.8rem;color:var(--muted);margin-top:2px}
+    .topbar-right{display:flex;gap:0.7rem;align-items:center}
+    .content{padding:1.8rem 2rem;flex:1}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;transition:all 0.2s;border:none;white-space:nowrap}
+    .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px #00d4ff30}
+    .btn-ghost{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+    .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+    .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.8rem;animation:fadeUp 0.4s ease both}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.4rem;display:flex;align-items:center;gap:14px}
+    .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+    .snum{font-family:'Share Tech Mono',monospace;font-size:1.5rem;font-weight:700;color:#fff}
+    .slbl{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:1px}
+    .two-col{display:grid;grid-template-columns:1fr 260px;gap:1.4rem;align-items:start}
+    .filter-bar{display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem;flex-wrap:wrap}
+    .search-wrap{position:relative;flex:1;min-width:180px;max-width:280px}
+    .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none}
+    .search-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px 9px 32px;font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--text);outline:none;transition:border-color 0.2s}
+    .search-input:focus{border-color:var(--accent)}
+    .fi-sel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:'Syne',sans-serif;font-size:0.79rem;color:var(--text);outline:none;cursor:pointer}
+    .fi-sel option{background:var(--deep)}
+    .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .emp-table{width:100%;border-collapse:collapse;font-size:0.83rem}
+    .emp-table thead th{padding:10px 14px;text-align:left;font-size:0.61rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border);background:var(--deep);white-space:nowrap}
+    .emp-table tbody td{padding:11px 14px;border-bottom:1px solid #0d284730;vertical-align:middle}
+    .emp-table tbody tr:last-child td{border-bottom:none}
+    .emp-table tbody tr:hover td{background:#0077ff05}
+    .emp-name-cell{font-weight:700;color:#fff;margin-bottom:2px;font-size:0.86rem}
+    .emp-email-cell{font-size:0.7rem;color:var(--muted);font-family:'Share Tech Mono',monospace}
+    .dept-tag{font-size:0.67rem;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--border);color:var(--muted);white-space:nowrap}
+    .risk-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.67rem;font-weight:700;white-space:nowrap}
+    .rp-high{background:#ff456018;color:var(--danger);border:1px solid #ff456030}
+    .rp-med{background:#ffb30018;color:var(--warn);border:1px solid #ffb30030}
+    .rp-low{background:#00e5a018;color:var(--success);border:1px solid #00e5a030}
+    .rp-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+    .act-btn{padding:4px 9px;border-radius:5px;font-family:'Syne',sans-serif;font-size:0.68rem;font-weight:700;cursor:pointer;border:none;transition:all 0.2s}
+    .ab-edit{background:#ffb30015;color:var(--warn);border:1px solid #ffb30030;margin-right:4px}
+    .ab-edit:hover{background:#ffb30028}
+    .ab-del{background:#ff456015;color:var(--danger);border:1px solid #ff456030}
+    .ab-del:hover{background:#ff456028}
+    .pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 0;margin-top:4px}
+    .pg-btn{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:6px 14px;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;color:var(--text);cursor:pointer;transition:all 0.2s}
+    .pg-btn:disabled{color:var(--muted);cursor:not-allowed;opacity:0.5}
+    .pg-btn:not(:disabled):hover{border-color:var(--accent);color:var(--accent)}
+    .pg-info{font-size:0.72rem;color:var(--muted);font-family:'Share Tech Mono',monospace}
+    .side-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.2rem}
+    .side-card-title{font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.9rem}
+    .dept-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .dept-name{font-size:0.74rem;color:var(--text);width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+    .dept-bar-bg{flex:1;height:5px;background:var(--border);border-radius:10px;overflow:hidden}
+    .dept-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:10px;transition:width 0.7s ease}
+    .dept-count{font-family:'Share Tech Mono',monospace;font-size:0.7rem;color:var(--muted);width:24px;text-align:right;flex-shrink:0}
+    .upload-zone{border:2px dashed var(--border);border-radius:10px;padding:1.6rem;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--deep)}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--accent2);background:#0077ff06}
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;padding:1rem}
+    .modal-overlay.open{opacity:1;pointer-events:all}
+    .modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;transform:translateY(20px);transition:transform 0.3s;overflow:hidden}
+    .modal-overlay.open .modal{transform:translateY(0)}
+    .modal.wide{max-width:560px}
+    .mh{display:flex;align-items:flex-start;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border)}
+    .mh h2{font-size:1rem;font-weight:800;color:#fff}
+    .mh p{font-size:0.74rem;color:var(--muted);margin-top:3px}
+    .mc{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.3rem;padding:4px;line-height:1;flex-shrink:0}
+    .mc:hover{color:var(--text)}
+    .mb{padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:0.9rem}
+    .mfoot{padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end}
+    .fg{display:flex;flex-direction:column;gap:5px}
+    .fg label{font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+    .fi{background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Syne',sans-serif;font-size:0.86rem;color:var(--text);outline:none;transition:border-color 0.2s;width:100%}
+    .fi:focus{border-color:var(--accent)}
+    .fg-2{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none"><path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a class="nav-item" href="campaign-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns</a>
+  <a class="nav-item" href="template-library.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Templates</a>
+  <a class="nav-item" href="inbox.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox</a>
+  <a class="nav-item active" href="employees.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <a class="nav-item" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training</a>
+  <div class="sidebar-section">Reports</div>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+  <div class="sidebar-section">System</div>
+  <a class="nav-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="av" id="sidebarAv">SA</div>
+      <div>
+        <div class="user-name" id="sidebarName">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="empModal" onclick="if(event.target===this)closeEmpModal()">
+  <div class="modal">
+    <div class="mh">
+      <div><h2 id="empModalTitle">Add Employee</h2><p id="empModalSub">Fill in the employee details</p></div>
+      <button class="mc" onclick="closeEmpModal()">&times;</button>
+    </div>
+    <div class="mb">
+      <div class="fg-2">
+        <div class="fg" style="grid-column:1/-1"><label>Full Name *</label><input class="fi" id="em_name" placeholder="e.g. Sarah Johnson"/></div>
+        <div class="fg" style="grid-column:1/-1"><label>Work Email *</label><input class="fi" id="em_email" type="email" placeholder="e.g. sarah@company.com"/></div>
+        <div class="fg"><label>Department *</label><input class="fi" id="em_dept" placeholder="e.g. Finance"/></div>
+        <div class="fg"><label>Job Title</label><input class="fi" id="em_jobtitle" placeholder="e.g. Senior Analyst"/></div>
+      </div>
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.74rem;color:var(--muted);line-height:1.6">
+        &#128274; Default password <strong style="color:var(--accent)">changeme123</strong> assigned. Employee can update later.
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeEmpModal()">Cancel</button>
+      <button class="btn btn-primary" id="empSaveBtn" onclick="saveEmployee()">Add Employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- CSV Import Modal -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)closeImportModal()">
+  <div class="modal wide">
+    <div class="mh">
+      <div><h2>Import from CSV</h2><p>Columns required: name, email, department</p></div>
+      <button class="mc" onclick="closeImportModal()">&times;</button>
+    </div>
+    <div class="mb">
+      <div class="upload-zone" id="csvZone" onclick="document.getElementById('csvInput').click()">
+        <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCSVFile(event)"/>
+        <div style="font-size:2rem;margin-bottom:8px">&#128196;</div>
+        <div style="font-weight:700;color:var(--text);margin-bottom:4px" id="csvZoneText">Click to upload or drag &amp; drop</div>
+        <div style="font-size:0.72rem;color:var(--muted)">.csv files only</div>
+      </div>
+      <div id="csvPreview" style="display:none">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px"><span id="csvCount">0</span> employees found</div>
+        <div style="background:var(--deep);border:1px solid var(--border);border-radius:8px;max-height:140px;overflow-y:auto;font-family:'Share Tech Mono',monospace;font-size:0.71rem;padding:10px 14px;line-height:1.8" id="csvPreviewBody"></div>
+      </div>
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.74rem;color:var(--muted);line-height:1.7">
+        <strong style="color:var(--text)">&#128161; Example:</strong><br>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:0.7rem">name,email,department<br>Sarah Johnson,sarah@co.com,Finance</span>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-ghost" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" id="importBtn" disabled style="opacity:0.45;cursor:not-allowed" onclick="runImport()">Import Employees</button>
+    </div>
+  </div>
+</div>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <h1>Employees</h1>
+      <p>Manage your employee roster and prepare targets for phishing campaigns</p>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="exportCSV()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <button class="btn btn-ghost" onclick="openImportModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import CSV
+      </button>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Employee
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="stat-card"><div class="stat-icon" style="background:#0077ff18">&#128101;</div><div><div class="snum" id="sTotal">&#8212;</div><div class="slbl">Total Employees</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#ff456018">&#128680;</div><div><div class="snum" id="sHigh" style="color:var(--danger)">&#8212;</div><div class="slbl">High Risk (&ge;70)</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#ffb30018">&#9888;</div><div><div class="snum" id="sMed" style="color:var(--warn)">&#8212;</div><div class="slbl">Medium Risk</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#00e5a018">&#10003;</div><div><div class="snum" id="sLow" style="color:var(--success)">&#8212;</div><div class="slbl">Low Risk (&lt;30)</div></div></div>
+    </div>
+
+    <div class="two-col">
+      <!-- Table -->
+      <div>
+        <div class="filter-bar">
+          <div class="search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" id="empSearch" placeholder="Search name, email, dept..." oninput="applyFilters()"/>
+          </div>
+          <select class="fi-sel" id="deptFilter" onchange="applyFilters()"><option value="">All Departments</option></select>
+          <select class="fi-sel" id="riskFilter" onchange="applyFilters()">
+            <option value="">All Risk Levels</option>
+            <option value="high">High (&ge;70)</option>
+            <option value="med">Medium (30-69)</option>
+            <option value="low">Low (&lt;30)</option>
+          </select>
+          <span id="filterNote" style="font-size:0.73rem;color:var(--muted)"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="emp-table">
+            <thead><tr>
+              <th>Employee</th><th>Department</th>
+              <th style="text-align:center">Risk</th>
+              <th style="text-align:center">Campaigns</th>
+              <th style="text-align:center">Clicks</th>
+              <th style="text-align:right;padding-right:14px">Actions</th>
+            </tr></thead>
+            <tbody id="empBody"><tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <button class="pg-btn" id="pgPrev" onclick="goPage(-1)" disabled>&#8592; Prev</button>
+          <span class="pg-info" id="pgInfo"></span>
+          <button class="pg-btn" id="pgNext" onclick="goPage(1)"  disabled>Next &#8594;</button>
+        </div>
+      </div>
+
+      <!-- Side panels -->
+      <div style="display:flex;flex-direction:column;gap:1.1rem">
+        <!-- Department Breakdown -->
+        <div class="side-card">
+          <div class="side-card-title">Department Breakdown</div>
+          <div id="deptBreakdown"><div style="color:var(--muted);font-size:0.78rem">Loading...</div></div>
+        </div>
+
+        <!-- Campaign Readiness -->
+        <div class="side-card" style="background:linear-gradient(135deg,#00d4ff0a,#0077ff08);border-color:#00d4ff20">
+          <div class="side-card-title" style="color:var(--accent)">&#128640; Campaign Readiness</div>
+          <div style="font-size:0.74rem;color:var(--muted);line-height:1.65;margin-bottom:0.9rem">Add employees here then export their CSV to use as targets when creating a phishing campaign.</div>
+          <div style="display:flex;flex-direction:column;gap:0.5rem">
+            <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:0.78rem" onclick="exportCSV()">&#128190; Download Roster CSV</button>
+            <button class="btn btn-ghost"   style="width:100%;justify-content:center;font-size:0.78rem" onclick="location.href='campaign-management.html'">Go to Campaigns &#8594;</button>
+          </div>
+        </div>
+
+        <!-- Risk Legend -->
+        <div class="side-card">
+          <div class="side-card-title">Risk Score Guide</div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-size:0.74rem">
+            <div style="display:flex;align-items:flex-start;gap:8px"><span class="risk-pill rp-high" style="margin-top:1px"><span class="rp-dot"></span>High</span><span style="color:var(--muted)">70-100: Clicked links or submitted credentials.</span></div>
+            <div style="display:flex;align-items:flex-start;gap:8px"><span class="risk-pill rp-med"  style="margin-top:1px"><span class="rp-dot"></span>Med</span><span style="color:var(--muted)">30-69: Opened phishing emails.</span></div>
+            <div style="display:flex;align-items:flex-start;gap:8px"><span class="risk-pill rp-low"  style="margin-top:1px"><span class="rp-dot"></span>Low</span><span style="color:var(--muted)">0-29: No risky interactions recorded.</span></div>
+          </div>
+          <div style="margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid var(--border);font-size:0.71rem;color:var(--muted)">Score decreases by 10 per phishing report and 15 per passed training quiz.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+let ALL = [], FILTERED = [], PAGE = 1, editingId = null, csvParsed = [];
+const PER = 15;
+
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  if (user.name) {
+    document.getElementById('sidebarName').textContent = user.name;
+    document.getElementById('sidebarAv').textContent = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+  }
+  await loadAll();
+}
+
+async function loadAll() {
+  try {
+    const [emps, stats] = await Promise.all([apiFetch('employees'), apiFetch('employees/stats')]);
+    ALL = emps;
+    document.getElementById('sTotal').textContent = stats.total;
+    document.getElementById('sHigh').textContent  = stats.high_risk;
+    document.getElementById('sMed').textContent   = stats.med_risk;
+    document.getElementById('sLow').textContent   = stats.low_risk;
+    renderDepts(stats.departments||[]);
+    buildDeptFilter(stats.departments||[]);
+    applyFilters();
+  } catch(e) {
+    document.getElementById('empBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:2.5rem">Failed to load &mdash; is the backend running?</td></tr>';
+  }
+}
+
+function renderDepts(depts) {
+  const max = depts[0]?.cnt || 1;
+  document.getElementById('deptBreakdown').innerHTML = depts.length
+    ? depts.slice(0,8).map(d =>
+        '<div class="dept-row"><div class="dept-name">'+(d.department||'Unknown')+'</div>' +
+        '<div class="dept-bar-bg"><div class="dept-bar-fill" style="width:'+Math.round(d.cnt/max*100)+'%"></div></div>' +
+        '<div class="dept-count">'+d.cnt+'</div></div>'
+      ).join('')
+    : '<div style="color:var(--muted);font-size:0.78rem">No employees yet</div>';
+}
+
+function buildDeptFilter(depts) {
+  const s = document.getElementById('deptFilter'), cur = s.value;
+  s.innerHTML = '<option value="">All Departments</option>' +
+    depts.map(d=>'<option value="'+d.department+'">'+d.department+' ('+d.cnt+')</option>').join('');
+  if (cur) s.value = cur;
+}
+
+function applyFilters() {
+  PAGE = 1;
+  const q = (document.getElementById('empSearch').value||'').toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  const risk = document.getElementById('riskFilter').value;
+  FILTERED = ALL.filter(e => {
+    if (q && !(e.name||'').toLowerCase().includes(q) && !(e.email||'').toLowerCase().includes(q) && !(e.department||'').toLowerCase().includes(q)) return false;
+    if (dept && e.department !== dept) return false;
+    const s = e.risk_score||0;
+    if (risk==='high' && s<70) return false;
+    if (risk==='med'  && (s<30||s>=70)) return false;
+    if (risk==='low'  && s>=30) return false;
+    return true;
+  });
+  document.getElementById('filterNote').textContent = (FILTERED.length!==ALL.length) ? FILTERED.length+' of '+ALL.length+' shown' : '';
+  renderPage();
+}
+
+const BGCOLS = ['#0077ff','#9b59b6','#e67e22','#2ecc71','#e74c3c','#1abc9c','#f39c12'];
+const bg  = email => BGCOLS[(email||'a').charCodeAt(0) % BGCOLS.length];
+const ini = name  => (name||'?').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+const rp  = score => score>=70
+  ? '<span class="risk-pill rp-high"><span class="rp-dot"></span>'+score+'</span>'
+  : score>=30
+    ? '<span class="risk-pill rp-med"><span class="rp-dot"></span>'+score+'</span>'
+    : '<span class="risk-pill rp-low"><span class="rp-dot"></span>'+score+'</span>';
+
+function renderPage() {
+  const total = FILTERED.length, pages = Math.max(1,Math.ceil(total/PER));
+  PAGE = Math.min(PAGE,pages);
+  const sl = FILTERED.slice((PAGE-1)*PER, PAGE*PER);
+  document.getElementById('pgInfo').textContent = 'Page '+PAGE+' of '+pages+' ('+total+' employees)';
+  document.getElementById('pgPrev').disabled = PAGE<=1;
+  document.getElementById('pgNext').disabled = PAGE>=pages;
+  if (!sl.length) {
+    document.getElementById('empBody').innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2.5rem">No employees match your filters</td></tr>';
+    return;
+  }
+  document.getElementById('empBody').innerHTML = sl.map(e =>
+    '<tr>'+
+    '<td><div style="display:flex;align-items:center;gap:10px">'+
+      '<div style="width:32px;height:32px;border-radius:50%;background:'+bg(e.email)+';display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0">'+ini(e.name)+'</div>'+
+      '<div><div class="emp-name-cell">'+e.name+'</div><div class="emp-email-cell">'+e.email+'</div></div>'+
+    '</div></td>'+
+    '<td><span class="dept-tag">'+(e.department||'&mdash;')+'</span></td>'+
+    '<td style="text-align:center">'+rp(e.risk_score||0)+'</td>'+
+    '<td style="text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:0.78rem;color:var(--muted)">'+(e.campaigns_targeted||0)+'</td>'+
+    '<td style="text-align:center;font-family:\'Share Tech Mono\',monospace;font-size:0.78rem;color:'+(e.campaigns_clicked>0?'var(--danger)':'var(--muted)')+'">'+((e.campaigns_clicked||0))+'</td>'+
+    '<td style="text-align:right;padding-right:12px">'+
+      '<button class="act-btn ab-edit" onclick="openEditModal('+e.id+')">&#9998; Edit</button>'+
+      '<button class="act-btn ab-del"  onclick="deleteEmp('+e.id+')">&#128465;</button>'+
+    '</td></tr>'
+  ).join('');
+}
+function goPage(d){PAGE+=d;renderPage();}
+
+function openAddModal(){
+  editingId=null;
+  ['em_name','em_email','em_dept','em_jobtitle'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('em_email').readOnly=false;
+  document.getElementById('empModalTitle').textContent='Add Employee';
+  document.getElementById('empModalSub').textContent='Fill in the employee details';
+  document.getElementById('empSaveBtn').textContent='Add Employee';
+  document.getElementById('empModal').classList.add('open');
+  setTimeout(()=>document.getElementById('em_name').focus(),150);
+}
+function openEditModal(id){
+  const e=ALL.find(e=>e.id===id); if(!e) return;
+  editingId=id;
+  document.getElementById('em_name').value  = e.name||'';
+  document.getElementById('em_email').value = e.email||'';
+  document.getElementById('em_dept').value  = e.department||'';
+  document.getElementById('em_jobtitle').value='';
+  document.getElementById('em_email').readOnly=true;
+  document.getElementById('empModalTitle').textContent='Edit Employee';
+  document.getElementById('empModalSub').textContent=e.email;
+  document.getElementById('empSaveBtn').textContent='Save Changes';
+  document.getElementById('empModal').classList.add('open');
+}
+function closeEmpModal(){document.getElementById('empModal').classList.remove('open');editingId=null;}
+
+async function saveEmployee(){
+  const btn=document.getElementById('empSaveBtn');
+  const name=document.getElementById('em_name').value.trim();
+  const email=document.getElementById('em_email').value.trim();
+  const dept=document.getElementById('em_dept').value.trim();
+  if(!name){showToast('Full name is required','error');return;}
+  if(!email&&!editingId){showToast('Work email is required','error');return;}
+  if(!dept){showToast('Department is required','error');return;}
+  btn.textContent='Saving...'; btn.disabled=true;
+  try{
+    if(editingId) await apiFetch('employees/'+editingId,'PUT',{name,department:dept});
+    else          await apiFetch('employees','POST',{name,email,department:dept});
+    closeEmpModal();
+    showToast(editingId?'Employee updated':'Employee added','success');
+    await loadAll();
+  } catch(err){showToast(err.message||'Save failed','error');}
+  btn.textContent=editingId?'Save Changes':'Add Employee'; btn.disabled=false;
+}
+
+async function deleteEmp(id){
+  const e=ALL.find(e=>e.id===id);
+  if(!confirm('Remove '+(e?e.name:'this employee')+' from the roster?\n\nTracking history and campaign records will be kept.')) return;
+  try{ await apiFetch('employees/'+id,'DELETE'); showToast('Employee removed','success'); await loadAll(); }
+  catch(err){ showToast(err.message,'error'); }
+}
+
+function openImportModal(){
+  csvParsed=[];
+  document.getElementById('csvZoneText').textContent='Click to upload or drag & drop';
+  document.getElementById('csvPreview').style.display='none';
+  document.getElementById('csvInput').value='';
+  const btn=document.getElementById('importBtn');
+  btn.disabled=true; btn.style.opacity='0.45'; btn.style.cursor='not-allowed';
+  document.getElementById('importModal').classList.add('open');
+}
+function closeImportModal(){document.getElementById('importModal').classList.remove('open');}
+
+function handleCSVFile(ev){
+  const file=ev.target?.files?.[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.trim().split('\n').filter(l=>l.trim());
+    const hdrs=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+    const ni=hdrs.indexOf('name'), ei=hdrs.indexOf('email'), di=hdrs.indexOf('department');
+    if(ei<0){showToast('CSV must have an "email" column','error');return;}
+    csvParsed=lines.slice(1).map(line=>{
+      const c=line.split(',').map(x=>x.trim().replace(/^"|"$/g,''));
+      return{name:ni>=0?c[ni]||'':'', email:c[ei]||'', department:di>=0?c[di]||'':''};
+    }).filter(r=>r.email);
+    document.getElementById('csvCount').textContent=csvParsed.length;
+    document.getElementById('csvPreviewBody').innerHTML=
+      csvParsed.slice(0,10).map(r=>r.name+' &lt;'+r.email+'&gt; &mdash; '+(r.department||'&mdash;')).join('<br>')+
+      (csvParsed.length>10?'<br><span style="color:var(--muted)">...and '+(csvParsed.length-10)+' more</span>':'');
+    document.getElementById('csvPreview').style.display='block';
+    document.getElementById('csvZoneText').textContent=file.name+' ('+csvParsed.length+' rows)';
+    const btn=document.getElementById('importBtn');
+    btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+  };
+  reader.readAsText(file);
+}
+
+async function runImport(){
+  if(!csvParsed.length) return;
+  const btn=document.getElementById('importBtn');
+  btn.textContent='Importing...'; btn.disabled=true;
+  try{
+    const res=await apiFetch('employees/upload','POST',{employees:csvParsed});
+    closeImportModal(); showToast(res.added+' employees imported','success'); await loadAll();
+  } catch(err){showToast('Import failed: '+(err.message||'Unknown error'),'error');}
+  btn.textContent='Import Employees'; btn.disabled=false;
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const zone=document.getElementById('csvZone');
+  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('drag');});
+  zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+  zone.addEventListener('drop',e=>{
+    e.preventDefault(); zone.classList.remove('drag');
+    const file=e.dataTransfer.files[0];
+    if(file&&file.name.endsWith('.csv')){
+      const dt=new DataTransfer(); dt.items.add(file);
+      const inp=document.getElementById('csvInput'); inp.files=dt.files;
+      handleCSVFile({target:inp});
+    } else showToast('Please drop a .csv file','error');
+  });
+});
+
+function exportCSV(){window.open('http://127.0.0.1:5000/api/employees/export-csv','_blank');}
+
+init();
+</script>
+</body>
+</html>
