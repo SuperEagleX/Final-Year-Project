@@ -143,6 +143,14 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
     .btn-new:hover { transform: translateY(-1px); box-shadow: 0 6px 20px #00d4ff30; }
+    .export-menu-item {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; padding: 9px 12px; border-radius: 7px;
+      background: none; border: none; cursor: pointer;
+      font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 600;
+      color: var(--text); transition: background 0.15s; text-align: left;
+    }
+    .export-menu-item:hover { background: var(--border); color: var(--accent); }
 
     /* ── Content ── */
     .content { padding: 1.8rem 2rem; flex: 1; }
@@ -344,10 +352,32 @@
         <div class="threat-dot"></div>
         Threat Level: <strong style="color:#fff;margin-left:4px">Low</strong>
       </div>
-      <button class="btn-new">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        New Campaign
-      </button>
+      <div style="position:relative" id="exportWrap">
+        <button class="btn-new" id="exportBtn" onclick="toggleExportMenu(event)" style="gap:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Report
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>
+        </button>
+        <div id="exportMenu" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;min-width:210px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,0.5)">
+          <div style="font-size:0.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;padding:6px 10px 4px">Export Format</div>
+          <button onclick="exportReport('csv')"  class="export-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            CSV &mdash; Spreadsheet
+          </button>
+          <button onclick="exportReport('json')" class="export-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>
+            JSON &mdash; Raw Data
+          </button>
+          <button onclick="exportReport('html')" class="export-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+            HTML &mdash; Full Report
+          </button>
+          <button onclick="exportReport('pdf')"  class="export-menu-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>
+            PDF &mdash; Print / Save
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1098,15 +1128,256 @@ async function init() {
   }
 }
 
-// ── New Campaign button ───────────────────────────────────────────────────
+// ── Export Report ─────────────────────────────────────────────────────────
+
+let dashData = null; // cached dashboard data for export
+
+function toggleExportMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('exportMenu');
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+// Close menu when clicking outside
+document.addEventListener('click', function(e) {
+  if (!document.getElementById('exportWrap')?.contains(e.target)) {
+    const menu = document.getElementById('exportMenu');
+    if (menu) menu.style.display = 'none';
+  }
+});
+
+async function exportReport(format) {
+  document.getElementById('exportMenu').style.display = 'none';
+
+  // Gather all data
+  let data;
+  try {
+    data = await apiFetch('dashboard/full');
+    dashData = data;
+  } catch(e) {
+    showToast('Could not load data for export', 'error');
+    return;
+  }
+
+  const now     = new Date();
+  const dateStr = now.toISOString().slice(0,10);
+  const s       = data.stats || {};
+  const camps   = data.campaigns || [];
+  const emps    = data.employees || [];
+
+  if (format === 'csv')  exportCSV(s, camps, emps, dateStr);
+  if (format === 'json') exportJSON(data, dateStr);
+  if (format === 'html') exportHTML(s, camps, emps, dateStr, now);
+  if (format === 'pdf')  exportPDF(s, camps, emps, dateStr, now);
+}
+
+// ── CSV Export ─────────────────────────────────────────────────────────────
+function exportCSV(s, camps, emps, dateStr) {
+  const lines = [];
+  lines.push('PhishGuard Security Report - ' + dateStr);
+  lines.push('');
+
+  // Summary stats
+  lines.push('SUMMARY STATISTICS');
+  lines.push('Metric,Value');
+  lines.push('Total Emails Sent,' + (s.total_sent||0));
+  lines.push('Open Rate,' + (s.open_rate||0) + '%');
+  lines.push('Click Rate,' + (s.click_rate||0) + '%');
+  lines.push('Submission Rate,' + (s.submit_rate||0) + '%');
+  lines.push('Emails Opened,' + (s.opened||0));
+  lines.push('Links Clicked,' + (s.clicked||0));
+  lines.push('Credentials Submitted,' + (s.submitted||0));
+  lines.push('Phishing Reported,' + (s.reported||0));
+  lines.push('');
+
+  // Campaigns
+  lines.push('CAMPAIGNS');
+  lines.push('Name,Status,Template,Sent,Opened,Clicked,Submitted,Reported,Click Rate,Submit Rate');
+  camps.forEach(c => {
+    lines.push([
+      '"'+(c.name||'')+'"', c.status||'draft', '"'+(c.template||'')+'"',
+      c.sent||0, c.opened||0, c.clicked||0, c.submitted||0, c.reported||0,
+      (c.click_rate||0)+'%', (c.submit_rate||0)+'%'
+    ].join(','));
+  });
+  lines.push('');
+
+  // High risk employees
+  if (emps.length) {
+    lines.push('HIGH RISK EMPLOYEES');
+    lines.push('Name,Email,Department,Risk Score');
+    emps.forEach(e => {
+      lines.push(['"'+(e.name||'')+'"',e.email||'',e.department||'',e.risk_score||0].join(','));
+    });
+  }
+
+  downloadFile('phishguard-report-'+dateStr+'.csv', lines.join('\n'), 'text/csv');
+  showToast('CSV report downloaded', 'success');
+}
+
+// ── JSON Export ────────────────────────────────────────────────────────────
+function exportJSON(data, dateStr) {
+  const payload = {
+    generated_at: new Date().toISOString(),
+    report_date:  dateStr,
+    stats:        data.stats,
+    campaigns:    data.campaigns,
+    employees:    data.employees,
+    recent_events: data.recent,
+    chart_data:   data.chart,
+  };
+  downloadFile(
+    'phishguard-report-'+dateStr+'.json',
+    JSON.stringify(payload, null, 2),
+    'application/json'
+  );
+  showToast('JSON report downloaded', 'success');
+}
+
+// ── HTML Report Export ─────────────────────────────────────────────────────
+function exportHTML(s, camps, emps, dateStr, now) {
+  const threat = (s.click_rate||0) >= 30 ? 'HIGH' : (s.click_rate||0) >= 15 ? 'MEDIUM' : 'LOW';
+  const threatColor = threat === 'HIGH' ? '#ff4560' : threat === 'MEDIUM' ? '#ffb300' : '#00e5a0';
+
+  const campRows = camps.map(c =>
+    '<tr><td>'+esc(c.name||'')+'</td><td><span style="text-transform:capitalize">'+esc(c.status||'')+'</span></td>' +
+    '<td>'+(c.sent||0)+'</td><td>'+(c.clicked||0)+'</td><td>'+(c.submitted||0)+'</td>' +
+    '<td style="color:'+(( c.click_rate||0)>=30?'#ff4560':(c.click_rate||0)>=15?'#ffb300':'#00e5a0')+'">'+
+    (c.click_rate||0)+'%</td></tr>'
+  ).join('');
+
+  const empRows = emps.slice(0,10).map(e =>
+    '<tr><td>'+esc(e.name||'')+'</td><td>'+esc(e.email||'')+'</td><td>'+esc(e.department||'')+'</td>' +
+    '<td style="color:'+(e.risk_score>=70?'#ff4560':e.risk_score>=30?'#ffb300':'#00e5a0')+'">'+
+    (e.risk_score||0)+'</td></tr>'
+  ).join('');
+
+  const html = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>' +
+    '<title>PhishGuard Security Report - '+dateStr+'</title>' +
+    '<style>' +
+    'body{font-family:Arial,sans-serif;background:#f5f5f5;color:#333;margin:0;padding:24px}' +
+    '.page{max-width:900px;margin:0 auto;background:#fff;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,0.1);overflow:hidden}' +
+    '.header{background:#020b18;padding:28px 32px;color:#cde4f8}' +
+    '.header h1{font-size:1.4rem;margin:0 0 4px;color:#fff}.header p{margin:0;font-size:0.85rem;opacity:0.7}' +
+    '.threat-badge{display:inline-block;background:'+threatColor+';color:#000;padding:4px 14px;border-radius:20px;font-size:0.78rem;font-weight:700;margin-top:10px}' +
+    '.body{padding:28px 32px}' +
+    '.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}' +
+    '.stat{background:#f9f9f9;border:1px solid #eee;border-radius:8px;padding:14px;text-align:center}' +
+    '.stat-num{font-size:1.6rem;font-weight:700;color:#020b18}.stat-lbl{font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.06em}' +
+    'h2{font-size:1rem;color:#020b18;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid #eee}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:28px;font-size:0.85rem}' +
+    'th{background:#020b18;color:#cde4f8;padding:9px 12px;text-align:left;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em}' +
+    'td{padding:9px 12px;border-bottom:1px solid #f0f0f0}tr:hover td{background:#f9f9f9}' +
+    '.footer{padding:16px 32px;background:#f5f5f5;border-top:1px solid #eee;font-size:0.78rem;color:#888;text-align:center}' +
+    '</style></head><body><div class="page">' +
+    '<div class="header">' +
+    '<h1>&#128737; PhishGuard Security Report</h1>' +
+    '<p>Generated: '+now.toLocaleString('en-GB', {dateStyle:'full',timeStyle:'short'})+'</p>' +
+    '<div class="threat-badge">Threat Level: '+threat+'</div>' +
+    '</div><div class="body">' +
+    '<div class="stats">' +
+    '<div class="stat"><div class="stat-num">'+(s.total_sent||0)+'</div><div class="stat-lbl">Emails Sent</div></div>' +
+    '<div class="stat"><div class="stat-num">'+(s.click_rate||0)+'%</div><div class="stat-lbl">Click Rate</div></div>' +
+    '<div class="stat"><div class="stat-num">'+(s.submit_rate||0)+'%</div><div class="stat-lbl">Submit Rate</div></div>' +
+    '<div class="stat"><div class="stat-num">'+(s.reported||0)+'</div><div class="stat-lbl">Reported</div></div>' +
+    '</div>' +
+    '<h2>Campaign Results</h2>' +
+    '<table><thead><tr><th>Campaign</th><th>Status</th><th>Sent</th><th>Clicked</th><th>Submitted</th><th>Click Rate</th></tr></thead>' +
+    '<tbody>'+campRows+'</tbody></table>' +
+    (emps.length ? '<h2>High Risk Employees (Top 10)</h2>' +
+    '<table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Risk Score</th></tr></thead>' +
+    '<tbody>'+empRows+'</tbody></table>' : '') +
+    '</div><div class="footer">PhishGuard &mdash; Confidential Security Report &mdash; '+dateStr+'</div>' +
+    '</div></body></html>';
+
+  downloadFile('phishguard-report-'+dateStr+'.html', html, 'text/html');
+  showToast('HTML report downloaded', 'success');
+}
+
+// ── PDF Export (print dialog) ──────────────────────────────────────────────
+function exportPDF(s, camps, emps, dateStr, now) {
+  // Build same HTML as exportHTML then open in print window
+  const threat = (s.click_rate||0) >= 30 ? 'HIGH' : (s.click_rate||0) >= 15 ? 'MEDIUM' : 'LOW';
+  const threatColor = threat === 'HIGH' ? '#ff4560' : threat === 'MEDIUM' ? '#ffb300' : '#00e5a0';
+
+  const campRows = camps.map(c =>
+    '<tr><td>'+esc(c.name||'')+'</td><td>'+esc(c.status||'')+'</td>' +
+    '<td>'+(c.sent||0)+'</td><td>'+(c.clicked||0)+'</td><td>'+(c.submitted||0)+'</td>' +
+    '<td>'+(c.click_rate||0)+'%</td><td>'+(c.submit_rate||0)+'%</td></tr>'
+  ).join('');
+
+  const empRows = emps.slice(0,15).map(e =>
+    '<tr><td>'+esc(e.name||'')+'</td><td>'+esc(e.email||'')+'</td>' +
+    '<td>'+esc(e.department||'')+'</td><td>'+( e.risk_score||0)+'</td></tr>'
+  ).join('');
+
+  const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"/>' +
+    '<title>PhishGuard Report - '+dateStr+'</title>' +
+    '<style>' +
+    '@page{size:A4;margin:20mm}' +
+    '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}' +
+    'body{font-family:Arial,sans-serif;font-size:11px;color:#333;margin:0}' +
+    '.header{background:#020b18;color:#fff;padding:20px 24px;margin-bottom:20px;border-radius:6px}' +
+    '.header h1{font-size:16px;margin:0 0 4px}.header p{margin:0;font-size:10px;opacity:0.7}' +
+    '.badge{display:inline-block;background:'+threatColor+';padding:3px 10px;border-radius:12px;font-size:9px;font-weight:700;color:#000;margin-top:6px}' +
+    '.stats{display:flex;gap:12px;margin-bottom:18px}' +
+    '.stat{flex:1;border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center}' +
+    '.sn{font-size:18px;font-weight:700;color:#020b18}.sl{font-size:9px;color:#888;text-transform:uppercase}' +
+    'h2{font-size:12px;color:#020b18;margin:16px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px}' +
+    'table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:10px}' +
+    'th{background:#020b18;color:#fff;padding:6px 8px;text-align:left;font-size:9px}' +
+    'td{padding:6px 8px;border-bottom:1px solid #f0f0f0}' +
+    '.footer{margin-top:20px;font-size:9px;color:#888;text-align:center;border-top:1px solid #eee;padding-top:8px}' +
+    '</style></head><body>' +
+    '<div class="header"><h1>&#128737; PhishGuard Security Report</h1>' +
+    '<p>'+now.toLocaleString('en-GB',{dateStyle:"full",timeStyle:"short"})+'</p>' +
+    '<span class="badge">Threat Level: '+threat+'</span></div>' +
+    '<div class="stats">' +
+    '<div class="stat"><div class="sn">'+(s.total_sent||0)+'</div><div class="sl">Sent</div></div>' +
+    '<div class="stat"><div class="sn">'+(s.open_rate||0)+'%</div><div class="sl">Open Rate</div></div>' +
+    '<div class="stat"><div class="sn">'+(s.click_rate||0)+'%</div><div class="sl">Click Rate</div></div>' +
+    '<div class="stat"><div class="sn">'+(s.submit_rate||0)+'%</div><div class="sl">Submit Rate</div></div>' +
+    '<div class="stat"><div class="sn">'+(s.reported||0)+'</div><div class="sl">Reported</div></div>' +
+    '</div>' +
+    '<h2>Campaign Results</h2>' +
+    '<table><thead><tr><th>Campaign</th><th>Status</th><th>Sent</th><th>Clicked</th><th>Submitted</th><th>Click%</th><th>Submit%</th></tr></thead>' +
+    '<tbody>'+campRows+'</tbody></table>' +
+    (emps.length ? '<h2>High Risk Employees</h2>' +
+    '<table><thead><tr><th>Name</th><th>Email</th><th>Department</th><th>Risk Score</th></tr></thead>' +
+    '<tbody>'+empRows+'</tbody></table>' : '') +
+    '<div class="footer">PhishGuard &mdash; Confidential &mdash; '+dateStr+'</div>' +
+    '</body></html>';
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 600);
+  showToast('PDF print dialog opened', 'success');
+}
+
+// ── Helper: escape HTML ────────────────────────────────────────────────────
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Helper: trigger file download ─────────────────────────────────────────
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── New Campaign button (kept for nav) ─────────────────────────────────────
 function logout() {
   clearSession();
   window.location.href = 'login.html';
 }
 
-document.querySelector('.btn-new')?.addEventListener('click', () => {
-  window.location.href = 'campaign-management.html';
-});
+// Export button handled by toggleExportMenu()
 
 init();
 // Auto-refresh every 30 seconds
