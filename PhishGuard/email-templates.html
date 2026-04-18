@@ -113,6 +113,7 @@
 
     /* Stripe cell */
     .td-stripe { width: 4px !important; padding: 0 !important; }
+    .card-stripe { width: 4px; height: 100%; min-height: 88px; }
 
     /* Icon cell */
     .td-icon { width: 72px; text-align: center; padding: 0 12px !important; }
@@ -213,6 +214,7 @@
   </style>
 </head>
 <body>
+<script src="config.js"></script>
 <aside class="sidebar">
   <div class="sidebar-logo">
     <svg viewBox="0 0 52 52" fill="none"><path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -380,24 +382,62 @@ async function deleteTemplate(id) {
 // ── Edit template modal ────────────────────────────────────────────────────
 let editingTemplateId = null;
 
-function openEditModal(id) {
+async function openEditModal(id) {
   const t = allTemplates.find(t => t.id === id);
   if (!t) return;
   editingTemplateId = id;
-  document.getElementById('editId').textContent       = '#' + id;
-  document.getElementById('editName').value           = t.name        || '';
-  document.getElementById('editSubject').value        = t.subject     || '';
-  document.getElementById('editDescription').value   = t.description || '';
-  document.getElementById('editSenderName').value    = t.sender_name || '';
-  document.getElementById('editCategory').value      = t.category    || 'IT Support';
-  document.getElementById('editDifficulty').value    = t.difficulty  || 'Medium';
-  document.getElementById('editLanguage').value      = (t.language   || 'english').toLowerCase();
+  document.getElementById('editId').textContent     = '#' + id;
+  document.getElementById('editName').value         = t.name        || '';
+  document.getElementById('editSubject').value      = t.subject     || '';
+  document.getElementById('editDescription').value = t.description || '';
+  document.getElementById('editSenderName').value  = t.sender_name || '';
+  document.getElementById('editCategory').value    = t.category    || 'IT Support';
+  document.getElementById('editDifficulty').value  = t.difficulty  || 'Medium';
+  document.getElementById('editLanguage').value    = (t.language   || 'english').toLowerCase();
+  // Reset editor to code tab
+  switchEditTab('code');
+  // Show modal immediately with cached data
   document.getElementById('editOverlay').classList.add('open');
+  // Fetch full HTML from API
+  const htmlEl = document.getElementById('editHtml');
+  htmlEl.value = 'Loading HTML...';
+  try {
+    const full = await apiFetch('templates/' + id);
+    htmlEl.value = full.html || '';
+  } catch(e) {
+    htmlEl.value = t.html || '';
+  }
 }
 
 function closeEditModal() {
   document.getElementById('editOverlay').classList.remove('open');
   editingTemplateId = null;
+}
+
+function switchEditTab(tab) {
+  const codeBtn = document.getElementById('editTabCode');
+  const prevBtn = document.getElementById('editTabPrev');
+  const codeWrap = document.getElementById('editCodeWrap');
+  const prevWrap = document.getElementById('editPreviewWrap');
+  if (!codeWrap) return;
+  const isCode = tab === 'code';
+  codeWrap.style.display = isCode ? 'block' : 'none';
+  prevWrap.style.display = isCode ? 'none'  : 'block';
+  if (codeBtn) { codeBtn.style.background = isCode ? 'var(--border)' : 'none'; codeBtn.style.color = isCode ? 'var(--accent)' : 'var(--muted)'; }
+  if (prevBtn) { prevBtn.style.background = isCode ? 'none' : 'var(--border)'; prevBtn.style.color = isCode ? 'var(--muted)' : 'var(--accent)'; }
+  if (!isCode) {
+    const html = document.getElementById('editHtml').value;
+    document.getElementById('editPreviewFrame').srcdoc = html || '<p style="padding:2rem;color:#999;font-family:sans-serif">No HTML content</p>';
+  }
+}
+
+function insertEditVar(v) {
+  const ta = document.getElementById('editHtml');
+  if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + v + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + v.length;
+  ta.focus();
 }
 
 async function saveEditTemplate() {
@@ -413,13 +453,14 @@ async function saveEditTemplate() {
       category:    document.getElementById('editCategory').value,
       difficulty:  document.getElementById('editDifficulty').value,
       language:    document.getElementById('editLanguage').value,
+      html:        document.getElementById('editHtml').value,
     });
     // Update local state
     const idx = allTemplates.findIndex(t => t.id === editingTemplateId);
     if (idx > -1) allTemplates[idx] = { ...allTemplates[idx], ...updated.template };
     closeEditModal();
     renderGrid(allTemplates);
-    showToast('Template updated', 'success');
+    showToast('Template updated ✅', 'success');
   } catch(e) {
     showToast('Save failed: ' + e.message, 'error');
     btn.textContent = 'Save Changes'; btn.disabled = false;
@@ -608,10 +649,12 @@ function useTemplate(id) {
 
 // ── Load all templates from API on page load ──────────────────────────────
 async function init() {
-  const user = requireAuth('admin');
-  if (!user) return;
-  if(document.getElementById('sidebarName')) document.getElementById('sidebarName').textContent = user.name;
-  if(document.getElementById('sidebarAv')) document.getElementById('sidebarAv').textContent = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+  // Show user info if logged in but don't block page load
+  const user = getUser ? getUser() : null;
+  if (user && user.name) {
+    if(document.getElementById('sidebarName')) document.getElementById('sidebarName').textContent = user.name;
+    if(document.getElementById('sidebarAv')) document.getElementById('sidebarAv').textContent = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+  }
 
   try {
     allTemplates = await apiFetch('templates');
@@ -953,18 +996,18 @@ init();
 </div>
 
 <!-- ── Edit Template Modal ── -->
-<div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEditModal()" style="z-index:300">
-  <div class="modal" style="max-width:560px">
+<div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEditModal()" style="z-index:300;align-items:flex-start;padding:2rem 1rem;overflow-y:auto">
+  <div class="modal" style="max-width:740px">
     <div class="modal-header">
       <div>
         <h2>Edit Template <span id="editId" style="font-size:0.75rem;color:var(--muted);font-family:'Share Tech Mono',monospace"></span></h2>
-        <p>Update template metadata — HTML content is not changed</p>
+        <p id="editModalSub">Update template metadata and HTML content</p>
       </div>
       <button class="modal-close" onclick="closeEditModal()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="modal-body" style="display:block;padding:1.4rem 1.6rem">
+    <div class="modal-body" style="display:block;padding:1.4rem 1.6rem;max-height:70vh;overflow-y:auto">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div style="display:flex;flex-direction:column;gap:6px;grid-column:1/-1">
           <label style="font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Template Name</label>
@@ -1003,6 +1046,31 @@ init();
             <option value="english">English</option>
             <option value="khmer">Khmer</option>
           </select>
+        </div>
+      </div>
+
+      <!-- HTML Editor -->
+      <div style="margin-top:1.2rem;border-top:1px solid var(--border);padding-top:1.2rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128231; Email HTML</label>
+          <div style="display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:3px">
+            <button id="editTabCode" onclick="switchEditTab('code')" style="padding:4px 12px;border-radius:5px;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:var(--border);color:var(--accent)">HTML</button>
+            <button id="editTabPrev" onclick="switchEditTab('preview')" style="padding:4px 12px;border-radius:5px;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:none;color:var(--muted)">Preview</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:0.5rem;align-items:center">
+          <span style="font-size:0.68rem;color:var(--muted)">Insert:</span>
+          <code onclick="insertEditVar('{{.FirstName}}')" style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.FirstName}}</code>
+          <code onclick="insertEditVar('{{.LastName}}')" style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.LastName}}</code>
+          <code onclick="insertEditVar('{{.Email}}')" style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68em;border:1px solid var(--border)">{{.Email}}</code>
+          <code onclick="insertEditVar('{{.URL}}')" style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.URL}}</code>
+          <code onclick="insertEditVar('{{.Tracker}}')" style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.Tracker}}</code>
+        </div>
+        <div id="editCodeWrap">
+          <textarea id="editHtml" style="width:100%;background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Share Tech Mono',monospace;font-size:0.74rem;color:var(--text);outline:none;resize:vertical;min-height:260px;line-height:1.7" placeholder="Email HTML will load here..."></textarea>
+        </div>
+        <div id="editPreviewWrap" style="display:none">
+          <iframe id="editPreviewFrame" style="width:100%;height:320px;border:1px solid var(--border);border-radius:8px;background:#fff"></iframe>
         </div>
       </div>
     </div>
@@ -1237,8 +1305,8 @@ async function submitImport() {
         <div><div class="strip-stat-num" id="statAvg" style="color:var(--warn)">&#8212;</div><div class="strip-stat-label">Avg Click Rate</div></div>
       </div>
       <div class="strip-stat">
-        <div class="strip-stat-icon" style="background:#ffb30015">⚠️</div>
-        <div><div class="strip-stat-num" style="color:var(--warn)">4</div><div class="strip-stat-label">High Risk Templates</div></div>
+        <div class="strip-stat-icon" style="background:#ffb30015">&#9888;</div>
+        <div><div class="strip-stat-num" id="statHigh" style="color:var(--warn)">&#8212;</div><div class="strip-stat-label">High Risk Templates</div></div>
       </div>
     </div>
 
@@ -1298,6 +1366,5 @@ async function submitImport() {
     </div>
   </div>
 </main>
-<script src="config.js"></script>
 </body>
 </html>

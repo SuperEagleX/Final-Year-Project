@@ -114,6 +114,7 @@
 
     /* Stripe cell */
     .td-stripe { width: 4px !important; padding: 0 !important; }
+    .card-stripe { width: 4px; height: 100%; min-height: 88px; }
 
     /* Icon cell */
     .td-icon { width: 72px; text-align: center; padding: 0 12px !important; }
@@ -715,8 +716,7 @@ function importHtmlFile(event) {
 }
 
 async function init() {
-  const user = requireAuth('admin');
-  if (!user) return;
+  const user = (typeof getUser !== "undefined") ? getUser() : null;
   if (user.name) {
     document.getElementById('sidebarName').textContent = user.name;
     document.getElementById('sidebarAv').textContent   = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);

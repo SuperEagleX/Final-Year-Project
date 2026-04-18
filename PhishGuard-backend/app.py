@@ -1187,9 +1187,13 @@ LANDING_META    = os.path.join(TEMPLATES_DIR, 'landing_pages.json')
 
 def load_landing_pages():
     if not os.path.exists(LANDING_META):
+        print(f'⚠️  landing_pages.json not found: {LANDING_META}')
         return []
-    with open(LANDING_META, 'r') as f:
-        return json.load(f)
+    with open(LANDING_META, 'r', encoding='utf-8') as f:
+        content = f.read().strip()
+        if not content:
+            return []
+        return json.loads(content)
 
 def save_landing_pages(pages):
     with open(LANDING_META, 'w') as f:
@@ -1197,8 +1201,17 @@ def save_landing_pages(pages):
 
 def load_templates():
     """Load all template metadata from templates.json."""
-    with open(TEMPLATES_META, 'r') as f:
-        return json.load(f)
+    if not os.path.exists(TEMPLATES_META):
+        print(f'⚠️  templates.json not found, creating empty: {TEMPLATES_META}')
+        os.makedirs(TEMPLATES_DIR, exist_ok=True)
+        with open(TEMPLATES_META, 'w') as f:
+            json.dump([], f)
+        return []
+    with open(TEMPLATES_META, 'r', encoding='utf-8') as f:
+        content = f.read().strip()
+        if not content:
+            return []
+        return json.loads(content)
 
 def load_template_html(filename):
     """Load HTML content of a specific template file."""
@@ -1256,7 +1269,13 @@ def get_templates():
     try:
         templates = load_templates()
         return jsonify(templates)
+    except FileNotFoundError:
+        print(f'❌ templates.json not found at: {TEMPLATES_META}')
+        return jsonify([])   # return empty list instead of 500
     except Exception as e:
+        import traceback
+        print(f'❌ get_templates error: {e}')
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
