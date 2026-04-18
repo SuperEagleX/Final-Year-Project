@@ -703,157 +703,150 @@ async function init() {
   }
 }
 
-// ── Preview modal close ───────────────────────────────────────────────────
-function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
-function closeBg(e)   { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+// ── Preview modal ─────────────────────────────────────────────────────────
+function closeModal()  { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeBg(e)    { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-// ── Create Template Modal ─────────────────────────────────────────────────
-// ── Create Template Wizard ────────────────────────────────────────────────
-let ctStep = 1;
-let ctType = null;
+// ── Create Template modal ─────────────────────────────────────────────────
+let ctAttachments = [];
 
-async function openCreateModal() {
-  ctStep = 1; ctType = null;
-  ctRenderStep();
-  const o = document.getElementById('createOverlay');
-  const m = document.getElementById('createModal');
-  o.style.opacity = '1'; o.style.pointerEvents = 'all';
-  m.style.transform = 'translateY(0)';
-  m.scrollTop = 0;
+function openCreateModal() {
+  // Reset all fields
+  ['ct_sender_name','ct_sender_email','ct_subject','ct_name','ct_description','ct_html'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('ct_category').value      = 'IT Support';
+  document.getElementById('ct_difficulty').value    = 'Medium';
+  document.getElementById('ct_phishing_type').value = 'landing';
+  document.getElementById('ct_landing_file').value  = '';
+  ctAttachments = [];
+  renderAttachmentList();
+  ctSwitchTab('code');
+  // Populate landing page dropdown
+  apiFetch('landing-pages').then(pages => {
+    const sel = document.getElementById('ct_landing_file');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">None</option>' +
+      pages.map(p => '<option value="'+p.file+'">'+p.name+'</option>').join('');
+  }).catch(() => {});
+  // Open overlay
+  const ov = document.getElementById('createOverlay');
+  ov.style.opacity = '1'; ov.style.pointerEvents = 'all';
+  document.getElementById('createModal').style.transform = 'translateY(0)';
 }
 
 function closeCreateModal() {
-  const o = document.getElementById('createOverlay');
-  const m = document.getElementById('createModal');
-  o.style.opacity = '0'; o.style.pointerEvents = 'none';
-  m.style.transform = 'translateY(20px)';
+  const ov = document.getElementById('createOverlay');
+  ov.style.opacity = '0'; ov.style.pointerEvents = 'none';
+  document.getElementById('createModal').style.transform = 'translateY(20px)';
+  ctAttachments = [];
 }
 
-function ctRenderStep() {
-  [1,2,3].forEach(i => {
-    const el = document.getElementById('ct_step' + i);
-    if (el) el.style.display = i === ctStep ? 'flex' : 'none';
-  });
-  const labels = ['Step 1 of 3 \u2014 Choose phishing type', 'Step 2 of 3 \u2014 Template details', 'Step 3 of 3 \u2014 Write email content'];
-  document.getElementById('ct_step_label').textContent = labels[ctStep - 1];
-  const back = document.getElementById('ct_back_btn');
-  const next = document.getElementById('ct_next_btn');
-  back.style.display = ctStep > 1 ? 'inline-flex' : 'none';
-  next.textContent   = ctStep === 3 ? '\u2714 Save Template' : 'Next \u2192';
-  next.disabled      = ctStep === 1 && !ctType;
-  // Show attachment field only for attachment type
-  const attRow = document.getElementById('ct_attachment_row');
-  if (attRow) attRow.style.display = (ctType === 'attachment') ? 'flex' : 'none';
-}
-
-function selectPhishType(type, el) {
-  ctType = type;
-  document.querySelectorAll('.type-pick').forEach(c => {
-    c.style.borderColor = 'var(--border)';
-    c.style.background  = 'transparent';
-  });
-  el.style.borderColor = 'var(--accent)';
-  el.style.background  = '#00d4ff0a';
-  document.getElementById('ct_next_btn').disabled = false;
-}
-
-function ctNextStep() {
-  if (ctStep === 1 && !ctType) { showToast('Please select a phishing type', 'error'); return; }
-  if (ctStep === 2) {
-    if (!document.getElementById('ct_name').value.trim())    { showToast('Template name is required', 'error'); return; }
-    if (!document.getElementById('ct_subject').value.trim()) { showToast('Subject line is required', 'error');  return; }
-    if (!document.getElementById('ct_sender').value.trim())  { showToast('Sender name is required', 'error');   return; }
+function ctSwitchTab(tab) {
+  const isCode = tab === 'code';
+  const codeBtn  = document.getElementById('ct_tab_code');
+  const prevBtn  = document.getElementById('ct_tab_prev');
+  const codeWrap = document.getElementById('ct_code_wrap');
+  const prevWrap = document.getElementById('ct_prev_wrap');
+  if (!codeWrap) return;
+  codeWrap.style.display = isCode ? 'block' : 'none';
+  prevWrap.style.display = isCode ? 'none'  : 'block';
+  if (codeBtn) { codeBtn.style.background = isCode ? 'var(--border)' : 'none'; codeBtn.style.color = isCode ? 'var(--accent)' : 'var(--muted)'; }
+  if (prevBtn) { prevBtn.style.background = isCode ? 'none' : 'var(--border)'; prevBtn.style.color = isCode ? 'var(--muted)' : 'var(--accent)'; }
+  if (!isCode) {
+    const html = document.getElementById('ct_html').value;
+    document.getElementById('ct_prev_frame').srcdoc = html || '<p style="padding:2rem;color:#999;font-family:sans-serif">No HTML content yet</p>';
   }
-  if (ctStep === 3) { saveTemplate(); return; }
-  ctStep++;
-  ctRenderStep();
-  document.getElementById('createModal').scrollTop = 0;
 }
 
-function ctPrevStep() {
-  if (ctStep > 1) { ctStep--; ctRenderStep(); document.getElementById('createModal').scrollTop = 0; }
+function ctInsertVar(v) {
+  const ta = document.getElementById('ct_html');
+  if (!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + v + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + v.length;
+  ta.focus();
 }
 
-// Build clean HTML from plain-text fields — no HTML knowledge needed
-function buildTemplateHtml(fields) {
-  const { senderName, greeting, body, cta, signoff, attachmentName, type } = fields;
-
-  // Replace user placeholders with GoPhish merge tags
-  const safeBody = body
-    .replace(/\{\{FirstName\}\}/g, '{{.FirstName}}')
-    .replace(/\{\{LINK\}\}/g, '<a href="{{.URL}}" style="color:#0052cc;font-weight:bold">{{.URL}}</a>');
-
-  const ctaBtn = cta
-    ? '<p style="margin:20px 0"><a href="{{.URL}}" style="display:inline-block;padding:11px 24px;background:#0052cc;color:#fff;border-radius:5px;text-decoration:none;font-weight:700;font-size:14px">' + cta + '</a></p>'
-    : '';
-
-  const attachBlock = (type === 'attachment' && attachmentName)
-    ? '<div style="margin:16px 0;padding:12px 16px;background:#f8f9fa;border:1px solid #ddd;border-radius:5px;display:inline-flex;align-items:center;gap:10px">' +
-      '<span style="font-size:20px">&#128206;</span>' +
-      '<div><div style="font-weight:700;color:#333">' + attachmentName + '</div>' +
-      '<div style="font-size:11px;color:#888">Click to open</div></div></div>'
-    : '';
-
-  const bodyLines = safeBody.split('\n').map(l => l.trim() ? '<p style="margin:0 0 12px">' + l + '</p>' : '').join('');
-  const signoffHtml = signoff ? '<p style="margin:20px 0 0">' + signoff.replace(/\n/g,'<br>') + '</p>' : '';
-  const greetHtml   = greeting ? '<p style="margin:0 0 16px;font-weight:600">' + greeting + '</p>' : '';
-
-  return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head>' +
-    '<body style="font-family:Arial,sans-serif;color:#333;background:#f4f4f4;margin:0;padding:20px">' +
-    '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.1)">' +
-    '<div style="background:#0052cc;padding:18px 24px">' +
-    '<div style="color:#fff;font-weight:700;font-size:16px">' + senderName + '</div></div>' +
-    '<div style="padding:28px 24px">' +
-    greetHtml + bodyLines + ctaBtn + attachBlock + signoffHtml +
-    '</div>' +
-    '<div style="background:#f8f9fa;padding:12px 24px;font-size:11px;color:#999;border-top:1px solid #eee">' +
-    'This email was sent by ' + senderName + '. {{.Tracker}}</div>' +
-    '</div></body></html>';
+function addAttachments(event) {
+  const files = Array.from(event.target.files || []);
+  files.forEach(f => {
+    if (!ctAttachments.find(a => a.name === f.name)) ctAttachments.push(f);
+  });
+  event.target.value = '';
+  renderAttachmentList();
 }
 
-async function saveTemplate() {
-  const btn = document.getElementById('ct_next_btn');
-  btn.textContent = '\u23F3 Saving...'; btn.disabled = true;
+function removeAttachment(name) {
+  ctAttachments = ctAttachments.filter(a => a.name !== name);
+  renderAttachmentList();
+}
+function removeAttachmentByIdx(idx) {
+  ctAttachments.splice(idx, 1);
+  renderAttachmentList();
+}
 
-  const name         = document.getElementById('ct_name').value.trim();
-  const subject      = document.getElementById('ct_subject').value.trim();
-  const senderName   = document.getElementById('ct_sender').value.trim();
-  const category     = document.getElementById('ct_category').value;
-  const difficulty   = document.getElementById('ct_difficulty').value;
-  const language     = document.getElementById('ct_language').value;
-  const description  = document.getElementById('ct_desc').value.trim();
-  const greeting     = document.getElementById('ct_greeting').value.trim();
-  const body         = document.getElementById('ct_body').value.trim();
-  const cta          = document.getElementById('ct_cta').value.trim();
-  const signoff      = document.getElementById('ct_signoff').value.trim();
-  const attachName   = document.getElementById('ct_attachment').value.trim();
+function renderAttachmentList() {
+  const list  = document.getElementById('ct_attachments_list');
+  const noMsg = document.getElementById('ct_no_attach');
+  if (!list) return;
+  if (!ctAttachments.length) {
+    list.innerHTML = '<div style="font-size:0.75rem;color:var(--muted);font-style:italic" id="ct_no_attach">No attachments added. Files are referenced via GoPhish during send.</div>';
+    return;
+  }
+  list.innerHTML = ctAttachments.map(f =>
+    '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:7px 10px">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>' +
+        '<span style="font-size:0.76rem;color:var(--text)">' + f.name + '</span>' +
+        '<span style="font-size:0.68rem;color:var(--muted)">(' + (f.size/1024).toFixed(1) + ' KB)</span>' +
+      '</div>' +
+      '<button onclick="removeAttachmentByIdx(' + i + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.8rem;padding:2px 6px">&#10005;</button>' +
+    '</div>'
+  ).join('');
+}
 
-  if (!body) { showToast('Email body is required', 'error'); btn.textContent = '\u2714 Save Template'; btn.disabled = false; return; }
+async function saveNewTemplate() {
+  const btn     = document.getElementById('ctSaveBtn');
+  const name    = document.getElementById('ct_name').value.trim();
+  const sender  = document.getElementById('ct_sender_name').value.trim();
+  const senderE = document.getElementById('ct_sender_email').value.trim();
+  const subject = document.getElementById('ct_subject').value.trim();
+  const html    = document.getElementById('ct_html').value.trim();
 
-  const html = buildTemplateHtml({ senderName, greeting, body, cta, signoff, attachmentName: attachName, type: ctType });
+  if (!name)   { showToast('Template name is required', 'error');   return; }
+  if (!sender) { showToast('Sender name is required', 'error');     return; }
+  if (!subject){ showToast('Subject line is required', 'error');    return; }
+  if (!html)   { showToast('Email HTML body is required', 'error'); return; }
+
+  btn.textContent = 'Saving...'; btn.disabled = true;
 
   try {
     await apiFetch('templates', 'POST', {
-      name, subject, category, difficulty, language, description,
-      sender_name: senderName,
-      phishing_type: ctType,
-      html,
+      name, subject, html,
+      sender_name:   sender,
+      sender_email:  senderE,
+      category:      document.getElementById('ct_category').value,
+      difficulty:    document.getElementById('ct_difficulty').value,
+      phishing_type: document.getElementById('ct_phishing_type').value,
+      description:   document.getElementById('ct_description').value.trim(),
+      landing_file:  document.getElementById('ct_landing_file').value,
+      template_type: 'email',
+      language:      'english',
     });
-    showToast('Template "' + name + '" created!', 'success');
     closeCreateModal();
-    // Reset all fields
-    ['ct_name','ct_sender','ct_subject','ct_desc','ct_greeting','ct_body','ct_cta','ct_signoff','ct_attachment'].forEach(id => {
-      const el = document.getElementById(id); if (el) el.value = '';
-    });
-    document.getElementById('ct_greeting').value = 'Dear {{FirstName}},';
-    document.getElementById('ct_cta').value      = 'Click Here';
+    showToast('Template "' + name + '" created ✅', 'success');
     allTemplates = await apiFetch('templates');
+    const elTotal = document.getElementById('statTotal');
+    if (elTotal) elTotal.textContent = allTemplates.length;
     renderGrid(allTemplates);
-  } catch(err) {
-    showToast('Save failed: ' + err.message, 'error');
+  } catch(e) {
+    showToast(e.message || 'Save failed', 'error');
   }
-  btn.textContent = '\u2714 Save Template'; btn.disabled = false;
+
+  btn.textContent = 'Save Template'; btn.disabled = false;
 }
+
 
 async function logout() { clearSession(); window.location.href = 'login.html'; }
 
@@ -861,139 +854,136 @@ init();
 </script>
 
 <!-- ── Create Template Modal ── -->
-<div id="createOverlay" onclick="if(event.target===this)closeCreateModal()" style="position:fixed;inset:0;z-index:300;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s">
-  <div id="createModal" style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;transform:translateY(20px);transition:transform 0.3s">
+<div id="createOverlay" onclick="if(event.target===this)closeCreateModal()" style="position:fixed;inset:0;z-index:300;background:#000000cc;backdrop-filter:blur(8px);display:flex;align-items:flex-start;justify-content:center;padding:1.5rem 1rem;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity 0.3s">
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:800px;transform:translateY(20px);transition:transform 0.3s" id="createModal">
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.2rem 1.6rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1;border-radius:16px 16px 0 0">
       <div>
-        <h2 style="font-size:1rem;font-weight:800;color:#fff">Create New Template</h2>
-        <p id="ct_step_label" style="font-size:0.75rem;color:var(--muted);margin-top:2px">Step 1 of 3 — Choose phishing type</p>
+        <h2 style="font-size:1rem;font-weight:800;color:#fff">New Email Template</h2>
+        <p style="font-size:0.74rem;color:var(--muted);margin-top:2px">Craft a phishing email template for your campaigns</p>
       </div>
-      <button onclick="closeCreateModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <button onclick="closeCreateModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.4rem;line-height:1;padding:4px">&times;</button>
+    </div>
+
+    <div style="padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1rem">
+
+      <!-- ── Envelope section ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#9993; Envelope</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Sender Name *</label>
+            <input id="ct_sender_name" class="form-input" placeholder="e.g. IT Support Team" autocomplete="off"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Sender Email *</label>
+            <input id="ct_sender_email" class="form-input" type="email" placeholder="e.g. it-support@company.com"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;grid-column:1/-1">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Subject Line *</label>
+            <input id="ct_subject" class="form-input" placeholder="e.g. [ACTION REQUIRED] Your password expires in 24 hours"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Metadata section ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128203; Template Info</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+          <div style="display:flex;flex-direction:column;gap:4px;grid-column:1/-1">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Template Name *</label>
+            <input id="ct_name" class="form-input" placeholder="e.g. IT Password Reset"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Category</label>
+            <select id="ct_category" class="form-input">
+              <option>IT Support</option><option>HR</option><option>Finance</option>
+              <option>Executive / BEC</option><option>Credential Harvest</option>
+              <option>Delivery</option><option>Social Engineering</option><option>Other</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Difficulty</label>
+            <select id="ct_difficulty" class="form-input">
+              <option>Easy</option><option selected>Medium</option><option>Hard</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Phishing Type</label>
+            <select id="ct_phishing_type" class="form-input">
+              <option value="landing">Link + Landing Page</option>
+              <option value="link">Link Only</option>
+              <option value="credential">Credential Harvest</option>
+              <option value="attachment">Attachment</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Linked Landing Page</label>
+            <select id="ct_landing_file" class="form-input">
+              <option value="">None</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;grid-column:1/-1">
+            <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Description</label>
+            <input id="ct_description" class="form-input" placeholder="Brief scenario description (optional)"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Attachments section ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128206; Add Attachment (optional)</div>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:0.74rem;font-weight:600;color:var(--accent);cursor:pointer;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add File
+            <input type="file" id="ct_attachment_input" multiple style="display:none" onchange="addAttachments(event)"/>
+          </label>
+        </div>
+        <div id="ct_attachments_list" style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:0.75rem;color:var(--muted);font-style:italic" id="ct_no_attach">No attachments added. Files are referenced via GoPhish during send.</div>
+        </div>
+      </div>
+
+      <!-- ── HTML Body section ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128231; Email HTML Body *</div>
+          <div style="display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:3px">
+            <button id="ct_tab_code" onclick="ctSwitchTab('code')" style="padding:4px 12px;border-radius:5px;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:var(--border);color:var(--accent)">HTML</button>
+            <button id="ct_tab_prev" onclick="ctSwitchTab('preview')" style="padding:4px 12px;border-radius:5px;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:none;color:var(--muted)">Preview</button>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:0.5rem;align-items:center">
+          <span style="font-size:0.68rem;color:var(--muted)">GoPhish variables:</span>
+          <code onclick="ctInsertVar('{{.FirstName}}')" style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.FirstName}}</code>
+          <code onclick="ctInsertVar('{{.LastName}}')"  style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.LastName}}</code>
+          <code onclick="ctInsertVar('{{.Email}}')"     style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.Email}}</code>
+          <code onclick="ctInsertVar('{{.Position}}')"  style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.Position}}</code>
+          <code onclick="ctInsertVar('{{.URL}}')"       style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.URL}}</code>
+          <code onclick="ctInsertVar('{{.Tracker}}')"   style="background:var(--card);padding:2px 6px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.68rem;border:1px solid var(--border)">{{.Tracker}}</code>
+        </div>
+        <div id="ct_code_wrap">
+          <textarea id="ct_html" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:'Share Tech Mono',monospace;font-size:0.74rem;color:var(--text);outline:none;resize:vertical;min-height:280px;line-height:1.7;transition:border-color 0.2s" placeholder="Write or paste your phishing email HTML here...&#10;&#10;Use {{.URL}} for the phishing link and {{.Tracker}} for the invisible open-tracking pixel.&#10;&#10;Example:&#10;&lt;p&gt;Dear {{.FirstName}}, click &lt;a href=&quot;{{.URL}}&quot;&gt;here&lt;/a&gt; to reset your password.&lt;/p&gt;&#10;&lt;img src=&quot;{{.Tracker}}&quot; style=&quot;display:none&quot;/&gt;"></textarea>
+        </div>
+        <div id="ct_prev_wrap" style="display:none">
+          <iframe id="ct_prev_frame" style="width:100%;height:340px;border:1px solid var(--border);border-radius:8px;background:#fff"></iframe>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:flex-end;position:sticky;bottom:0;background:var(--panel);border-radius:0 0 16px 16px">
+      <button onclick="closeCreateModal()" style="padding:9px 18px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;background:var(--panel);color:var(--text);border:1px solid var(--border)">Cancel</button>
+      <button id="ctSaveBtn" onclick="saveNewTemplate()" class="btn-primary" style="padding:9px 20px;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000">
+        Save Template
       </button>
-    </div>
-
-    <!-- Step 1: Choose type -->
-    <div id="ct_step1" style="padding:1.6rem;display:flex;flex-direction:column;gap:0.8rem">
-      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:0.4rem">What kind of phishing scenario does this template simulate?</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
-        <div class="type-pick" onclick="selectPhishType('link',this)" data-type="link"
-          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
-          <div style="font-size:1.6rem;margin-bottom:8px">&#128279;</div>
-          <div style="font-weight:700;color:#fff;margin-bottom:4px">Phishing Link</div>
-          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Email contains a malicious link. Clicking it redirects to your tracking page.</div>
-        </div>
-        <div class="type-pick" onclick="selectPhishType('landing',this)" data-type="landing"
-          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
-          <div style="font-size:1.6rem;margin-bottom:8px">&#128193;</div>
-          <div style="font-weight:700;color:#fff;margin-bottom:4px">Link + Landing Page</div>
-          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Link leads to a fake login or form page that captures credential submissions.</div>
-        </div>
-        <div class="type-pick" onclick="selectPhishType('attachment',this)" data-type="attachment"
-          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
-          <div style="font-size:1.6rem;margin-bottom:8px">&#128206;</div>
-          <div style="font-weight:700;color:#fff;margin-bottom:4px">File Attachment</div>
-          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Email has a fake attachment (invoice, PDF, doc) that prompts the user to click a link.</div>
-        </div>
-        <div class="type-pick" onclick="selectPhishType('credential',this)" data-type="credential"
-          style="border:1px solid var(--border);border-radius:10px;padding:1.2rem;cursor:pointer;transition:all 0.2s">
-          <div style="font-size:1.6rem;margin-bottom:8px">&#128274;</div>
-          <div style="font-weight:700;color:#fff;margin-bottom:4px">Credential Harvest</div>
-          <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Email body itself contains a form or prompt asking for username and password.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 2: Template details -->
-    <div id="ct_step2" style="padding:1.6rem;display:none;flex-direction:column;gap:1rem">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Template Name *</label>
-          <input id="ct_name" type="text" placeholder="e.g. Fake Invoice Alert" class="form-input"/>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sender Name *</label>
-          <input id="ct_sender" type="text" placeholder="e.g. Finance Team" class="form-input"/>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Subject Line *</label>
-        <input id="ct_subject" type="text" placeholder="e.g. Invoice #INV-2026-0089 requires your approval" class="form-input"/>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Category</label>
-          <select id="ct_category" class="form-input">
-            <option>IT Support</option><option>HR</option>
-            <option>Credential Harvest</option><option>Executive / BEC</option>
-            <option>Delivery</option><option>Social Engineering</option>
-            <option>Finance</option><option>Other</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Difficulty</label>
-          <select id="ct_difficulty" class="form-input">
-            <option>Easy</option><option>Medium</option><option>Hard</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Language</label>
-          <select id="ct_language" class="form-input">
-            <option value="english">English</option>
-            <option value="khmer">Khmer</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Description</label>
-        <input id="ct_desc" type="text" placeholder="Brief description of this template's scenario" class="form-input"/>
-      </div>
-    </div>
-
-    <!-- Step 3: Email content (no HTML needed) -->
-    <div id="ct_step3" style="padding:1.6rem;display:none;flex-direction:column;gap:1rem">
-      <div style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:0.78rem;color:var(--muted);line-height:1.6">
-        &#128161; Just write the text. We'll generate clean HTML from what you enter below.
-        Use <strong style="color:var(--accent)">{{FirstName}}</strong> for the recipient's name and
-        <strong style="color:var(--accent)">{{LINK}}</strong> where you want the phishing link to appear.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Greeting</label>
-        <input id="ct_greeting" type="text" placeholder="e.g. Dear {{FirstName}}," class="form-input" value="Dear {{FirstName}},"/>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Email Body *</label>
-        <textarea id="ct_body" rows="5" placeholder="Write the main message. Use {{FirstName}} and {{LINK}} as placeholders..." class="form-input" style="resize:vertical;line-height:1.6"></textarea>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Call-to-Action Button Text</label>
-          <input id="ct_cta" type="text" placeholder="e.g. Reset Password Now" class="form-input" value="Click Here"/>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Sign-off</label>
-          <input id="ct_signoff" type="text" placeholder="e.g. Best regards, IT Support Team" class="form-input"/>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px" id="ct_attachment_row" style="display:none">
-        <label style="font-size:0.7rem;font-weight:700;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase">Fake Attachment Name (for attachment type)</label>
-        <input id="ct_attachment" type="text" placeholder="e.g. Invoice_March_2026.pdf" class="form-input"/>
-      </div>
-    </div>
-
-    <!-- Footer with step navigation -->
-    <div style="padding:1rem 1.6rem;border-top:1px solid var(--border);display:flex;gap:0.8rem;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--panel)">
-      <button id="ct_back_btn" onclick="ctPrevStep()" class="btn btn-ghost" style="display:none">&#8592; Back</button>
-      <span></span>
-      <div style="display:flex;gap:0.8rem">
-        <button onclick="closeCreateModal()" class="btn btn-ghost">Cancel</button>
-        <button id="ct_next_btn" onclick="ctNextStep()" class="btn btn-primary" disabled>Next &#8594;</button>
-      </div>
     </div>
   </div>
 </div>
+
 
 <!-- ── Edit Template Modal ── -->
 <div class="modal-overlay" id="editOverlay" onclick="if(event.target===this)closeEditModal()" style="z-index:300;align-items:flex-start;padding:2rem 1rem;overflow-y:auto">

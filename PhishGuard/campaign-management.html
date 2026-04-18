@@ -575,145 +575,133 @@
 </div>
 
 <!-- ── Create Campaign Modal ── -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeOnBg(event)">
-  <div class="modal" id="modal">
-    <div class="modal-header">
-      <div>
-        <h2>Create New Campaign</h2>
-        <p>Step <span id="stepNum">1</span> of 3</p>
-      </div>
+<div class="modal-overlay" id="modalOverlay" onclick="closeOnBg(event)" style="align-items:flex-start;padding:1.5rem 1rem;overflow-y:auto">
+  <div class="modal" id="modal" style="max-width:780px">
+    <div class="modal-header" style="position:sticky;top:0;background:var(--panel);z-index:1;border-radius:16px 16px 0 0">
+      <div><h2>New Campaign</h2><p id="campModalSub">Configure your phishing simulation campaign</p></div>
       <button class="modal-close" onclick="closeModal()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <div class="modal-body">
 
-      <!-- Step indicator -->
-      <div class="steps">
-        <div class="step active" id="s1"><div class="step-circle">1</div><div class="step-label">Details</div></div>
-        <div class="step-line"></div>
-        <div class="step" id="s2"><div class="step-circle">2</div><div class="step-label">Template</div></div>
-        <div class="step-line"></div>
-        <div class="step" id="s3"><div class="step-circle">3</div><div class="step-label">Targets & Launch</div></div>
-      </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem;padding:1.4rem 1.6rem;max-height:75vh;overflow-y:auto">
 
-      <!-- Step 1: Campaign Details -->
-      <div id="step1">
-        <div class="form-group">
-          <label>Campaign Name</label>
-          <input type="text" placeholder="e.g. Q2 IT Helpdesk Simulation"/>
-        </div>
-        <div class="form-row">
+      <!-- ── Campaign basics ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#127919; Campaign Details</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+          <div class="form-group" style="grid-column:1/-1;margin-bottom:0">
+            <label>Campaign Name *</label>
+            <input id="camp_name" type="text" class="form-input" placeholder="e.g. Q2 IT Helpdesk Simulation"/>
+          </div>
           <div class="form-group" style="margin-bottom:0">
             <label>Start Date</label>
-            <input type="date"/>
+            <input id="camp_start" type="date" class="form-input"/>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label>End Date</label>
-            <input type="date"/>
+            <input id="camp_end" type="date" class="form-input"/>
           </div>
-        </div>
-        <div style="margin-bottom:1.2rem"></div>
-        <div class="form-group">
-          <label>Sender Name (Display)</label>
-          <input type="text" placeholder="e.g. IT Support Team"/>
-        </div>
-        <div class="form-group">
-          <label>Sender Email (Spoofed)</label>
-          <input type="email" placeholder="e.g. itsupport@company-helpdesk.com"/>
-        </div>
-        <div class="form-group">
-          <label>Campaign Description (Internal)</label>
-          <textarea placeholder="Notes for your team about this campaign's goals..."></textarea>
+          <div class="form-group" style="grid-column:1/-1;margin-bottom:0">
+            <label>Internal Description (optional)</label>
+            <textarea id="camp_desc" class="form-input" rows="2" placeholder="Notes for your team about this campaign..." style="resize:vertical"></textarea>
+          </div>
         </div>
       </div>
 
-      <!-- Step 2: Template (hidden) -->
-      <div id="step2" style="display:none">
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.2rem">Choose a phishing email template for this campaign:</p>
-        <div class="template-picker">
-          <div class="template-option selected" onclick="selectTemplate(this)">
-            <div class="template-option-icon" style="background:#0077ff18">🔐</div>
-            <div><div class="template-option-name">IT Password Reset</div><div class="template-option-diff">Difficulty: Medium</div></div>
+      <!-- ── Sender override ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#9993; Sender (overrides template defaults)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Sender Name</label>
+            <input id="camp_sender_name" type="text" class="form-input" placeholder="e.g. IT Support Team"/>
           </div>
-          <div class="template-option" onclick="selectTemplate(this)">
-            <div class="template-option-icon" style="background:#ff456018">📋</div>
-            <div><div class="template-option-name">HR Policy Update</div><div class="template-option-diff">Difficulty: Easy</div></div>
+          <div class="form-group" style="margin-bottom:0">
+            <label>Sender Email</label>
+            <input id="camp_sender_email" type="email" class="form-input" placeholder="e.g. it-support@company.com"/>
           </div>
-          <div class="template-option" onclick="selectTemplate(this)">
-            <div class="template-option-icon" style="background:#0077ff18">☁️</div>
-            <div><div class="template-option-name">Microsoft 365 Suspension</div><div class="template-option-diff">Difficulty: Hard</div></div>
-          </div>
-          <div class="template-option" onclick="selectTemplate(this)">
-            <div class="template-option-icon" style="background:#9b59b618">👔</div>
-            <div><div class="template-option-name">CEO Wire Transfer</div><div class="template-option-diff">Difficulty: Hard</div></div>
-          </div>
-          <div class="template-option" onclick="selectTemplate(this)">
-            <div class="template-option-icon" style="background:#00e5a018">📦</div>
-            <div><div class="template-option-name">Package Delivery Alert</div><div class="template-option-diff">Difficulty: Easy</div></div>
-          </div>
-          <div class="template-option" onclick="selectTemplate(this)">
-            <div class="template-option-icon" style="background:#0077ff18">🔵</div>
-            <div><div class="template-option-name">LinkedIn Connection</div><div class="template-option-diff">Difficulty: Medium</div></div>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Email Subject Line</label>
-          <input type="text" value="[ACTION REQUIRED] Your password expires in 24 hours"/>
         </div>
       </div>
 
-      <!-- Step 3: Targets & Launch (hidden) -->
-      <div id="step3" style="display:none">
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1.2rem">Upload your target employee list and configure sending:</p>
-        <div class="upload-zone" id="uploadZone" style="margin-bottom:1.2rem;cursor:pointer" onclick="document.getElementById('csvFileInput').click()">
-          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSV(event)"/>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto 8px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <p id="uploadLabel"><span>Click to upload</span> or drag & drop your CSV file</p>
-          <p style="font-size:0.72rem;margin-top:6px">Columns: name, email, department</p>
+      <!-- ── Email Template picker ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128231; Email Template</div>
+          <a href="email-templates.html" style="font-size:0.72rem;color:var(--accent);text-decoration:none">Manage Templates &#8599;</a>
         </div>
-        <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase">Sending Schedule</p>
-        <div class="schedule-options" style="margin-bottom:1.2rem">
-          <div class="schedule-opt selected" onclick="selectSchedule(this)">
-            <span class="schedule-opt-icon">⚡</span>
-            Immediate
-          </div>
-          <div class="schedule-opt" onclick="selectSchedule(this)">
-            <span class="schedule-opt-icon">📅</span>
-            Scheduled
-          </div>
-          <div class="schedule-opt" onclick="selectSchedule(this)">
-            <span class="schedule-opt-icon">🔀</span>
-            Randomised
+        <select id="camp_template" class="form-input" onchange="onTemplateChange(this.value)" style="margin-bottom:0.7rem">
+          <option value="">&#8212; Select an email template &#8212;</option>
+        </select>
+        <div id="camp_template_preview" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.78rem">
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div><span style="color:var(--muted)">From:</span> <span id="cprev_from" style="color:var(--text)"></span></div>
+            <div><span style="color:var(--muted)">Subject:</span> <span id="cprev_subject" style="color:var(--text)"></span></div>
+            <div><span style="color:var(--muted)">Type:</span> <span id="cprev_type" style="color:var(--accent)"></span></div>
           </div>
         </div>
-        <div class="form-group">
-          <label>Landing Page (after click)</label>
-          <select>
-            <option>Awareness Training Page</option>
-            <option>Generic Warning Page</option>
-            <option>Blank (silent tracking)</option>
-          </select>
+      </div>
+
+      <!-- ── Landing Page picker ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem">
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128196; Landing Page (optional)</div>
+          <a href="landing-pages.html" style="font-size:0.72rem;color:var(--accent);text-decoration:none">Manage Pages &#8599;</a>
         </div>
-        <div class="form-group">
-          <label>Notify Admin when employee reports phish?</label>
-          <select>
-            <option>Yes — send email alert</option>
-            <option>No — track silently</option>
-          </select>
+        <select id="camp_landing" class="form-input" onchange="onLandingChange(this.value)" style="margin-bottom:0.7rem">
+          <option value="">&#8212; No landing page (link-only tracking) &#8212;</option>
+        </select>
+        <div id="camp_landing_preview" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.78rem">
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            <div><span style="color:var(--muted)">File:</span> <span id="lprev_file" style="color:var(--text);font-family:'Share Tech Mono',monospace"></span></div>
+            <div><span style="color:var(--muted)">Captures:</span> <span id="lprev_capture" style="color:var(--accent)"></span></div>
+            <div><span style="color:var(--muted)">Redirect:</span> <span id="lprev_redirect" style="color:var(--muted)"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Targets ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128101; Target Employees</div>
+        <div style="display:flex;gap:0.7rem;margin-bottom:0.7rem">
+          <button onclick="loadEmployeesAsCampTargets()" style="flex:1;padding:8px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text)">
+            &#128101; Load from Employee Roster
+          </button>
+          <label style="flex:1;padding:8px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text);text-align:center">
+            &#128196; Upload CSV
+            <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSV(event)"/>
+          </label>
+        </div>
+        <div id="uploadLabel" style="font-size:0.76rem;color:var(--muted);padding:6px 0">No targets loaded yet</div>
+        <div id="camp_targets_preview" style="display:none;max-height:120px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:0.71rem;color:var(--muted);line-height:1.8"></div>
+      </div>
+
+      <!-- ── Schedule ── -->
+      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
+        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128197; Sending Schedule</div>
+        <div style="display:flex;gap:0.6rem;margin-bottom:0.7rem" id="scheduleGroup">
+          <div class="schedule-opt selected" onclick="selectSchedule(this)"><span class="schedule-opt-icon">&#9889;</span>Immediate</div>
+          <div class="schedule-opt" onclick="selectSchedule(this)"><span class="schedule-opt-icon">&#128197;</span>Scheduled</div>
+          <div class="schedule-opt" onclick="selectSchedule(this)"><span class="schedule-opt-icon">&#128256;</span>Randomised</div>
+        </div>
+        <div id="scheduledDateWrap" style="display:none;margin-top:0.5rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Send at</label>
+            <input id="camp_schedule_time" type="datetime-local" class="form-input"/>
+          </div>
         </div>
       </div>
 
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" id="backBtn" onclick="prevStep()" style="display:none">← Back</button>
+
+    <div class="modal-footer" style="position:sticky;bottom:0;background:var(--panel);border-radius:0 0 16px 16px">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">Next →</button>
+      <button class="btn btn-ghost" id="saveDraftBtn" onclick="launchCampaign('draft')" style="margin-left:auto">Save as Draft</button>
+      <button class="btn btn-primary" id="nextBtn" onclick="launchCampaign('active')">&#128640; Launch Campaign</button>
     </div>
   </div>
 </div>
 
-<script src="config.js"></script>
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
 let currentStep       = 1;
@@ -1294,6 +1282,214 @@ function selectSchedule(el) {
 function logout() { clearSession(); window.location.href = 'login.html'; }
 
 init();
+// ── Create Campaign modal ──────────────────────────────────────────────────
+let campTargets  = [];
+let campTemplates = [];
+let campLandingPages = [];
+
+async function openModal() {
+  // Reset fields
+  ['camp_name','camp_sender_name','camp_sender_email','camp_desc','camp_schedule_time'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  // Set today as default start date
+  const today = new Date().toISOString().slice(0,10);
+  const startEl = document.getElementById('camp_start');
+  const endEl   = document.getElementById('camp_end');
+  if (startEl) startEl.value = today;
+  if (endEl)   endEl.value   = '';
+
+  campTargets = [];
+  document.getElementById('uploadLabel').textContent       = 'No targets loaded yet';
+  document.getElementById('camp_targets_preview').style.display = 'none';
+  document.getElementById('camp_template_preview').style.display = 'none';
+  document.getElementById('camp_landing_preview').style.display  = 'none';
+  document.getElementById('scheduledDateWrap').style.display = 'none';
+  // Reset schedule selection
+  document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
+  document.querySelector('.schedule-opt')?.classList.add('selected');
+
+  // Load templates and landing pages in parallel
+  try {
+    const [templates, landingPages] = await Promise.all([
+      apiFetch('templates'),
+      apiFetch('landing-pages'),
+    ]);
+    campTemplates    = templates;
+    campLandingPages = landingPages;
+
+    const tSel = document.getElementById('camp_template');
+    tSel.innerHTML = '<option value="">&#8212; Select an email template &#8212;</option>' +
+      templates.map(t => '<option value="'+t.id+'">'+t.name+' ('+t.category+')</option>').join('');
+
+    const lSel = document.getElementById('camp_landing');
+    lSel.innerHTML = '<option value="">&#8212; No landing page (link-only) &#8212;</option>' +
+      landingPages.map(p => '<option value="'+p.id+'">'+p.name+'</option>').join('');
+
+    // If a template was pre-selected from email-templates page
+    const preselect = sessionStorage.getItem('pg_selected_template');
+    if (preselect) {
+      const pt = JSON.parse(preselect);
+      const opt = Array.from(tSel.options).find(o => o.text.startsWith(pt.name));
+      if (opt) { tSel.value = opt.value; onTemplateChange(opt.value); }
+      sessionStorage.removeItem('pg_selected_template');
+    }
+    // Pre-select landing page if stored
+    const preLp = sessionStorage.getItem('selectedLandingPage');
+    if (preLp) {
+      const plp = JSON.parse(preLp);
+      const lopt = Array.from(lSel.options).find(o => o.text.startsWith(plp.name));
+      if (lopt) { lSel.value = lopt.value; onLandingChange(lopt.value); }
+      sessionStorage.removeItem('selectedLandingPage');
+    }
+  } catch(e) {
+    showToast('Could not load templates/landing pages', 'error');
+  }
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal()   { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeOnBg(e)   { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+function onTemplateChange(id) {
+  const t = campTemplates.find(t => String(t.id) === String(id));
+  const prev = document.getElementById('camp_template_preview');
+  if (!t) { if (prev) prev.style.display = 'none'; return; }
+  // Fill sender defaults if empty
+  const sn = document.getElementById('camp_sender_name');
+  const se = document.getElementById('camp_sender_email');
+  if (sn && !sn.value) sn.value = t.sender_name || '';
+  if (se && !se.value) se.value = t.sender_email || '';
+  // Show preview
+  if (prev) {
+    document.getElementById('cprev_from').textContent    = (t.sender_name||'') + (t.sender_email?' <'+t.sender_email+'>':'');
+    document.getElementById('cprev_subject').textContent = t.subject || '';
+    document.getElementById('cprev_type').textContent    = t.phishing_type || 'link';
+    prev.style.display = 'block';
+  }
+  // Auto-select linked landing page
+  if (t.landing_file && campLandingPages.length) {
+    const lp = campLandingPages.find(p => p.file === t.landing_file);
+    if (lp) {
+      const lSel = document.getElementById('camp_landing');
+      const opt  = Array.from(lSel.options).find(o => String(o.value) === String(lp.id));
+      if (opt) { lSel.value = opt.value; onLandingChange(opt.value); }
+    }
+  }
+}
+
+function onLandingChange(id) {
+  const p = campLandingPages.find(p => String(p.id) === String(id));
+  const prev = document.getElementById('camp_landing_preview');
+  if (!p) { if (prev) prev.style.display = 'none'; return; }
+  if (prev) {
+    document.getElementById('lprev_file').textContent    = p.file || '';
+    document.getElementById('lprev_capture').textContent = p.capture_credentials ? 'Credentials' + (p.capture_passwords?' + Passwords':'') : 'None';
+    document.getElementById('lprev_redirect').textContent= p.redirect_url || 'None';
+    prev.style.display = 'block';
+  }
+}
+
+async function loadEmployeesAsCampTargets() {
+  try {
+    const emps = await apiFetch('employees');
+    campTargets = emps.map(e => ({ name: e.name, email: e.email, department: e.department || '' }));
+    document.getElementById('uploadLabel').textContent = campTargets.length + ' employees loaded from roster';
+    showCampTargetPreview();
+    showToast(campTargets.length + ' employees loaded', 'success');
+  } catch(e) {
+    showToast('Could not load employees', 'error');
+  }
+}
+
+function showCampTargetPreview() {
+  const box = document.getElementById('camp_targets_preview');
+  if (!campTargets.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = campTargets.slice(0,8).map(t =>
+    t.name + ' &lt;' + t.email + '&gt;' + (t.department ? ' &mdash; ' + t.department : '')
+  ).join('<br>') + (campTargets.length > 8 ? '<br>... and ' + (campTargets.length - 8) + ' more' : '');
+}
+
+function selectSchedule(el) {
+  document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const isScheduled = el.textContent.trim().includes('Scheduled');
+  document.getElementById('scheduledDateWrap').style.display = isScheduled ? 'block' : 'none';
+}
+
+async function launchCampaign(status) {
+  const name = (document.getElementById('camp_name')?.value || '').trim();
+  if (!name) { showToast('Campaign name is required', 'error'); return; }
+
+  const templateId = document.getElementById('camp_template').value;
+  const templateObj = campTemplates.find(t => String(t.id) === String(templateId));
+
+  const btn = document.getElementById(status === 'draft' ? 'saveDraftBtn' : 'nextBtn');
+  const origText = btn.textContent;
+  btn.textContent = 'Saving...'; btn.disabled = true;
+
+  try {
+    // Create the campaign
+    const camp = await apiFetch('campaigns', 'POST', {
+      name,
+      template:     templateObj?.name || '',
+      sender_name:  document.getElementById('camp_sender_name').value.trim() || templateObj?.sender_name || '',
+      sender_email: document.getElementById('camp_sender_email').value.trim() || templateObj?.sender_email || '',
+      start_date:   document.getElementById('camp_start').value || '',
+      end_date:     document.getElementById('camp_end').value   || '',
+      status:       status,
+    });
+
+    const campId = camp.id || camp.campaign?.id;
+
+    // Upload targets if any
+    if (campTargets.length && campId) {
+      await apiFetch('employees/upload', 'POST', {
+        employees:   campTargets,
+        campaign_id: campId,
+      });
+    }
+
+    // Launch immediately if status is active
+    if (status === 'active' && campId) {
+      try { await apiFetch('campaigns/' + campId + '/send', 'POST'); }
+      catch(e) { showToast('Campaign saved but send failed: ' + e.message, 'error'); }
+    }
+
+    closeModal();
+    showToast(status === 'draft' ? 'Campaign saved as draft' : 'Campaign launched! &#128640;', 'success');
+    await loadCampaigns();
+  } catch(e) {
+    showToast('Failed: ' + (e.message || 'Unknown error'), 'error');
+  }
+
+  btn.textContent = origText; btn.disabled = false;
+}
+
+// ── CSV upload for targets ─────────────────────────────────────────────────
+function handleCSV(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines   = e.target.result.trim().split('\n').filter(l => l.trim());
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/^"|"$/g,''));
+    const ni = headers.indexOf('name'), ei = headers.indexOf('email'), di = headers.indexOf('department');
+    if (ei < 0) { showToast('CSV must have an "email" column', 'error'); return; }
+    campTargets = lines.slice(1).map(line => {
+      const cols = line.split(',').map(x => x.trim().replace(/^"|"$/g,''));
+      return { name: ni>=0?cols[ni]||'':'', email: cols[ei]||'', department: di>=0?cols[di]||'':'' };
+    }).filter(r => r.email);
+    document.getElementById('uploadLabel').textContent = campTargets.length + ' targets loaded from CSV';
+    showCampTargetPreview();
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+
 </script>
 </body>
 </html>
