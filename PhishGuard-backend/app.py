@@ -1165,7 +1165,7 @@ import ssl
 
 # ── GoPhish Integration ────────────────────────────────────────────────────
 GOPHISH_URL     = 'https://127.0.0.1:3333'
-GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'  # ← paste your GoPhish API key
+GOPHISH_API_KEY = '0f0510cd5099b035ab814ce78bb65c39a7c4ec103eab70940826d03ff2eb311b'
 
 def gophish_request(endpoint, method='GET', data=None):
     """Make an authenticated request to the GoPhish API."""
@@ -1175,9 +1175,175 @@ def gophish_request(endpoint, method='GET', data=None):
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode    = ssl.CERT_NONE
-    req      = urllib.request.Request(url, data=body, headers=headers, method=method)
-    response = urllib.request.urlopen(req, context=ctx)
-    return json.loads(response.read().decode())
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        response = urllib.request.urlopen(req, context=ctx)
+        raw = response.read().decode()
+        if not raw.strip():
+            return {}
+        result = json.loads(raw)
+        # GoPhish returns {"success": false, "message": "..."} on logical errors
+        # But only raise for POST/PUT — DELETE and GET may use different formats
+        if method in ('POST', 'PUT') and isinstance(result, dict) and result.get('success') is False:
+            msg = result.get('message', 'Unknown GoPhish error')
+            print(f'❌ GoPhish API error [{method} {endpoint}]: {msg}')
+            raise Exception(f'GoPhish: {msg}')
+        return result
+    except urllib.error.HTTPError as e:
+        body_text = e.read().decode()
+        print(f'❌ GoPhish HTTP {e.code} [{method} {endpoint}]: {body_text[:300]}')
+        raise Exception(f'GoPhish HTTP {e.code}: {body_text[:200]}')
+    except urllib.error.URLError as e:
+        print(f'❌ GoPhish connection error [{method} {endpoint}]: {e.reason}')
+        raise Exception(f'GoPhish unreachable: {e.reason}')
+
+
+# ── GoPhish Diagnostic Endpoint ───────────────────────────────────────────
+@app.route('/api/gophish/send-test', methods=['POST'])
+def gophish_send_test():
+    """
+    POST /api/gophish/send-test
+    Body: { "campaign_id": <id> }
+    Runs through every GoPhish step and returns detailed results.
+    """
+    data = request.get_json() or {}
+    campaign_id = data.get('campaign_id', 1)
+    log = []
+
+    try:
+        conn = get_db()
+        campaign = conn.execute('SELECT * FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
+        targets  = conn.execute('SELECT * FROM campaign_targets WHERE campaign_id=?', (campaign_id,)).fetchall()
+        conn.close()
+        log.append({'step': 'db', 'ok': True, 'campaign': dict(campaign) if campaign else None, 'targets': len(targets)})
+        if not campaign: return jsonify({'log': log, 'error': 'Campaign not found'})
+        if not targets:  return jsonify({'log': log, 'error': 'No targets'})
+    except Exception as e:
+        return jsonify({'log': log, 'error': str(e)})
+
+    # Test SMTP fetch
+    try:
+        smtp = gophish_request('smtp')
+        smtp_names = [s.get('name') for s in (smtp or [])]
+        log.append({'step': 'smtp_list', 'ok': True, 'profiles': smtp_names})
+        # Prefer Mailhog over Brevo/external for local testing
+        smtp_name = None
+        for preferred in ['Mailhog','mailhog','MAILHOG','Local','local']:
+            match = next((n for n in smtp_names if preferred.lower() in n.lower()), None)
+            if match:
+                smtp_name = match
+                break
+        if not smtp_name:
+            smtp_name = smtp_names[0]
+        if not smtp_name:
+            return jsonify({'log': log, 'error': 'No SMTP profiles in GoPhish. Create one pointing to 127.0.0.1:1025'})
+    except Exception as e:
+        return jsonify({'log': log, 'error': f'SMTP fetch failed: {e}'})
+
+    # Test template creation — use timestamp suffix to avoid GoPhish 409 conflicts
+    import time as _t
+    ts = int(_t.time())
+    try:
+        template = get_template_by_name(campaign['template'] or 'IT Password Reset')
+        t_name = f'PG_TEST_{campaign_id}_{ts}'
+        # Delete if exists
+        try:
+            items = gophish_request('templates')
+            for item in (items or []):
+                if item.get('name') == t_name:
+                    gophish_request(f'templates/{item["id"]}', 'DELETE')
+        except: pass
+        result = gophish_request('templates', 'POST', {
+            'name': t_name,
+            'subject': template['subject'],
+            'html': template['html'],
+            'envelope_sender': (campaign['sender_name'] or 'PhishGuard') + ' <' + (campaign['sender_email'] or 'phishguard@local') + '>',
+        })
+        log.append({'step': 'create_template', 'ok': True, 'id': result.get('id')})
+    except Exception as e:
+        log.append({'step': 'create_template', 'ok': False, 'error': str(e)})
+        return jsonify({'log': log, 'error': str(e)})
+
+    # Test page creation
+    try:
+        p_name = f'PG_TEST_PAGE_{campaign_id}_{ts}'
+        try:
+            items = gophish_request('pages')
+            for item in (items or []):
+                if item.get('name') == p_name:
+                    gophish_request(f'pages/{item["id"]}', 'DELETE')
+        except: pass
+        result = gophish_request('pages', 'POST', {
+            'name': p_name,
+            'html': '<html><body><h1>Test Page</h1></body></html>',
+            'capture_credentials': True,
+            'capture_passwords': False,
+        })
+        log.append({'step': 'create_page', 'ok': True, 'id': result.get('id')})
+    except Exception as e:
+        log.append({'step': 'create_page', 'ok': False, 'error': str(e)})
+        return jsonify({'log': log, 'error': str(e)})
+
+    # Test group creation
+    try:
+        g_name = f'PG_TEST_GROUP_{campaign_id}_{ts}'
+        try:
+            items = gophish_request('groups')
+            for item in (items or []):
+                if item.get('name') == g_name:
+                    gophish_request(f'groups/{item["id"]}', 'DELETE')
+        except: pass
+        result = gophish_request('groups', 'POST', {
+            'name': g_name,
+            'targets': [{'first_name': t['name'].split(' ')[0], 'last_name': ' '.join(t['name'].split(' ')[1:]), 'email': t['email'], 'position': t['department']} for t in targets[:2]]
+        })
+        log.append({'step': 'create_group', 'ok': True, 'id': result.get('id')})
+    except Exception as e:
+        log.append({'step': 'create_group', 'ok': False, 'error': str(e)})
+        return jsonify({'log': log, 'error': str(e)})
+
+    # Test campaign creation
+    try:
+        c_name = f'PG_TEST_CAMP_{campaign_id}_{ts}'
+        try:
+            items = gophish_request('campaigns')
+            for item in (items or []):
+                if item.get('name') == c_name:
+                    gophish_request(f'campaigns/{item["id"]}', 'DELETE')
+        except: pass
+        result = gophish_request('campaigns', 'POST', {
+            'name': c_name,
+            'template': {'name': t_name},
+            'page': {'name': p_name},
+            'smtp': {'name': smtp_name},
+            'url': f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}&email={{{{.Email}}}}',
+            'launch_date': (datetime.utcnow() - timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
+            'groups': [{'name': g_name}],
+        })
+        log.append({'step': 'create_campaign', 'ok': True, 'id': result.get('id')})
+    except Exception as e:
+        log.append({'step': 'create_campaign', 'ok': False, 'error': str(e)})
+        return jsonify({'log': log, 'error': str(e)})
+
+    return jsonify({'log': log, 'success': True, 'smtp_used': smtp_name,
+                    'message': 'All steps passed — check Mailhog for test emails'})
+
+
+# ── GoPhish Diagnostic Endpoint ───────────────────────────────────────────
+@app.route('/api/gophish/test', methods=['GET'])
+def test_gophish():
+    """GET /api/gophish/test — Check GoPhish connectivity and list resources."""
+    results = {}
+    for resource in ['smtp', 'templates', 'pages', 'groups', 'campaigns']:
+        try:
+            data = gophish_request(resource)
+            count = len(data) if isinstance(data, list) else 1
+            results[resource] = {'ok': True, 'count': count}
+            if resource == 'smtp':
+                results['smtp_profiles'] = [s.get('name','?') for s in (data if isinstance(data,list) else [])]
+        except Exception as e:
+            results[resource] = {'ok': False, 'error': str(e)}
+    return jsonify({'gophish_url': GOPHISH_URL, 'results': results})
 
 
 # ── Template File Loader ───────────────────────────────────────────────────
@@ -1660,7 +1826,15 @@ def send_campaign_emails(campaign_id):
     if not campaign:
         return jsonify({'error': 'Campaign not found'}), 404
     if not targets:
-        return jsonify({'error': 'No targets found — upload employees first'}), 400
+        print(f'⚠️  No targets in campaign_targets for campaign {campaign_id} — checking users table')
+        # Fall back: grab all employees from users table
+        conn2 = get_db()
+        fallback = conn2.execute("SELECT name, email, department FROM users WHERE role='employee'").fetchall()
+        conn2.close()
+        if not fallback:
+            return jsonify({'error': 'No targets found — add employees first'}), 400
+        targets = fallback
+        print(f'✅ Using {len(targets)} employees from roster as fallback targets')
 
     template_name = campaign['template'] or 'IT Password Reset'
 
@@ -1670,32 +1844,36 @@ def send_campaign_emails(campaign_id):
         return jsonify({'error': f'Could not load template: {str(e)}'}), 500
 
     try:
-        gophish_template_name = f'PG_{campaign_id}_{template_name}'
-        page_name  = f'PG_Awareness_{campaign_id}'
-        group_name = f'PG_Group_{campaign_id}'
-        camp_name  = f'PG_Campaign_{campaign_id}'
+        import time as _time
+        _ts = int(_time.time())
+        # Use timestamp so names are always unique — avoids GoPhish 409 conflicts
+        gophish_template_name = f'PG_{campaign_id}_{_ts}'
+        page_name  = f'PG_Page_{campaign_id}_{_ts}'
+        group_name = f'PG_Group_{campaign_id}_{_ts}'
+        camp_name  = f'PG_Camp_{campaign_id}_{_ts}'
 
         # ── Helper: delete GoPhish object by name if it exists ──────────────
         def gophish_delete_if_exists(endpoint, name):
-            """Find object by name and delete it so we can recreate cleanly."""
             try:
                 items = gophish_request(endpoint)
-                # items is a list; find matching name
                 if isinstance(items, list):
                     for item in items:
                         if item.get('name') == name:
                             gophish_request(f'{endpoint}/{item["id"]}', 'DELETE')
                             print(f'🗑️  Deleted existing GoPhish {endpoint}: {name}')
                             break
-            except Exception as e:
-                print(f'⚠️ Could not clean up {endpoint}/{name}: {e}')
+            except Exception as ex:
+                print(f'⚠️ Could not clean up {endpoint}/{name}: {ex}')
 
         # Step 1 — Clean up then push YOUR template into GoPhish
         gophish_delete_if_exists('templates', gophish_template_name)
+        sender_name  = (campaign['sender_name']  or '') or template.get('sender_name',  'PhishGuard')
+        sender_email = (campaign['sender_email'] or '') or template.get('sender_email', 'phishguard@local')
         gophish_request('templates', 'POST', {
-            'name':    gophish_template_name,
-            'subject': template['subject'],
-            'html':    template['html'],
+            'name':            gophish_template_name,
+            'subject':         template['subject'],
+            'html':            template['html'],
+            'envelope_sender': f'{sender_name} <{sender_email}>',
         })
         print(f'✅ Template pushed to GoPhish: {gophish_template_name}')
 
@@ -1736,14 +1914,19 @@ def send_campaign_emails(campaign_id):
 
         # Step 4 — Clean up then launch campaign in GoPhish
         gophish_delete_if_exists('campaigns', camp_name)
-        # Detect which SMTP profile to use — try Mailhog first, fall back to Brevo
-        smtp_profiles = []
+        # Detect SMTP profile — prefer Mailhog (local) over external providers
+        smtp_name = 'Mailhog'
         try:
             smtp_profiles = gophish_request('smtp')
-            smtp_profiles = [s['name'] for s in smtp_profiles] if smtp_profiles else []
-        except Exception:
-            pass
-        smtp_name = 'Mailhog' if 'Mailhog' in smtp_profiles else 'Brevo SMTP'
+            if smtp_profiles and isinstance(smtp_profiles, list):
+                names = [s.get('name','') for s in smtp_profiles]
+                print(f'📧 Available SMTP profiles: {names}')
+                # Priority: exact Mailhog match → anything with mailhog/local → first non-Brevo → first
+                local_match = next((n for n in names if 'mailhog' in n.lower() or 'local' in n.lower()), None)
+                non_brevo   = next((n for n in names if 'brevo' not in n.lower() and 'sendgrid' not in n.lower()), None)
+                smtp_name   = local_match or non_brevo or (names[0] if names else 'Mailhog')
+        except Exception as ex:
+            print(f'⚠️  Could not fetch SMTP profiles: {ex}')
         print(f'📧 Using SMTP profile: {smtp_name}')
 
         gophish_campaign = {
@@ -1757,7 +1940,13 @@ def send_campaign_emails(campaign_id):
             'launch_date': (datetime.utcnow() - timedelta(minutes=2)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
             'groups':      [{'name': group_name}],
         }
-        result = gophish_request('campaigns', 'POST', gophish_campaign)
+        try:
+            result = gophish_request('campaigns', 'POST', gophish_campaign)
+        except Exception as gex:
+            err_msg = str(gex)
+            print(f'❌ GoPhish campaign POST failed: {err_msg}')
+            # Try to extract the response body for more detail
+            raise Exception(f'GoPhish error: {err_msg}')
         print(f'✅ Campaign launched in GoPhish. ID: {result["id"]}')
 
         # Step 5 — Update status in YOUR database + save email logs

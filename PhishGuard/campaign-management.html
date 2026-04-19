@@ -377,6 +377,7 @@
   </style>
 </head>
 <body>
+<script src="config.js"></script>
 
 <!-- ── Sidebar ── -->
 <aside class="sidebar">
@@ -576,107 +577,166 @@
 
 <!-- ── Create Campaign Modal ── -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeOnBg(event)" style="align-items:flex-start;padding:1.5rem 1rem;overflow-y:auto">
-  <div class="modal" id="modal" style="max-width:780px">
+  <div class="modal" id="modal" style="max-width:820px">
     <div class="modal-header" style="position:sticky;top:0;background:var(--panel);z-index:1;border-radius:16px 16px 0 0">
-      <div><h2>New Campaign</h2><p id="campModalSub">Configure your phishing simulation campaign</p></div>
+      <div><h2>New Campaign</h2><p id="campModalSub">Configure your phishing simulation</p></div>
       <button class="modal-close" onclick="closeModal()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem;padding:1.4rem 1.6rem;max-height:78vh;overflow-y:auto">
 
-    <div class="modal-body" style="display:flex;flex-direction:column;gap:1rem;padding:1.4rem 1.6rem;max-height:75vh;overflow-y:auto">
-
-      <!-- ── Campaign basics ── -->
+      <!-- Campaign Details -->
       <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
         <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#127919; Campaign Details</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
-          <div class="form-group" style="grid-column:1/-1;margin-bottom:0">
-            <label>Campaign Name *</label>
-            <input id="camp_name" type="text" class="form-input" placeholder="e.g. Q2 IT Helpdesk Simulation"/>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Start Date</label>
-            <input id="camp_start" type="date" class="form-input"/>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>End Date</label>
-            <input id="camp_end" type="date" class="form-input"/>
-          </div>
-          <div class="form-group" style="grid-column:1/-1;margin-bottom:0">
-            <label>Internal Description (optional)</label>
-            <textarea id="camp_desc" class="form-input" rows="2" placeholder="Notes for your team about this campaign..." style="resize:vertical"></textarea>
-          </div>
+          <div class="form-group" style="grid-column:1/-1;margin-bottom:0"><label>Campaign Name *</label><input id="camp_name" type="text" class="form-input" placeholder="e.g. Q2 IT Helpdesk Simulation"/></div>
+          <div class="form-group" style="margin-bottom:0"><label>Start Date</label><input id="camp_start" type="date" class="form-input"/></div>
+          <div class="form-group" style="margin-bottom:0"><label>End Date</label><input id="camp_end" type="date" class="form-input"/></div>
+          <div class="form-group" style="grid-column:1/-1;margin-bottom:0"><label>Internal Description</label><textarea id="camp_desc" class="form-input" rows="2" placeholder="Notes for your team..." style="resize:vertical"></textarea></div>
         </div>
       </div>
 
-      <!-- ── Sender override ── -->
-      <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
-        <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#9993; Sender (overrides template defaults)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
-          <div class="form-group" style="margin-bottom:0">
-            <label>Sender Name</label>
-            <input id="camp_sender_name" type="text" class="form-input" placeholder="e.g. IT Support Team"/>
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label>Sender Email</label>
-            <input id="camp_sender_email" type="email" class="form-input" placeholder="e.g. it-support@company.com"/>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Email Template picker ── -->
+      <!-- Email Template -->
       <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem">
           <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128231; Email Template</div>
           <a href="email-templates.html" style="font-size:0.72rem;color:var(--accent);text-decoration:none">Manage Templates &#8599;</a>
         </div>
-        <select id="camp_template" class="form-input" onchange="onTemplateChange(this.value)" style="margin-bottom:0.7rem">
+        <select id="camp_template" class="form-input" onchange="onTemplateChange(this.value)">
           <option value="">&#8212; Select an email template &#8212;</option>
         </select>
-        <div id="camp_template_preview" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.78rem">
-          <div style="display:flex;gap:16px;flex-wrap:wrap">
-            <div><span style="color:var(--muted)">From:</span> <span id="cprev_from" style="color:var(--text)"></span></div>
-            <div><span style="color:var(--muted)">Subject:</span> <span id="cprev_subject" style="color:var(--text)"></span></div>
-            <div><span style="color:var(--muted)">Type:</span> <span id="cprev_type" style="color:var(--accent)"></span></div>
+
+        <!-- Template editor (shown after selection) -->
+        <div id="tmpl_editor_wrap" style="display:none;margin-top:0.8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <!-- Envelope bar -->
+          <div style="background:var(--card);padding:0.7rem 1rem;border-bottom:1px solid var(--border)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.5rem">
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="font-size:0.64rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">From Name</label>
+                <input id="tmpl_sender_name" class="form-input" style="padding:6px 10px;font-size:0.82rem" placeholder="Sender name"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <label style="font-size:0.64rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">From Email</label>
+                <input id="tmpl_sender_email" type="email" class="form-input" style="padding:6px 10px;font-size:0.82rem" placeholder="sender@domain.com"/>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <label style="font-size:0.64rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Subject Line</label>
+              <input id="tmpl_subject" class="form-input" style="padding:6px 10px;font-size:0.82rem" placeholder="Email subject"/>
+            </div>
+          </div>
+          <!-- Attachment bar -->
+          <div style="background:var(--card);padding:0.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap">
+            <span style="font-size:0.71rem;color:var(--muted);font-weight:600">Attachments:</span>
+            <div id="tmpl_attach_list" style="display:flex;gap:6px;flex-wrap:wrap;flex:1"></div>
+            <label style="display:inline-flex;align-items:center;gap:5px;font-size:0.71rem;font-weight:600;color:var(--accent);cursor:pointer;padding:3px 8px;border:1px solid var(--border);border-radius:5px;background:var(--deep)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Attach
+              <input type="file" id="tmpl_attach_input" multiple style="display:none" onchange="addTmplAttachment(event)"/>
+            </label>
+          </div>
+          <!-- HTML editor / preview tabs -->
+          <div style="background:var(--card);padding:0.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+              <span style="font-size:0.68rem;color:var(--muted)">Insert:</span>
+              <code onclick="insertTmplVar('{{.FirstName}}')" style="background:var(--deep);padding:2px 5px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.66rem;border:1px solid var(--border)">{{.FirstName}}</code>
+              <code onclick="insertTmplVar('{{.Email}}')"     style="background:var(--deep);padding:2px 5px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.66rem;border:1px solid var(--border)">{{.Email}}</code>
+              <code onclick="insertTmplVar('{{.URL}}')"       style="background:var(--deep);padding:2px 5px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.66rem;border:1px solid var(--border)">{{.URL}}</code>
+              <code onclick="insertTmplVar('{{.Tracker}}')"   style="background:var(--deep);padding:2px 5px;border-radius:3px;color:var(--accent);cursor:pointer;font-size:0.66rem;border:1px solid var(--border)">{{.Tracker}}</code>
+            </div>
+            <div style="display:flex;gap:3px;background:var(--deep);border:1px solid var(--border);border-radius:7px;padding:2px">
+              <button id="te_tab_code" onclick="switchTmplTab('code')"    style="padding:3px 10px;border-radius:5px;font-size:0.7rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:var(--border);color:var(--accent)">HTML</button>
+              <button id="te_tab_prev" onclick="switchTmplTab('preview')" style="padding:3px 10px;border-radius:5px;font-size:0.7rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:none;color:var(--muted)">Preview</button>
+            </div>
+          </div>
+          <div id="te_code_wrap" style="background:var(--deep)">
+            <textarea id="tmpl_html" style="width:100%;background:transparent;border:none;padding:12px;font-family:'Share Tech Mono',monospace;font-size:0.73rem;color:var(--text);outline:none;resize:vertical;min-height:200px;line-height:1.7" placeholder="Email HTML will load here after selecting a template..."></textarea>
+          </div>
+          <div id="te_prev_wrap" style="display:none;background:var(--deep)">
+            <iframe id="te_prev_frame" style="width:100%;height:260px;border:none;background:#fff"></iframe>
           </div>
         </div>
       </div>
 
-      <!-- ── Landing Page picker ── -->
+      <!-- Landing Page -->
       <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem">
-          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128196; Landing Page (optional)</div>
+          <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128196; Landing Page <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></div>
           <a href="landing-pages.html" style="font-size:0.72rem;color:var(--accent);text-decoration:none">Manage Pages &#8599;</a>
         </div>
-        <select id="camp_landing" class="form-input" onchange="onLandingChange(this.value)" style="margin-bottom:0.7rem">
+        <select id="camp_landing" class="form-input" onchange="onLandingChange(this.value)">
           <option value="">&#8212; No landing page (link-only tracking) &#8212;</option>
         </select>
-        <div id="camp_landing_preview" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:0.78rem">
-          <div style="display:flex;gap:16px;flex-wrap:wrap">
-            <div><span style="color:var(--muted)">File:</span> <span id="lprev_file" style="color:var(--text);font-family:'Share Tech Mono',monospace"></span></div>
-            <div><span style="color:var(--muted)">Captures:</span> <span id="lprev_capture" style="color:var(--accent)"></span></div>
+
+        <!-- Landing page preview (shown after selection) -->
+        <div id="lp_preview_wrap" style="display:none;margin-top:0.8rem;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+          <!-- Info bar -->
+          <div style="background:var(--card);padding:0.6rem 1rem;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;font-size:0.77rem">
+            <div><span style="color:var(--muted)">File:</span> <span id="lprev_file" style="color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.72rem"></span></div>
+            <div><span style="color:var(--muted)">Captures:</span> <span id="lprev_capture" style="color:var(--success)"></span></div>
             <div><span style="color:var(--muted)">Redirect:</span> <span id="lprev_redirect" style="color:var(--muted)"></span></div>
+          </div>
+          <!-- Landing page HTML editor -->
+          <div style="background:var(--card);padding:0.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:0.68rem;color:var(--muted);font-weight:600">Edit landing page HTML for this campaign</span>
+            <div style="display:flex;gap:3px;background:var(--deep);border:1px solid var(--border);border-radius:7px;padding:2px">
+              <button id="lp_tab_code" onclick="switchLpTab('code')"    style="padding:3px 10px;border-radius:5px;font-size:0.7rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:var(--border);color:var(--accent)">HTML</button>
+              <button id="lp_tab_prev" onclick="switchLpTab('preview')" style="padding:3px 10px;border-radius:5px;font-size:0.7rem;font-weight:600;cursor:pointer;border:none;font-family:'Syne',sans-serif;background:none;color:var(--muted)">Preview</button>
+            </div>
+          </div>
+          <div id="lp_code_wrap" style="background:var(--deep)">
+            <textarea id="lp_html" style="width:100%;background:transparent;border:none;padding:12px;font-family:'Share Tech Mono',monospace;font-size:0.73rem;color:var(--text);outline:none;resize:vertical;min-height:180px;line-height:1.7" placeholder="Landing page HTML will load here..."></textarea>
+          </div>
+          <div id="lp_prev_wrap" style="display:none">
+            <iframe id="lp_prev_frame" style="width:100%;height:240px;border:none;background:#fff"></iframe>
           </div>
         </div>
       </div>
 
-      <!-- ── Targets ── -->
+      <!-- Target Employees -->
       <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
         <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128101; Target Employees</div>
-        <div style="display:flex;gap:0.7rem;margin-bottom:0.7rem">
-          <button onclick="loadEmployeesAsCampTargets()" style="flex:1;padding:8px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text)">
-            &#128101; Load from Employee Roster
+        <!-- Action buttons -->
+        <div style="display:flex;gap:0.6rem;margin-bottom:0.8rem;flex-wrap:wrap">
+          <button onclick="openEmployeeSelector()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text);transition:all 0.2s">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Select from Roster
           </button>
-          <label style="flex:1;padding:8px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text);text-align:center">
-            &#128196; Upload CSV
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:600;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--text)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17,8 12,3 7,8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload CSV
             <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSV(event)"/>
           </label>
         </div>
-        <div id="uploadLabel" style="font-size:0.76rem;color:var(--muted);padding:6px 0">No targets loaded yet</div>
-        <div id="camp_targets_preview" style="display:none;max-height:120px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-family:'Share Tech Mono',monospace;font-size:0.71rem;color:var(--muted);line-height:1.8"></div>
+
+        <!-- Employee selector panel (hidden by default) -->
+        <div id="emp_selector_panel" style="display:none;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:0.8rem">
+          <div style="background:var(--card);padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.6rem">
+            <input id="emp_search_input" type="text" placeholder="Search employees..." oninput="filterEmpSelector()" style="flex:1;background:var(--deep);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:0.76rem;color:var(--text);outline:none"/>
+            <button onclick="selectAllEmployees()" style="font-size:0.72rem;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--accent2);color:#fff;border:none;font-family:'Syne',sans-serif;white-space:nowrap">Select All</button>
+            <button onclick="clearEmpSelection()" style="font-size:0.72rem;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--deep);color:var(--muted);border:1px solid var(--border);font-family:'Syne',sans-serif;white-space:nowrap">Clear</button>
+            <button onclick="closeEmployeeSelector()" style="font-size:0.72rem;font-weight:600;padding:5px 10px;border-radius:5px;cursor:pointer;background:var(--danger);color:#fff;border:none;font-family:'Syne',sans-serif">Done</button>
+          </div>
+          <div id="emp_selector_list" style="max-height:200px;overflow-y:auto;background:var(--deep)"></div>
+          <div style="background:var(--card);padding:0.5rem 0.8rem;border-top:1px solid var(--border);font-size:0.72rem;color:var(--muted)" id="emp_selector_count">0 selected</div>
+        </div>
+
+        <!-- Manual email entry -->
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:0.8rem">
+          <div style="background:var(--card);padding:0.5rem 0.8rem;border-bottom:1px solid var(--border);font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">&#128394; Add Individual Emails</div>
+          <div style="background:var(--deep);padding:0.6rem 0.8rem;display:flex;gap:0.5rem">
+            <input id="manual_email_input" type="email" placeholder="name@company.com" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:'Share Tech Mono',monospace;font-size:0.76rem;color:var(--text);outline:none" onkeydown="if(event.key==='Enter')addManualEmail()"/>
+            <input id="manual_name_input"  type="text"  placeholder="Display name (optional)" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-family:'Syne',sans-serif;font-size:0.76rem;color:var(--text);outline:none"/>
+            <button onclick="addManualEmail()" style="padding:6px 14px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000;border:none">Add</button>
+          </div>
+        </div>
+
+        <!-- Target summary -->
+        <div id="target_summary" style="font-size:0.75rem;color:var(--muted);padding:4px 0">No targets selected yet</div>
+        <div id="target_chips" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;max-height:100px;overflow-y:auto"></div>
       </div>
 
-      <!-- ── Schedule ── -->
+      <!-- Schedule -->
       <div style="background:var(--deep);border:1px solid var(--border);border-radius:10px;padding:1rem">
         <div style="font-size:0.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.8rem">&#128197; Sending Schedule</div>
         <div style="display:flex;gap:0.6rem;margin-bottom:0.7rem" id="scheduleGroup">
@@ -684,16 +744,12 @@
           <div class="schedule-opt" onclick="selectSchedule(this)"><span class="schedule-opt-icon">&#128197;</span>Scheduled</div>
           <div class="schedule-opt" onclick="selectSchedule(this)"><span class="schedule-opt-icon">&#128256;</span>Randomised</div>
         </div>
-        <div id="scheduledDateWrap" style="display:none;margin-top:0.5rem">
-          <div class="form-group" style="margin-bottom:0">
-            <label>Send at</label>
-            <input id="camp_schedule_time" type="datetime-local" class="form-input"/>
-          </div>
+        <div id="scheduledDateWrap" style="display:none">
+          <div class="form-group" style="margin-bottom:0"><label>Send at</label><input id="camp_schedule_time" type="datetime-local" class="form-input"/></div>
         </div>
       </div>
 
     </div>
-
     <div class="modal-footer" style="position:sticky;bottom:0;background:var(--panel);border-radius:0 0 16px 16px">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
       <button class="btn btn-ghost" id="saveDraftBtn" onclick="launchCampaign('draft')" style="margin-left:auto">Save as Draft</button>
@@ -702,19 +758,20 @@
   </div>
 </div>
 
+</div>
+
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
-let currentStep       = 1;
-let uploadedEmployees = [];
 let allCampaigns      = [];
 let activeStatusTab   = 'all';
 let copyCampaignData  = null;
 
 // ── Init ──────────────────────────────────────────────────────────────────
 async function init() {
-  const user = requireAuth('admin');
-  if (!user) return;
-  document.querySelector('.user-name').textContent = user.name;
+  const user = (typeof requireAuth !== "undefined") ? requireAuth('admin') : null;
+  if (!user) { console.warn("No session — loading campaigns anyway"); }
+  if(document.getElementById('sidebarName')) document.getElementById('sidebarName').textContent = user.name;
+  if(document.getElementById('sidebarAv')) document.getElementById('sidebarAv').textContent = (user.name||'SA').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
   await loadCampaigns();
 }
 
@@ -1166,75 +1223,10 @@ async function deleteCampaign(id) {
 }
 
 // ── Create Campaign Modal ─────────────────────────────────────────────────
-function openModal() {
-  document.getElementById('modalOverlay').classList.add('open');
-  currentStep = 1;
-  uploadedEmployees = [];
-  renderStep();
-}
 function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
 function closeOnBg(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-function renderStep() {
-  for (let i = 1; i <= 3; i++) {
-    document.getElementById('step' + i).style.display = i === currentStep ? 'block' : 'none';
-  }
-  ['s1','s2','s3'].forEach((id, idx) => {
-    const el = document.getElementById(id);
-    el.classList.remove('active','done');
-    if (idx + 1 < currentStep) { el.classList.add('done'); el.querySelector('.step-circle').innerHTML = '&#10003;'; }
-    else { if (idx + 1 === currentStep) el.classList.add('active'); el.querySelector('.step-circle').innerHTML = idx + 1; }
-  });
-  document.getElementById('stepNum').textContent = currentStep;
-  document.getElementById('backBtn').style.display = currentStep > 1 ? 'inline-flex' : 'none';
-  document.getElementById('nextBtn').textContent = currentStep === 3 ? '&#128640; Launch Campaign' : 'Next &rarr;';
-}
-
-async function nextStep() {
-  if (currentStep < 3) { currentStep++; renderStep(); }
-  else { await launchCampaign(); }
-}
-function prevStep() {
-  if (currentStep > 1) { currentStep--; renderStep(); }
-}
-
-async function launchCampaign() {
-  const btn = document.getElementById('nextBtn');
-  btn.textContent = '&#9203; Launching...';
-  btn.disabled = true;
-
-  const inputs      = document.querySelectorAll('#step1 input[type="text"]');
-  const emailInputs = document.querySelectorAll('#step1 input[type="email"]');
-  const dateInputs  = document.querySelectorAll('#step1 input[type="date"]');
-  const name        = inputs[0]?.value.trim()      || 'New Campaign';
-  const senderName  = inputs[1]?.value.trim()      || 'IT Support';
-  const senderEmail = emailInputs[0]?.value.trim() || 'it@company.com';
-  const startDate   = dateInputs[0]?.value         || '';
-  const endDate     = dateInputs[1]?.value         || '';
-  const templateEl  = document.querySelector('.template-option.selected .template-option-name');
-  const template    = templateEl ? templateEl.textContent.trim() : 'IT Password Reset';
-
-  try {
-    const campaign = await apiFetch('campaigns', 'POST', {
-      name, template, sender_name: senderName, sender_email: senderEmail,
-      start_date: startDate, end_date: endDate, status: 'draft',
-    });
-    if (uploadedEmployees.length > 0) {
-      await apiFetch('employees/upload', 'POST', { employees: uploadedEmployees, campaign_id: campaign.campaign_id });
-    }
-    const result = await apiFetch('campaigns/' + campaign.campaign_id + '/send', 'POST', {});
-    closeModal();
-    showToast('&#10003; Campaign "' + name + '" launched! ' + result.targets + ' emails queued.', 'success');
-    await loadCampaigns();
-  } catch(err) {
-    showToast('&#10060; Launch failed: ' + err.message, 'error');
-    btn.textContent = '&#128640; Launch Campaign';
-    btn.disabled = false;
-  }
-}
-
-// ── CSV Upload ────────────────────────────────────────────────────────────
-function handleCSV(event) {
+async function handleCSV(event) {
   const file = event.target?.files?.[0];
   if (!file) return;
   const reader = new FileReader();
@@ -1243,14 +1235,14 @@ function handleCSV(event) {
     const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
     const ni = headers.indexOf('name'), ei = headers.indexOf('email'), di = headers.indexOf('department');
     if (ei === -1) { showToast('CSV must have an email column', 'error'); return; }
-    uploadedEmployees = [];
+    campTargets = [];
     lines.slice(1).forEach(line => {
       const cols = line.split(',').map(c => c.trim());
-      if (cols[ei]) uploadedEmployees.push({ name: ni>=0?cols[ni]:'', email: cols[ei], department: di>=0?cols[di]:'' });
+      if (cols[ei]) campTargets.push({ name: ni>=0?cols[ni]:'', email: cols[ei], department: di>=0?cols[di]:'' });
     });
     const lbl = document.getElementById('uploadLabel');
-    if (lbl) lbl.innerHTML = '&#10003; <strong style="color:var(--success)">' + file.name + '</strong> — ' + uploadedEmployees.length + ' employees ready';
-    showToast(uploadedEmployees.length + ' employees loaded', 'success');
+    if (lbl) lbl.innerHTML = '&#10003; <strong style="color:var(--success)">' + file.name + '</strong> — ' + campTargets.length + ' employees ready';
+    showToast(campTargets.length + ' employees loaded', 'success');
   };
   reader.readAsText(file);
 }
@@ -1283,133 +1275,327 @@ function logout() { clearSession(); window.location.href = 'login.html'; }
 
 init();
 // ── Create Campaign modal ──────────────────────────────────────────────────
-let campTargets  = [];
-let campTemplates = [];
+let campTargets      = [];
+let campTemplates    = [];
 let campLandingPages = [];
+let campRosterEmps   = [];   // full roster for selector
+let campTmplAttachments = [];
 
 async function openModal() {
-  // Reset fields
-  ['camp_name','camp_sender_name','camp_sender_email','camp_desc','camp_schedule_time'].forEach(id => {
+  // Reset all fields
+  ['camp_name','camp_sender_name','camp_sender_email','camp_desc',
+   'camp_schedule_time','manual_email_input','manual_name_input'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  // Set today as default start date
   const today = new Date().toISOString().slice(0,10);
-  const startEl = document.getElementById('camp_start');
-  const endEl   = document.getElementById('camp_end');
-  if (startEl) startEl.value = today;
-  if (endEl)   endEl.value   = '';
+  const s = document.getElementById('camp_start'); if(s) s.value = today;
+  const e = document.getElementById('camp_end');   if(e) e.value = '';
 
-  campTargets = [];
-  document.getElementById('uploadLabel').textContent       = 'No targets loaded yet';
-  document.getElementById('camp_targets_preview').style.display = 'none';
-  document.getElementById('camp_template_preview').style.display = 'none';
-  document.getElementById('camp_landing_preview').style.display  = 'none';
-  document.getElementById('scheduledDateWrap').style.display = 'none';
-  // Reset schedule selection
+  campTargets = []; campTmplAttachments = [];
+  renderTargetChips();
+
+  // Hide dynamic sections
+  ['tmpl_editor_wrap','lp_preview_wrap','emp_selector_panel','scheduledDateWrap'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display = 'none';
+  });
+  document.getElementById('target_summary').textContent = 'No targets selected yet';
+  document.getElementById('target_chips').innerHTML = '';
+
+  // Reset schedule
   document.querySelectorAll('.schedule-opt').forEach(o => o.classList.remove('selected'));
   document.querySelector('.schedule-opt')?.classList.add('selected');
 
-  // Load templates and landing pages in parallel
+  // Load templates + landing pages
   try {
-    const [templates, landingPages] = await Promise.all([
-      apiFetch('templates'),
-      apiFetch('landing-pages'),
-    ]);
+    const [templates, lps] = await Promise.all([apiFetch('templates'), apiFetch('landing-pages')]);
     campTemplates    = templates;
-    campLandingPages = landingPages;
+    campLandingPages = lps;
 
     const tSel = document.getElementById('camp_template');
     tSel.innerHTML = '<option value="">&#8212; Select an email template &#8212;</option>' +
       templates.map(t => '<option value="'+t.id+'">'+t.name+' ('+t.category+')</option>').join('');
 
     const lSel = document.getElementById('camp_landing');
-    lSel.innerHTML = '<option value="">&#8212; No landing page (link-only) &#8212;</option>' +
-      landingPages.map(p => '<option value="'+p.id+'">'+p.name+'</option>').join('');
+    lSel.innerHTML = '<option value="">&#8212; No landing page &#8212;</option>' +
+      lps.map(p => '<option value="'+p.id+'">'+p.name+'</option>').join('');
 
-    // If a template was pre-selected from email-templates page
-    const preselect = sessionStorage.getItem('pg_selected_template');
-    if (preselect) {
-      const pt = JSON.parse(preselect);
+    // Pre-select from sessionStorage
+    const preT = sessionStorage.getItem('pg_selected_template');
+    if (preT) {
+      const pt = JSON.parse(preT);
       const opt = Array.from(tSel.options).find(o => o.text.startsWith(pt.name));
-      if (opt) { tSel.value = opt.value; onTemplateChange(opt.value); }
+      if (opt) { tSel.value = opt.value; await onTemplateChange(opt.value); }
       sessionStorage.removeItem('pg_selected_template');
     }
-    // Pre-select landing page if stored
     const preLp = sessionStorage.getItem('selectedLandingPage');
     if (preLp) {
       const plp = JSON.parse(preLp);
       const lopt = Array.from(lSel.options).find(o => o.text.startsWith(plp.name));
-      if (lopt) { lSel.value = lopt.value; onLandingChange(lopt.value); }
+      if (lopt) { lSel.value = lopt.value; await onLandingChange(lopt.value); }
       sessionStorage.removeItem('selectedLandingPage');
     }
-  } catch(e) {
-    showToast('Could not load templates/landing pages', 'error');
-  }
+  } catch(err) { showToast('Could not load templates/landing pages', 'error'); }
+
+  // Load roster for employee selector
+  try {
+    campRosterEmps = await apiFetch('employees');
+  } catch(err) { campRosterEmps = []; }
 
   document.getElementById('modalOverlay').classList.add('open');
 }
 
-function closeModal()   { document.getElementById('modalOverlay').classList.remove('open'); }
-function closeOnBg(e)   { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+function closeModal()  { document.getElementById('modalOverlay').classList.remove('open'); }
+function closeOnBg(e)  { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
-function onTemplateChange(id) {
+// ── Template editor ───────────────────────────────────────────────────────
+async function onTemplateChange(id) {
   const t = campTemplates.find(t => String(t.id) === String(id));
-  const prev = document.getElementById('camp_template_preview');
-  if (!t) { if (prev) prev.style.display = 'none'; return; }
-  // Fill sender defaults if empty
-  const sn = document.getElementById('camp_sender_name');
-  const se = document.getElementById('camp_sender_email');
-  if (sn && !sn.value) sn.value = t.sender_name || '';
-  if (se && !se.value) se.value = t.sender_email || '';
-  // Show preview
-  if (prev) {
-    document.getElementById('cprev_from').textContent    = (t.sender_name||'') + (t.sender_email?' <'+t.sender_email+'>':'');
-    document.getElementById('cprev_subject').textContent = t.subject || '';
-    document.getElementById('cprev_type').textContent    = t.phishing_type || 'link';
-    prev.style.display = 'block';
-  }
+  const wrap = document.getElementById('tmpl_editor_wrap');
+  if (!t) { if(wrap) wrap.style.display = 'none'; return; }
+
+  // Fill envelope
+  document.getElementById('tmpl_sender_name').value  = t.sender_name  || '';
+  document.getElementById('tmpl_sender_email').value = t.sender_email || '';
+  document.getElementById('tmpl_subject').value      = t.subject      || '';
+
+  // Show editor
+  wrap.style.display = 'block';
+  switchTmplTab('code');
+
+  // Fetch HTML
+  const htmlEl = document.getElementById('tmpl_html');
+  htmlEl.value = 'Loading HTML...';
+  try {
+    const full = await apiFetch('templates/' + id);
+    htmlEl.value = full.html || '';
+  } catch(err) { htmlEl.value = ''; }
+
   // Auto-select linked landing page
   if (t.landing_file && campLandingPages.length) {
     const lp = campLandingPages.find(p => p.file === t.landing_file);
     if (lp) {
       const lSel = document.getElementById('camp_landing');
       const opt  = Array.from(lSel.options).find(o => String(o.value) === String(lp.id));
-      if (opt) { lSel.value = opt.value; onLandingChange(opt.value); }
+      if (opt) { lSel.value = opt.value; await onLandingChange(opt.value); }
     }
   }
 }
 
-function onLandingChange(id) {
+function switchTmplTab(tab) {
+  const isCode = tab === 'code';
+  const cb = document.getElementById('te_tab_code'), pb = document.getElementById('te_tab_prev');
+  const cw = document.getElementById('te_code_wrap'), pw = document.getElementById('te_prev_wrap');
+  if(!cw) return;
+  cw.style.display = isCode ? 'block' : 'none';
+  pw.style.display = isCode ? 'none'  : 'block';
+  if(cb){ cb.style.background=isCode?'var(--border)':'none'; cb.style.color=isCode?'var(--accent)':'var(--muted)'; }
+  if(pb){ pb.style.background=isCode?'none':'var(--border)'; pb.style.color=isCode?'var(--muted)':'var(--accent)'; }
+  if(!isCode) {
+    const html = document.getElementById('tmpl_html').value;
+    document.getElementById('te_prev_frame').srcdoc = html||'<p style="padding:2rem;color:#999;font-family:sans-serif">No content</p>';
+  }
+}
+
+function insertTmplVar(v) {
+  const ta = document.getElementById('tmpl_html');
+  if(!ta) return;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + v + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + v.length;
+  ta.focus();
+}
+
+function addTmplAttachment(event) {
+  Array.from(event.target.files||[]).forEach(f => {
+    if (!campTmplAttachments.find(a => a.name===f.name)) campTmplAttachments.push(f);
+  });
+  event.target.value = '';
+  renderTmplAttachments();
+}
+
+function removeTmplAttach(idx) { campTmplAttachments.splice(idx,1); renderTmplAttachments(); }
+
+function renderTmplAttachments() {
+  const list = document.getElementById('tmpl_attach_list');
+  if(!list) return;
+  if(!campTmplAttachments.length) { list.innerHTML='<span style="font-size:0.71rem;color:var(--muted);font-style:italic">None</span>'; return; }
+  list.innerHTML = campTmplAttachments.map((f,i) =>
+    '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--deep);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:0.7rem;color:var(--text)">' +
+    '&#128206; '+f.name+' <button onclick="removeTmplAttach('+i+')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:0.78rem;padding:0 2px;line-height:1">&#10005;</button></span>'
+  ).join('');
+}
+
+// ── Landing page editor ───────────────────────────────────────────────────
+async function onLandingChange(id) {
   const p = campLandingPages.find(p => String(p.id) === String(id));
-  const prev = document.getElementById('camp_landing_preview');
-  if (!p) { if (prev) prev.style.display = 'none'; return; }
-  if (prev) {
-    document.getElementById('lprev_file').textContent    = p.file || '';
-    document.getElementById('lprev_capture').textContent = p.capture_credentials ? 'Credentials' + (p.capture_passwords?' + Passwords':'') : 'None';
-    document.getElementById('lprev_redirect').textContent= p.redirect_url || 'None';
-    prev.style.display = 'block';
-  }
-}
+  const wrap = document.getElementById('lp_preview_wrap');
+  if(!p) { if(wrap) wrap.style.display='none'; return; }
 
-async function loadEmployeesAsCampTargets() {
+  document.getElementById('lprev_file').textContent    = p.file || '';
+  document.getElementById('lprev_capture').textContent = p.capture_credentials ? 'Credentials'+(p.capture_passwords?' + Passwords':'') : 'None';
+  document.getElementById('lprev_redirect').textContent= p.redirect_url || 'None';
+  wrap.style.display = 'block';
+  switchLpTab('code');
+
+  // Fetch HTML
+  const htmlEl = document.getElementById('lp_html');
+  htmlEl.value = 'Loading HTML...';
   try {
-    const emps = await apiFetch('employees');
-    campTargets = emps.map(e => ({ name: e.name, email: e.email, department: e.department || '' }));
-    document.getElementById('uploadLabel').textContent = campTargets.length + ' employees loaded from roster';
-    showCampTargetPreview();
-    showToast(campTargets.length + ' employees loaded', 'success');
-  } catch(e) {
-    showToast('Could not load employees', 'error');
+    const full = await apiFetch('landing-pages/' + id);
+    htmlEl.value = full.html || '';
+  } catch(err) { htmlEl.value = ''; }
+}
+
+function switchLpTab(tab) {
+  const isCode = tab === 'code';
+  const cb = document.getElementById('lp_tab_code'), pb = document.getElementById('lp_tab_prev');
+  const cw = document.getElementById('lp_code_wrap'), pw = document.getElementById('lp_prev_wrap');
+  if(!cw) return;
+  cw.style.display = isCode ? 'block' : 'none';
+  pw.style.display = isCode ? 'none'  : 'block';
+  if(cb){ cb.style.background=isCode?'var(--border)':'none'; cb.style.color=isCode?'var(--accent)':'var(--muted)'; }
+  if(pb){ pb.style.background=isCode?'none':'var(--border)'; pb.style.color=isCode?'var(--muted)':'var(--accent)'; }
+  if(!isCode) {
+    const html = document.getElementById('lp_html').value;
+    document.getElementById('lp_prev_frame').srcdoc = html||'<p style="padding:2rem;color:#999;font-family:sans-serif">No content</p>';
   }
 }
 
-function showCampTargetPreview() {
-  const box = document.getElementById('camp_targets_preview');
-  if (!campTargets.length) { box.style.display = 'none'; return; }
-  box.style.display = 'block';
-  box.innerHTML = campTargets.slice(0,8).map(t =>
-    t.name + ' &lt;' + t.email + '&gt;' + (t.department ? ' &mdash; ' + t.department : '')
-  ).join('<br>') + (campTargets.length > 8 ? '<br>... and ' + (campTargets.length - 8) + ' more' : '');
+// ── Employee selector ─────────────────────────────────────────────────────
+function openEmployeeSelector() {
+  document.getElementById('emp_selector_panel').style.display = 'block';
+  document.getElementById('emp_search_input').value = '';
+  renderEmpSelectorList(campRosterEmps);
+}
+function closeEmployeeSelector() {
+  document.getElementById('emp_selector_panel').style.display = 'none';
+}
+
+function renderEmpSelectorList(emps) {
+  const list = document.getElementById('emp_selector_list');
+  if(!emps.length) {
+    list.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);font-size:0.78rem">No employees found</div>';
+    return;
+  }
+  const BGCOLS = ['#0077ff','#9b59b6','#e67e22','#2ecc71','#e74c3c','#1abc9c'];
+  list.innerHTML = emps.map((emp,i) => {
+    const selected = campTargets.some(t => t.email === emp.email);
+    const bg  = BGCOLS[emp.email.charCodeAt(0) % BGCOLS.length];
+    const ini = (emp.name||'?').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    return '<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;cursor:pointer;border-bottom:1px solid #0d284730" data-idx="'+i+'">' +
+      '<input type="checkbox" data-email="'+emp.email+'" data-name="'+encodeURIComponent(emp.name||'')+'" data-dept="'+encodeURIComponent(emp.department||'')+'"' +
+      (selected?' checked':'') + ' onchange="handleEmpCheck(this)" style="width:15px;height:15px;accent-color:var(--accent2);cursor:pointer;flex-shrink:0"/>' +
+      '<div style="width:28px;height:28px;border-radius:50%;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:700;color:#fff;flex-shrink:0">'+ini+'</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:0.82rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+emp.name+'</div>' +
+        '<div style="font-size:0.7rem;color:var(--muted);font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+emp.email+'</div>' +
+      '</div>' +
+      '<span style="font-size:0.68rem;color:var(--muted);white-space:nowrap">'+(emp.department||'')+'</span>' +
+    '</label>';
+  }).join('');
+  updateEmpSelectorCount();
+}
+
+function handleEmpCheck(input) {
+  const email = input.dataset.email;
+  const name  = decodeURIComponent(input.dataset.name || '');
+  const dept  = decodeURIComponent(input.dataset.dept || '');
+  toggleEmpTarget(email, name, dept, input.checked);
+}
+
+
+function filterEmpSelector() {
+  const q = document.getElementById('emp_search_input').value.toLowerCase();
+  const filtered = campRosterEmps.filter(e =>
+    (e.name||'').toLowerCase().includes(q) || (e.email||'').toLowerCase().includes(q) || (e.department||'').toLowerCase().includes(q)
+  );
+  renderEmpSelectorList(filtered);
+}
+
+function toggleEmpTarget(email, name, dept, checked) {
+  if (checked) {
+    if (!campTargets.find(t => t.email===email)) campTargets.push({email,name,department:dept||''});
+  } else {
+    campTargets = campTargets.filter(t => t.email !== email);
+  }
+  updateEmpSelectorCount();
+  renderTargetChips();
+}
+
+function selectAllEmployees() {
+  const q = document.getElementById('emp_search_input').value.toLowerCase();
+  const visible = campRosterEmps.filter(e =>
+    !q || (e.name||'').toLowerCase().includes(q) || (e.email||'').toLowerCase().includes(q)
+  );
+  visible.forEach(emp => {
+    if (!campTargets.find(t => t.email===emp.email))
+      campTargets.push({email:emp.email, name:emp.name, department:emp.department||''});
+  });
+  renderEmpSelectorList(visible.length ? visible : campRosterEmps);
+  renderTargetChips();
+}
+
+function clearEmpSelection() {
+  campTargets = campTargets.filter(t => {
+    // Only remove roster employees, keep manually added ones
+    return !campRosterEmps.find(e => e.email === t.email);
+  });
+  const q = document.getElementById('emp_search_input').value.toLowerCase();
+  const visible = q ? campRosterEmps.filter(e => (e.name||'').toLowerCase().includes(q)||(e.email||'').toLowerCase().includes(q)) : campRosterEmps;
+  renderEmpSelectorList(visible);
+  renderTargetChips();
+}
+
+function updateEmpSelectorCount() {
+  const el = document.getElementById('emp_selector_count');
+  if(el) el.textContent = campTargets.length + ' selected';
+}
+
+// ── Manual email entry ────────────────────────────────────────────────────
+function addManualEmail() {
+  const emailEl = document.getElementById('manual_email_input');
+  const nameEl  = document.getElementById('manual_name_input');
+  const email = (emailEl.value||'').trim().toLowerCase();
+  const name  = (nameEl.value||'').trim() || email;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email address', 'error'); return;
+  }
+  if (campTargets.find(t => t.email===email)) {
+    showToast('Email already in target list', 'error'); return;
+  }
+  campTargets.push({ email, name, department: 'Manual' });
+  emailEl.value = ''; nameEl.value = '';
+  emailEl.focus();
+  renderTargetChips();
+  showToast(email + ' added', 'success');
+}
+
+// ── Target chips display ──────────────────────────────────────────────────
+function renderTargetChips() {
+  const summary = document.getElementById('target_summary');
+  const chips   = document.getElementById('target_chips');
+  if(!chips) return;
+  const n = campTargets.length;
+  if(summary) summary.textContent = n ? n + ' target' + (n>1?'s':'')+' selected' : 'No targets selected yet';
+  if(!n) { chips.innerHTML=''; return; }
+  chips.innerHTML = campTargets.slice(0,20).map((t,i) =>
+    '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:0.7rem;color:var(--text);max-width:200px">' +
+    '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name||t.email) + '</span>' +
+    '<button onclick="removeTarget('+i+')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;padding:0 1px;line-height:1;flex-shrink:0">&#10005;</button></span>'
+  ).join('') + (n>20 ? '<span style="font-size:0.72rem;color:var(--muted);padding:4px 6px">+' + (n-20) + ' more</span>' : '');
+  if(document.getElementById('emp_selector_count'))
+    document.getElementById('emp_selector_count').textContent = n + ' selected';
+}
+
+function removeTarget(idx) {
+  campTargets.splice(idx, 1);
+  renderTargetChips();
+  // Refresh selector checkboxes if panel is open
+  if(document.getElementById('emp_selector_panel').style.display !== 'none') {
+    const q = document.getElementById('emp_search_input').value.toLowerCase();
+    const visible = q ? campRosterEmps.filter(e=>(e.name||'').toLowerCase().includes(q)||(e.email||'').toLowerCase().includes(q)) : campRosterEmps;
+    renderEmpSelectorList(visible);
+  }
 }
 
 function selectSchedule(el) {
@@ -1419,74 +1605,96 @@ function selectSchedule(el) {
   document.getElementById('scheduledDateWrap').style.display = isScheduled ? 'block' : 'none';
 }
 
-async function launchCampaign(status) {
-  const name = (document.getElementById('camp_name')?.value || '').trim();
-  if (!name) { showToast('Campaign name is required', 'error'); return; }
-
-  const templateId = document.getElementById('camp_template').value;
-  const templateObj = campTemplates.find(t => String(t.id) === String(templateId));
-
-  const btn = document.getElementById(status === 'draft' ? 'saveDraftBtn' : 'nextBtn');
-  const origText = btn.textContent;
-  btn.textContent = 'Saving...'; btn.disabled = true;
-
-  try {
-    // Create the campaign
-    const camp = await apiFetch('campaigns', 'POST', {
-      name,
-      template:     templateObj?.name || '',
-      sender_name:  document.getElementById('camp_sender_name').value.trim() || templateObj?.sender_name || '',
-      sender_email: document.getElementById('camp_sender_email').value.trim() || templateObj?.sender_email || '',
-      start_date:   document.getElementById('camp_start').value || '',
-      end_date:     document.getElementById('camp_end').value   || '',
-      status:       status,
-    });
-
-    const campId = camp.id || camp.campaign?.id;
-
-    // Upload targets if any
-    if (campTargets.length && campId) {
-      await apiFetch('employees/upload', 'POST', {
-        employees:   campTargets,
-        campaign_id: campId,
-      });
-    }
-
-    // Launch immediately if status is active
-    if (status === 'active' && campId) {
-      try { await apiFetch('campaigns/' + campId + '/send', 'POST'); }
-      catch(e) { showToast('Campaign saved but send failed: ' + e.message, 'error'); }
-    }
-
-    closeModal();
-    showToast(status === 'draft' ? 'Campaign saved as draft' : 'Campaign launched! &#128640;', 'success');
-    await loadCampaigns();
-  } catch(e) {
-    showToast('Failed: ' + (e.message || 'Unknown error'), 'error');
-  }
-
-  btn.textContent = origText; btn.disabled = false;
-}
-
-// ── CSV upload for targets ─────────────────────────────────────────────────
+// ── CSV upload ────────────────────────────────────────────────────────────
 function handleCSV(event) {
   const file = event.target?.files?.[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
-    const lines   = e.target.result.trim().split('\n').filter(l => l.trim());
-    const headers = lines[0].toLowerCase().split(',').map(h => h.trim().replace(/^"|"$/g,''));
-    const ni = headers.indexOf('name'), ei = headers.indexOf('email'), di = headers.indexOf('department');
-    if (ei < 0) { showToast('CSV must have an "email" column', 'error'); return; }
-    campTargets = lines.slice(1).map(line => {
-      const cols = line.split(',').map(x => x.trim().replace(/^"|"$/g,''));
-      return { name: ni>=0?cols[ni]||'':'', email: cols[ei]||'', department: di>=0?cols[di]||'':'' };
-    }).filter(r => r.email);
-    document.getElementById('uploadLabel').textContent = campTargets.length + ' targets loaded from CSV';
-    showCampTargetPreview();
+    const lines   = e.target.result.trim().split('\n').filter(l=>l.trim());
+    const headers = lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+    const ni=headers.indexOf('name'), ei=headers.indexOf('email'), di=headers.indexOf('department');
+    if(ei<0){ showToast('CSV must have an "email" column','error'); return; }
+    const imported = lines.slice(1).map(line => {
+      const cols = line.split(',').map(x=>x.trim().replace(/^"|"$/g,''));
+      return {name:ni>=0?cols[ni]||'':'', email:cols[ei]||'', department:di>=0?cols[di]||'':''};
+    }).filter(r=>r.email && !campTargets.find(t=>t.email===r.email));
+    campTargets.push(...imported);
+    renderTargetChips();
+    showToast(imported.length + ' targets imported from CSV', 'success');
     event.target.value = '';
   };
   reader.readAsText(file);
+}
+
+// ── Launch campaign ───────────────────────────────────────────────────────
+async function launchCampaign(status) {
+  const name = (document.getElementById('camp_name')?.value||'').trim();
+  if(!name){ showToast('Campaign name is required','error'); return; }
+
+  const templateId  = document.getElementById('camp_template').value;
+  const templateObj = campTemplates.find(t => String(t.id)===String(templateId));
+  const landingId   = document.getElementById('camp_landing').value;
+  const landingObj  = campLandingPages.find(p => String(p.id)===String(landingId));
+
+  const btn = document.getElementById(status==='draft'?'saveDraftBtn':'nextBtn');
+  const orig = btn.textContent; btn.textContent='Saving...'; btn.disabled=true;
+
+  try {
+    const camp = await apiFetch('campaigns','POST',{
+      name,
+      template:     templateObj?.name || '',
+      sender_name:  document.getElementById('tmpl_sender_name')?.value.trim() || document.getElementById('camp_sender_name')?.value.trim() || templateObj?.sender_name || '',
+      sender_email: document.getElementById('tmpl_sender_email')?.value.trim() || templateObj?.sender_email || '',
+      start_date:   document.getElementById('camp_start').value||'',
+      end_date:     document.getElementById('camp_end').value||'',
+      status,
+    });
+    const campId = camp.campaign_id || camp.id || camp.campaign?.id;
+    console.log('Campaign created, ID:', campId, 'full response:', camp);
+
+    // Save edited template HTML back if changed
+    if (templateObj && campId) {
+      const editedHtml = document.getElementById('tmpl_html')?.value;
+      if (editedHtml && editedHtml !== 'Loading HTML...') {
+        try { await apiFetch('templates/'+templateId,'PUT',{
+          html: editedHtml,
+          subject: document.getElementById('tmpl_subject')?.value||templateObj.subject,
+          sender_name: document.getElementById('tmpl_sender_name')?.value||templateObj.sender_name,
+          sender_email: document.getElementById('tmpl_sender_email')?.value||templateObj.sender_email,
+        }); } catch(err) {}
+      }
+    }
+
+    // Save edited landing page HTML back if changed
+    if (landingObj && campId) {
+      const editedLp = document.getElementById('lp_html')?.value;
+      if (editedLp && editedLp !== 'Loading HTML...') {
+        try { await apiFetch('landing-pages/'+landingId,'PUT',{ html: editedLp }); } catch(err) {}
+      }
+    }
+
+    // Upload targets
+    console.log('campId:', campId, 'targets:', campTargets.length, 'status:', status);
+    if (campTargets.length && campId) {
+      await apiFetch('employees/upload','POST',{ employees:campTargets, campaign_id:campId });
+    }
+
+    // Launch if active
+    console.log('About to send — campId:', campId, 'status:', status);
+    if (status==='active' && campId) {
+      try { await apiFetch('campaigns/'+campId+'/send','POST'); }
+      catch(err){ console.error('Send failed:', err); showToast('Saved but send failed: '+err.message,'error'); }
+    }
+
+    closeModal();
+    showToast(status==='draft'?'Campaign saved as draft':'Campaign launched! &#128640;','success');
+    await loadCampaigns();
+  } catch(err) {
+    console.error('launchCampaign failed:', err);
+    showToast('Failed: '+(err.message||'Unknown error'),'error');
+  }
+  btn.textContent=orig; btn.disabled=false;
 }
 
 
