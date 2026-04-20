@@ -1198,135 +1198,163 @@ def gophish_request(endpoint, method='GET', data=None):
         raise Exception(f'GoPhish unreachable: {e.reason}')
 
 
-# ── GoPhish Diagnostic Endpoint ───────────────────────────────────────────
-@app.route('/api/gophish/send-test', methods=['POST'])
-def gophish_send_test():
-    """
-    POST /api/gophish/send-test
-    Body: { "campaign_id": <id> }
-    Runs through every GoPhish step and returns detailed results.
-    """
-    data = request.get_json() or {}
-    campaign_id = data.get('campaign_id', 1)
-    log = []
 
+# ── Admin User Management Routes ───────────────────────────────────────────
+@app.route('/api/admin/users', methods=['GET'])
+def get_all_users():
+    """GET /api/admin/users — List all users (admins + employees)."""
+    conn = get_db()
+    users = conn.execute(
+        'SELECT id, name, email, role, department, risk_score, created_at FROM users ORDER BY role, name'
+    ).fetchall()
+    conn.close()
+    return jsonify([dict(u) for u in users])
+
+
+@app.route('/api/admin/users', methods=['POST'])
+def create_user():
+    """POST /api/admin/users — Create a new user."""
+    d = request.get_json()
+    if not d.get('name') or not d.get('email') or not d.get('password'):
+        return jsonify({'error': 'name, email and password required'}), 400
+    conn = get_db()
     try:
-        conn = get_db()
-        campaign = conn.execute('SELECT * FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
-        targets  = conn.execute('SELECT * FROM campaign_targets WHERE campaign_id=?', (campaign_id,)).fetchall()
+        conn.execute(
+            'INSERT INTO users (name, email, password, role, department) VALUES (?,?,?,?,?)',
+            (d['name'], d['email'], hash_password(d['password']),
+             d.get('role','employee'), d.get('department',''))
+        )
+        conn.commit()
+        new_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
         conn.close()
-        log.append({'step': 'db', 'ok': True, 'campaign': dict(campaign) if campaign else None, 'targets': len(targets)})
-        if not campaign: return jsonify({'log': log, 'error': 'Campaign not found'})
-        if not targets:  return jsonify({'log': log, 'error': 'No targets'})
+        return jsonify({'success': True, 'id': new_id}), 201
     except Exception as e:
-        return jsonify({'log': log, 'error': str(e)})
+        conn.close()
+        return jsonify({'error': str(e)}), 500
 
-    # Test SMTP fetch
+
+@app.route('/api/admin/users/<int:uid>', methods=['PUT'])
+def update_user(uid):
+    """PUT /api/admin/users/<id> — Update a user."""
+    d = request.get_json()
+    conn = get_db()
+    for field in ('name', 'email', 'role', 'department'):
+        if field in d:
+            conn.execute(f'UPDATE users SET {field}=? WHERE id=?', (d[field], uid))
+    if d.get('password'):
+        conn.execute('UPDATE users SET password=? WHERE id=?', (hash_password(d['password']), uid))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/admin/users/<int:uid>', methods=['DELETE'])
+def delete_user(uid):
+    """DELETE /api/admin/users/<id> — Delete a user."""
+    conn = get_db()
+    # Don't allow deleting the last admin
+    admin_count = conn.execute("SELECT COUNT(*) FROM users WHERE role='admin'").fetchone()[0]
+    user = conn.execute('SELECT role FROM users WHERE id=?', (uid,)).fetchone()
+    if user and user['role'] == 'admin' and admin_count <= 1:
+        conn.close()
+        return jsonify({'error': 'Cannot delete the last administrator'}), 400
+    conn.execute('DELETE FROM users WHERE id=?', (uid,))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
+
+# ── SMTP / Phish Profile Routes ────────────────────────────────────────────
+@app.route('/api/smtp-profiles', methods=['GET'])
+def get_smtp_profiles():
+    conn = get_db()
+    profiles = conn.execute('SELECT * FROM smtp_profiles ORDER BY id').fetchall()
+    conn.close()
+    return jsonify([dict(p) for p in profiles])
+
+
+@app.route('/api/smtp-profiles', methods=['POST'])
+def create_smtp_profile():
+    d = request.get_json()
+    if not d.get('name'):
+        return jsonify({'error': 'Name is required'}), 400
+    conn = get_db()
     try:
-        smtp = gophish_request('smtp')
-        smtp_names = [s.get('name') for s in (smtp or [])]
-        log.append({'step': 'smtp_list', 'ok': True, 'profiles': smtp_names})
-        # Prefer Mailhog over Brevo/external for local testing
-        smtp_name = None
-        for preferred in ['Mailhog','mailhog','MAILHOG','Local','local']:
-            match = next((n for n in smtp_names if preferred.lower() in n.lower()), None)
-            if match:
-                smtp_name = match
-                break
-        if not smtp_name:
-            smtp_name = smtp_names[0]
-        if not smtp_name:
-            return jsonify({'log': log, 'error': 'No SMTP profiles in GoPhish. Create one pointing to 127.0.0.1:1025'})
+        conn.execute('''
+            INSERT INTO smtp_profiles
+            (name, type, host, port, username, password, from_name, from_email, use_tls, use_ssl, ignore_cert_errors, is_active)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,0)
+        ''', (d['name'], d.get('type','mailhog'), d.get('host','127.0.0.1'),
+              int(d.get('port',1025)), d.get('username',''), d.get('password',''),
+              d.get('from_name','PhishGuard'), d.get('from_email','phishguard@localhost'),
+              int(d.get('use_tls',0)), int(d.get('use_ssl',0)), int(d.get('ignore_cert_errors',1))))
+        conn.commit()
+        new_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        conn.close()
+        return jsonify({'success': True, 'id': new_id}), 201
     except Exception as e:
-        return jsonify({'log': log, 'error': f'SMTP fetch failed: {e}'})
+        conn.close()
+        return jsonify({'error': str(e)}), 500
 
-    # Test template creation — use timestamp suffix to avoid GoPhish 409 conflicts
-    import time as _t
-    ts = int(_t.time())
+
+@app.route('/api/smtp-profiles/<int:pid>', methods=['PUT'])
+def update_smtp_profile(pid):
+    d = request.get_json()
+    conn = get_db()
+    for field in ('name','type','host','port','username','password','from_name','from_email','use_tls','use_ssl','ignore_cert_errors'):
+        if field in d:
+            conn.execute(f'UPDATE smtp_profiles SET {field}=? WHERE id=?', (d[field], pid))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/smtp-profiles/<int:pid>', methods=['DELETE'])
+def delete_smtp_profile(pid):
+    conn = get_db()
+    conn.execute('DELETE FROM smtp_profiles WHERE id=?', (pid,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/smtp-profiles/<int:pid>/activate', methods=['POST'])
+def activate_smtp_profile(pid):
+    conn = get_db()
+    conn.execute('UPDATE smtp_profiles SET is_active=0')  # deactivate all
+    conn.execute('UPDATE smtp_profiles SET is_active=1 WHERE id=?', (pid,))
+    conn.commit(); conn.close()
+    return jsonify({'success': True})
+
+
+@app.route('/api/smtp-profiles/<int:pid>/test', methods=['POST'])
+def test_smtp_profile(pid):
+    """Test SMTP profile by pushing it to GoPhish and checking connectivity."""
+    conn = get_db()
+    profile = conn.execute('SELECT * FROM smtp_profiles WHERE id=?', (pid,)).fetchone()
+    conn.close()
+    if not profile:
+        return jsonify({'error': 'Profile not found'}), 404
+    p = dict(profile)
     try:
-        template = get_template_by_name(campaign['template'] or 'IT Password Reset')
-        t_name = f'PG_TEST_{campaign_id}_{ts}'
-        # Delete if exists
+        # Build GoPhish SMTP object
+        gp_smtp = {
+            'name':               f'PG_TEST_SMTP_{pid}',
+            'host':               f'{p["host"]}:{p["port"]}',
+            'from_address':       f'{p["from_name"]} <{p["from_email"]}>',
+            'username':           p['username'],
+            'password':           p['password'],
+            'ignore_cert_errors': bool(p['ignore_cert_errors']),
+        }
+        # Delete existing test profile in GoPhish
         try:
-            items = gophish_request('templates')
+            items = gophish_request('smtp')
             for item in (items or []):
-                if item.get('name') == t_name:
-                    gophish_request(f'templates/{item["id"]}', 'DELETE')
+                if item.get('name') == gp_smtp['name']:
+                    gophish_request(f'smtp/{item["id"]}', 'DELETE')
         except: pass
-        result = gophish_request('templates', 'POST', {
-            'name': t_name,
-            'subject': template['subject'],
-            'html': template['html'],
-            'envelope_sender': (campaign['sender_name'] or 'PhishGuard') + ' <' + (campaign['sender_email'] or 'phishguard@local') + '>',
-        })
-        log.append({'step': 'create_template', 'ok': True, 'id': result.get('id')})
+        result = gophish_request('smtp', 'POST', gp_smtp)
+        return jsonify({'success': True, 'message': f'Profile "{p["name"]}" pushed to GoPhish OK', 'gophish_id': result.get('id')})
     except Exception as e:
-        log.append({'step': 'create_template', 'ok': False, 'error': str(e)})
-        return jsonify({'log': log, 'error': str(e)})
-
-    # Test page creation
-    try:
-        p_name = f'PG_TEST_PAGE_{campaign_id}_{ts}'
-        try:
-            items = gophish_request('pages')
-            for item in (items or []):
-                if item.get('name') == p_name:
-                    gophish_request(f'pages/{item["id"]}', 'DELETE')
-        except: pass
-        result = gophish_request('pages', 'POST', {
-            'name': p_name,
-            'html': '<html><body><h1>Test Page</h1></body></html>',
-            'capture_credentials': True,
-            'capture_passwords': False,
-        })
-        log.append({'step': 'create_page', 'ok': True, 'id': result.get('id')})
-    except Exception as e:
-        log.append({'step': 'create_page', 'ok': False, 'error': str(e)})
-        return jsonify({'log': log, 'error': str(e)})
-
-    # Test group creation
-    try:
-        g_name = f'PG_TEST_GROUP_{campaign_id}_{ts}'
-        try:
-            items = gophish_request('groups')
-            for item in (items or []):
-                if item.get('name') == g_name:
-                    gophish_request(f'groups/{item["id"]}', 'DELETE')
-        except: pass
-        result = gophish_request('groups', 'POST', {
-            'name': g_name,
-            'targets': [{'first_name': t['name'].split(' ')[0], 'last_name': ' '.join(t['name'].split(' ')[1:]), 'email': t['email'], 'position': t['department']} for t in targets[:2]]
-        })
-        log.append({'step': 'create_group', 'ok': True, 'id': result.get('id')})
-    except Exception as e:
-        log.append({'step': 'create_group', 'ok': False, 'error': str(e)})
-        return jsonify({'log': log, 'error': str(e)})
-
-    # Test campaign creation
-    try:
-        c_name = f'PG_TEST_CAMP_{campaign_id}_{ts}'
-        try:
-            items = gophish_request('campaigns')
-            for item in (items or []):
-                if item.get('name') == c_name:
-                    gophish_request(f'campaigns/{item["id"]}', 'DELETE')
-        except: pass
-        result = gophish_request('campaigns', 'POST', {
-            'name': c_name,
-            'template': {'name': t_name},
-            'page': {'name': p_name},
-            'smtp': {'name': smtp_name},
-            'url': f'http://127.0.0.1:5000/api/track/click?campaign_id={campaign_id}&email={{{{.Email}}}}',
-            'launch_date': (datetime.utcnow() - timedelta(minutes=1)).strftime('%Y-%m-%dT%H:%M:%S+00:00'),
-            'groups': [{'name': g_name}],
-        })
-        log.append({'step': 'create_campaign', 'ok': True, 'id': result.get('id')})
-    except Exception as e:
-        log.append({'step': 'create_campaign', 'ok': False, 'error': str(e)})
-        return jsonify({'log': log, 'error': str(e)})
-
-    return jsonify({'log': log, 'success': True, 'smtp_used': smtp_name,
-                    'message': 'All steps passed — check Mailhog for test emails'})
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ── GoPhish Diagnostic Endpoint ───────────────────────────────────────────
@@ -1914,20 +1942,46 @@ def send_campaign_emails(campaign_id):
 
         # Step 4 — Clean up then launch campaign in GoPhish
         gophish_delete_if_exists('campaigns', camp_name)
-        # Detect SMTP profile — prefer Mailhog (local) over external providers
-        smtp_name = 'Mailhog'
+        # Get active SMTP profile from PhishGuard DB
+        _conn = get_db()
+        _active_profile = _conn.execute(
+            'SELECT * FROM smtp_profiles WHERE is_active=1 ORDER BY id LIMIT 1'
+        ).fetchone()
+        if not _active_profile:
+            _active_profile = _conn.execute('SELECT * FROM smtp_profiles ORDER BY id LIMIT 1').fetchone()
+        _conn.close()
+
+        if not _active_profile:
+            return jsonify({'error': 'No SMTP profile configured. Add one in Phish Profiles page.'}), 500
+
+        _p = dict(_active_profile)
+        print(f'📧 Using SMTP profile: {_p["name"]} ({_p["host"]}:{_p["port"]})')
+
+        # Ensure this profile exists in GoPhish — push/update it
+        _gp_smtp_name = f'PG_SMTP_{_p["id"]}'
+        _gp_smtp_obj  = {
+            'name':               _gp_smtp_name,
+            'host':               f'{_p["host"]}:{_p["port"]}',
+            'from_address':       f'{_p["from_name"]} <{_p["from_email"]}>',
+            'username':           _p['username'] or '',
+            'password':           _p['password'] or '',
+            'ignore_cert_errors': bool(_p['ignore_cert_errors']),
+        }
+        # Push to GoPhish (delete+recreate to update)
         try:
-            smtp_profiles = gophish_request('smtp')
-            if smtp_profiles and isinstance(smtp_profiles, list):
-                names = [s.get('name','') for s in smtp_profiles]
-                print(f'📧 Available SMTP profiles: {names}')
-                # Priority: exact Mailhog match → anything with mailhog/local → first non-Brevo → first
-                local_match = next((n for n in names if 'mailhog' in n.lower() or 'local' in n.lower()), None)
-                non_brevo   = next((n for n in names if 'brevo' not in n.lower() and 'sendgrid' not in n.lower()), None)
-                smtp_name   = local_match or non_brevo or (names[0] if names else 'Mailhog')
-        except Exception as ex:
-            print(f'⚠️  Could not fetch SMTP profiles: {ex}')
-        print(f'📧 Using SMTP profile: {smtp_name}')
+            _existing = gophish_request('smtp')
+            for _item in (_existing or []):
+                if _item.get('name') == _gp_smtp_name:
+                    gophish_request(f'smtp/{_item["id"]}', 'DELETE')
+                    break
+        except: pass
+        try:
+            gophish_request('smtp', 'POST', _gp_smtp_obj)
+            print(f'✅ SMTP profile pushed to GoPhish: {_gp_smtp_name}')
+        except Exception as _se:
+            print(f'⚠️ Could not push SMTP profile to GoPhish: {_se}')
+
+        smtp_name = _gp_smtp_name
 
         gophish_campaign = {
             'name':        camp_name,
@@ -2439,8 +2493,56 @@ def health():
 
 
 # ── Run ────────────────────────────────────────────────────────────────────
+def migrate_db():
+    """Add any missing tables/columns to an existing database (safe to run repeatedly)."""
+    conn = get_db()
+    c = conn.cursor()
+
+    # smtp_profiles table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS smtp_profiles (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL UNIQUE,
+            type        TEXT DEFAULT 'mailhog',
+            host        TEXT DEFAULT '127.0.0.1',
+            port        INTEGER DEFAULT 1025,
+            username    TEXT DEFAULT '',
+            password    TEXT DEFAULT '',
+            from_name   TEXT DEFAULT 'PhishGuard',
+            from_email  TEXT DEFAULT 'phishguard@localhost',
+            use_tls     INTEGER DEFAULT 0,
+            use_ssl     INTEGER DEFAULT 0,
+            is_active   INTEGER DEFAULT 0,
+            ignore_cert_errors INTEGER DEFAULT 1,
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    # Seed default Mailhog profile if empty
+    if conn.execute('SELECT COUNT(*) FROM smtp_profiles').fetchone()[0] == 0:
+        conn.execute('''
+            INSERT INTO smtp_profiles (name, type, host, port, from_name, from_email, is_active)
+            VALUES ('Mailhog (Local)', 'mailhog', '127.0.0.1', 1025, 'PhishGuard', 'phishguard@localhost', 1)
+        ''')
+        print('✅ Seeded default Mailhog SMTP profile')
+
+    # campaign sender_name / sender_email columns (in case old DB missing them)
+    try:
+        c.execute('ALTER TABLE campaigns ADD COLUMN sender_name TEXT DEFAULT ""')
+        print('✅ Added sender_name to campaigns')
+    except: pass
+    try:
+        c.execute('ALTER TABLE campaigns ADD COLUMN sender_email TEXT DEFAULT ""')
+        print('✅ Added sender_email to campaigns')
+    except: pass
+
+    conn.commit()
+    conn.close()
+    print('✅ Database migration complete')
+
+
 if __name__ == '__main__':
     init_db()
+    migrate_db()
     print('🚀 PhishGuard API starting on http://127.0.0.1:5000')
     print('📋 Available endpoints:')
     print('   POST /api/login')

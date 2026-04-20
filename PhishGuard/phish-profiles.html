@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Phish Profiles — PhishGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+  :root{--bg:#020b18;--panel:#071628;--card:#0a1f35;--deep:#04111e;--border:#0d2847;--accent:#00d4ff;--accent2:#0077ff;--success:#00e5a0;--warn:#ffb300;--danger:#ff4560;--text:#cde4f8;--muted:#4a7fa5}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{display:flex;height:100vh;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif}
+  /* Sidebar */
+  .sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+  .sidebar-logo{display:flex;align-items:center;gap:10px;padding:1.2rem 1rem;border-bottom:1px solid var(--border)}
+  .sidebar-logo svg{width:32px;height:32px}
+  .sidebar-logo-text{font-size:1rem;font-weight:800;color:#fff}.sidebar-logo-text span{color:var(--accent)}
+  .sidebar-section{font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;padding:1rem 1rem 0.4rem}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:0.6rem 1rem;font-size:0.82rem;font-weight:600;color:var(--muted);text-decoration:none;border-radius:8px;margin:1px 0.5rem;transition:all 0.15s}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0}
+  .nav-item:hover{background:var(--card);color:#fff}
+  .nav-item.active{background:linear-gradient(135deg,#00d4ff18,#0077ff18);color:var(--accent);border:1px solid #00d4ff20}
+  .sidebar-footer{margin-top:auto;padding:1rem;border-top:1px solid var(--border)}
+  .user-chip{display:flex;align-items:center;gap:10px}
+  .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#000;flex-shrink:0}
+  .user-name{font-size:0.8rem;font-weight:700;color:#fff}
+  .user-role{font-size:0.68rem;color:var(--muted)}
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:var(--panel)}
+  .topbar h1{font-size:1.1rem;font-weight:800;color:#fff}
+  .topbar p{font-size:0.75rem;color:var(--muted);margin-top:2px}
+  .content{flex:1;overflow-y:auto;padding:1.8rem 2rem}
+  /* Cards */
+  .profile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.2rem;margin-bottom:2rem}
+  .profile-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:box-shadow 0.2s;position:relative}
+  .profile-card.active-profile{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 8px 32px #00d4ff18}
+  .profile-card-header{padding:1rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .profile-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+  .profile-icon.mailhog{background:#00e5a018;color:var(--success);font-family:'Share Tech Mono',monospace;font-size:0.72rem;font-weight:800}
+  .profile-icon.gmail{background:#4285f418;color:#4285F4;font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:900;letter-spacing:-1px}
+  .profile-card-title{font-size:0.95rem;font-weight:800;color:#fff}
+  .profile-card-sub{font-size:0.72rem;color:var(--muted);margin-top:2px}
+  .active-badge{position:absolute;top:10px;right:10px;background:var(--accent);color:#000;font-size:0.62rem;font-weight:800;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.06em}
+  .profile-body{padding:1rem 1.2rem;display:flex;flex-direction:column;gap:0.6rem}
+  .profile-row{display:flex;justify-content:space-between;align-items:center;font-size:0.78rem}
+  .profile-row-label{color:var(--muted);font-weight:600}
+  .profile-row-val{color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.73rem}
+  .profile-footer{padding:0.8rem 1.2rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;border:none;transition:all 0.15s}
+  .btn-activate{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000}
+  .btn-activate:hover{opacity:0.9;transform:translateY(-1px)}
+  .btn-test{background:var(--deep);color:var(--text);border:1px solid var(--border)}
+  .btn-test:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-edit{background:var(--deep);color:var(--muted);border:1px solid var(--border)}
+  .btn-edit:hover{color:#fff;border-color:var(--border)}
+  .btn-delete{background:var(--deep);color:var(--danger);border:1px solid #ff456020}
+  .btn-delete:hover{background:#ff456015}
+  .btn-primary{background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000;padding:9px 20px}
+  .btn-ghost{background:var(--panel);color:var(--text);border:1px solid var(--border);padding:9px 16px}
+  /* Add new profile button */
+  .add-card{background:var(--deep);border:2px dashed var(--border);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:2rem;cursor:pointer;transition:all 0.2s;min-height:200px}
+  .add-card:hover{border-color:var(--accent);background:#00d4ff08}
+  .add-card svg{width:32px;height:32px;color:var(--muted)}
+  .add-card:hover svg{color:var(--accent)}
+  .add-card span{font-size:0.82rem;font-weight:700;color:var(--muted)}
+  .add-card:hover span{color:var(--accent)}
+  /* Info banner */
+  .info-banner{background:#00d4ff0a;border:1px solid #00d4ff20;border-radius:10px;padding:0.9rem 1.2rem;margin-bottom:1.4rem;display:flex;align-items:flex-start;gap:10px;font-size:0.78rem;color:var(--text);line-height:1.6}
+  .info-banner svg{width:16px;height:16px;color:var(--accent);flex-shrink:0;margin-top:1px}
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:#000000cc;backdrop-filter:blur(8px);z-index:400;display:flex;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity 0.25s}
+  .overlay.open{opacity:1;pointer-events:all}
+  .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;width:100%;max-width:560px;transform:translateY(20px);transition:transform 0.25s}
+  .overlay.open .modal-box{transform:translateY(0)}
+  .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)}
+  .modal-hdr h3{font-size:0.95rem;font-weight:800;color:#fff}
+  .modal-hdr p{font-size:0.72rem;color:var(--muted);margin-top:2px}
+  .modal-body{padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:0.9rem}
+  .modal-ftr{padding:0.9rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.6rem}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+  .field input,.field select{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:0.8rem;color:var(--text);outline:none;width:100%;transition:border-color 0.2s}
+  .field input:focus,.field select:focus{border-color:var(--accent)}
+  .field .hint{font-size:0.67rem;color:var(--muted);line-height:1.5}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem}
+  /* Type selector */
+  .type-pills{display:flex;gap:0.5rem}
+  .type-pill{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;text-align:center;transition:all 0.15s;background:var(--card)}
+  .type-pill.sel{border-color:var(--accent);background:#00d4ff12;color:var(--accent)}
+  .type-pill-icon{font-size:0.72rem;font-weight:800;font-family:'Share Tech Mono',monospace;color:var(--accent);letter-spacing:0.04em;margin-bottom:6px;background:var(--border);border-radius:4px;padding:3px 6px;display:inline-block}
+  .type-pill-label{font-size:0.76rem;font-weight:700;color:inherit}
+  .type-pill-sub{font-size:0.66rem;color:var(--muted);margin-top:2px}
+  /* Test result */
+  .test-result{padding:8px 12px;border-radius:7px;font-size:0.76rem;font-weight:600;display:none}
+  .test-result.ok{background:#00e5a015;color:var(--success);border:1px solid #00e5a030;display:block}
+  .test-result.fail{background:#ff456015;color:var(--danger);border:1px solid #ff456030;display:block}
+  /* Scrollbar */
+  .main::-webkit-scrollbar{width:5px}
+  .main::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .profile-card{animation:fadeUp 0.4s ease both}
+</style>
+</head>
+<body>
+<script src="config.js"></script>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 52 52" fill="none"><path d="M26 4L6 14v14c0 11 8.7 21.3 20 24 11.3-2.7 20-13 20-24V14L26 4z" fill="#00d4ff18" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 14a6 6 0 100 12 6 6 0 000-12z" fill="#00d4ff40" stroke="#00d4ff" stroke-width="1.5"/><path d="M26 26v8M22 34h8" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round"/></svg>
+    <div class="sidebar-logo-text">Phish<span>Guard</span></div>
+  </div>
+  <div class="sidebar-section">Main Menu</div>
+  <a class="nav-item" href="admin-dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a class="nav-item" href="campaign-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>Campaigns</a>
+  <a class="nav-item" href="email-templates.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Templates</a>
+  <a class="nav-item" href="landing-pages.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Landing Pages</a>
+  <a class="nav-item" href="inbox.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox</a>
+  <a class="nav-item" href="employees.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
+  <a class="nav-item" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training</a>
+  <div class="sidebar-section">Configuration</div>
+  <a class="nav-item active" href="phish-profiles.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/><circle cx="18" cy="5" r="3" fill="currentColor" stroke="none"/></svg>Phish Profiles</a>
+  <a class="nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="avatar" id="sidebarAv">SA</div>
+      <div>
+        <div class="user-name" id="sidebarName">Super Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div>
+      <h1>Phish Profiles</h1>
+      <p>Configure SMTP sending profiles for your phishing campaigns</p>
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Profile
+    </button>
+  </div>
+
+  <div class="content">
+
+    <div class="info-banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>
+        The <strong>active profile</strong> is used for all campaign sends. Mailhog delivers to your local inbox — good for testing.
+        Gmail SMTP sends real emails to real addresses — use for live campaigns.
+        Only one profile can be active at a time.
+      </div>
+    </div>
+
+    <div class="profile-grid" id="profileGrid">
+      <div style="text-align:center;padding:3rem;color:var(--muted);grid-column:1/-1">
+        
+        Loading profiles...
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Add / Edit Profile Modal ── -->
+<div class="overlay" id="profileOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <div>
+        <h3 id="modalTitle">Add Sending Profile</h3>
+        <p id="modalSub">Configure an SMTP profile for campaign delivery</p>
+      </div>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.3rem;line-height:1">&times;</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Type selector -->
+      <div class="field">
+        <label>Profile Type</label>
+        <div class="type-pills">
+          <div class="type-pill sel" id="pill_mailhog" onclick="selectType('mailhog')">
+            <div class="type-pill-icon">MH</div>
+            <div class="type-pill-label">Mailhog</div>
+            <div class="type-pill-sub">Local testing</div>
+          </div>
+          <div class="type-pill" id="pill_gmail" onclick="selectType('gmail')">
+            <div class="type-pill-icon">G</div>
+            <div class="type-pill-label">Gmail SMTP</div>
+            <div class="type-pill-sub">Real emails</div>
+          </div>
+          <div class="type-pill" id="pill_custom" onclick="selectType('custom')">
+            <div class="type-pill-icon">SMTP</div>
+            <div class="type-pill-label">Custom</div>
+            <div class="type-pill-sub">Any SMTP</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Profile Name *</label>
+        <input id="f_name" placeholder="e.g. Mailhog Local, Company Gmail"/>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>From Name</label>
+          <input id="f_from_name" placeholder="e.g. IT Support"/>
+        </div>
+        <div class="field">
+          <label>From Email *</label>
+          <input id="f_from_email" type="email" placeholder="e.g. it@company.com"/>
+        </div>
+      </div>
+
+      <!-- SMTP fields (hidden for Mailhog) -->
+      <div id="smtp_fields">
+        <div class="grid-2" style="margin-bottom:0.9rem">
+          <div class="field">
+            <label>SMTP Host</label>
+            <input id="f_host" placeholder="smtp.gmail.com"/>
+          </div>
+          <div class="field">
+            <label>Port</label>
+            <input id="f_port" type="number" placeholder="587"/>
+          </div>
+        </div>
+        <div class="grid-2" style="margin-bottom:0.9rem">
+          <div class="field">
+            <label>Username / Email</label>
+            <input id="f_username" placeholder="your@gmail.com"/>
+          </div>
+          <div class="field">
+            <label>Password / App Password</label>
+            <input id="f_password" type="password" placeholder="••••••••"/>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Security</label>
+            <select id="f_security">
+              <option value="tls">STARTTLS (port 587)</option>
+              <option value="ssl">SSL/TLS (port 465)</option>
+              <option value="none">None (port 25/1025)</option>
+            </select>
+          </div>
+          <div class="field" style="justify-content:flex-end;padding-bottom:4px">
+            <label>Ignore Cert Errors</label>
+            <select id="f_ignore_cert">
+              <option value="1">Yes (recommended for testing)</option>
+              <option value="0">No (production)</option>
+            </select>
+          </div>
+        </div>
+        <div id="gmail_hint" class="field" style="display:none;margin-top:0.6rem">
+          <div class="hint" style="background:#ffb30010;border:1px solid #ffb30030;border-radius:6px;padding:8px 10px;color:var(--warn)">
+            Gmail requires an <strong>App Password</strong> — not your regular password.
+            Enable 2FA on your Google account, then go to
+            <strong>Google Account → Security → App Passwords</strong> to generate one.
+            Use <code>smtp.gmail.com</code> port <code>587</code> with STARTTLS.
+          </div>
+        </div>
+      </div>
+
+      <!-- Test result -->
+      <div id="testResult" class="test-result"></div>
+
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" id="testBtn" onclick="testCurrentProfile()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Test Connection
+      </button>
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let profiles   = [];
+let editingId  = null;
+let activeType = 'mailhog';
+
+async function init() {
+  const user = requireAuth('admin');
+  if (!user) return;
+  if (document.getElementById('sidebarName')) document.getElementById('sidebarName').textContent = user.name;
+  if (document.getElementById('sidebarAv'))   document.getElementById('sidebarAv').textContent   = user.name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+  await loadProfiles();
+}
+
+async function loadProfiles() {
+  try {
+    profiles = await apiFetch('smtp-profiles');
+    renderGrid();
+  } catch(e) {
+    document.getElementById('profileGrid').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--danger)">Could not load profiles — is app.py running?</div>';
+  }
+}
+
+function renderGrid() {
+  const grid = document.getElementById('profileGrid');
+  if (!profiles.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted)">No profiles yet — add one above</div>';
+    return;
+  }
+
+  const TYPE_ICON  = { mailhog:'MH', gmail:'G', custom:'SMTP' };
+  const TYPE_LABEL = { mailhog:'Mailhog (Local)', gmail:'Gmail SMTP', custom:'Custom SMTP' };
+
+  grid.innerHTML = profiles.map(p => {
+    const icon  = TYPE_ICON[p.type]  || 'SMTP';
+    const label = TYPE_LABEL[p.type] || 'Custom SMTP';
+    const isActive = p.is_active;
+    return `
+    <div class="profile-card ${isActive?'active-profile':''}">
+      ${isActive ? '<div class="active-badge">Active</div>' : ''}
+      <div class="profile-card-header">
+        <div class="profile-icon ${p.type}">${icon}</div>
+        <div>
+          <div class="profile-card-title">${p.name}</div>
+          <div class="profile-card-sub">${label}</div>
+        </div>
+      </div>
+      <div class="profile-body">
+        <div class="profile-row">
+          <span class="profile-row-label">Host</span>
+          <span class="profile-row-val">${p.host}:${p.port}</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label">From</span>
+          <span class="profile-row-val">${p.from_name} &lt;${p.from_email}&gt;</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label">Auth</span>
+          <span class="profile-row-val">${p.username ? p.username : 'None'}</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-row-label">Security</span>
+          <span class="profile-row-val">${p.use_tls?'STARTTLS':p.use_ssl?'SSL/TLS':'None'}</span>
+        </div>
+      </div>
+      <div class="profile-footer">
+        ${!isActive ? `<button class="btn btn-activate" onclick="activateProfile(${p.id})">Set Active</button>` : '<span style="font-size:0.74rem;color:var(--accent);font-weight:700;padding:7px 0">Active</span>'}
+        <button class="btn btn-test" onclick="testProfile(${p.id})">Test</button>
+        <button class="btn btn-edit" onclick="openEditModal(${p.id})">Edit</button>
+        ${!isActive ? `<button class="btn btn-delete" onclick="deleteProfile(${p.id})">Delete</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') + `
+  <div class="add-card" onclick="openAddModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>Add New Profile</span>
+  </div>`;
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add Sending Profile';
+  document.getElementById('modalSub').textContent   = 'Configure a new SMTP profile';
+  document.getElementById('f_name').value       = '';
+  document.getElementById('f_from_name').value  = 'PhishGuard';
+  document.getElementById('f_from_email').value = '';
+  document.getElementById('f_host').value       = '127.0.0.1';
+  document.getElementById('f_port').value       = '1025';
+  document.getElementById('f_username').value   = '';
+  document.getElementById('f_password').value   = '';
+  document.getElementById('f_security').value   = 'none';
+  document.getElementById('f_ignore_cert').value = '1';
+  document.getElementById('testResult').className = 'test-result';
+  selectType('mailhog');
+  document.getElementById('profileOverlay').classList.add('open');
+}
+
+function openEditModal(id) {
+  const p = profiles.find(x => x.id === id);
+  if (!p) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Profile';
+  document.getElementById('modalSub').textContent   = 'Update SMTP configuration';
+  document.getElementById('f_name').value       = p.name;
+  document.getElementById('f_from_name').value  = p.from_name;
+  document.getElementById('f_from_email').value = p.from_email;
+  document.getElementById('f_host').value       = p.host;
+  document.getElementById('f_port').value       = p.port;
+  document.getElementById('f_username').value   = p.username || '';
+  document.getElementById('f_password').value   = p.password || '';
+  document.getElementById('f_security').value   = p.use_tls ? 'tls' : p.use_ssl ? 'ssl' : 'none';
+  document.getElementById('f_ignore_cert').value = String(p.ignore_cert_errors);
+  document.getElementById('testResult').className = 'test-result';
+  selectType(p.type || 'mailhog');
+  document.getElementById('profileOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('profileOverlay').classList.remove('open');
+  editingId = null;
+}
+
+function selectType(type) {
+  activeType = type;
+  ['mailhog','gmail','custom'].forEach(t => {
+    document.getElementById('pill_'+t).classList.toggle('sel', t === type);
+  });
+  const smtp = document.getElementById('smtp_fields');
+  const gmailHint = document.getElementById('gmail_hint');
+
+  if (type === 'mailhog') {
+    smtp.style.display = 'none';
+    document.getElementById('f_host').value = '127.0.0.1';
+    document.getElementById('f_port').value = '1025';
+    document.getElementById('f_security').value = 'none';
+    if (!document.getElementById('f_name').value)
+      document.getElementById('f_name').value = 'Mailhog (Local)';
+    if (!document.getElementById('f_from_email').value)
+      document.getElementById('f_from_email').value = 'phishguard@localhost';
+  } else if (type === 'gmail') {
+    smtp.style.display = 'block';
+    gmailHint.style.display = 'block';
+    document.getElementById('f_host').value = 'smtp.gmail.com';
+    document.getElementById('f_port').value = '587';
+    document.getElementById('f_security').value = 'tls';
+    document.getElementById('f_ignore_cert').value = '0';
+    if (!document.getElementById('f_name').value)
+      document.getElementById('f_name').value = 'Gmail SMTP';
+  } else {
+    smtp.style.display = 'block';
+    gmailHint.style.display = 'none';
+  }
+}
+
+async function saveProfile() {
+  const name       = document.getElementById('f_name').value.trim();
+  const from_email = document.getElementById('f_from_email').value.trim();
+  if (!name)       { showToast('Profile name is required', 'error'); return; }
+  if (!from_email) { showToast('From email is required', 'error');   return; }
+
+  const sec = document.getElementById('f_security').value;
+  const payload = {
+    name,
+    type:               activeType,
+    host:               document.getElementById('f_host').value.trim()     || '127.0.0.1',
+    port:               parseInt(document.getElementById('f_port').value)  || 1025,
+    username:           document.getElementById('f_username').value.trim(),
+    password:           document.getElementById('f_password').value,
+    from_name:          document.getElementById('f_from_name').value.trim() || 'PhishGuard',
+    from_email,
+    use_tls:            sec === 'tls' ? 1 : 0,
+    use_ssl:            sec === 'ssl' ? 1 : 0,
+    ignore_cert_errors: parseInt(document.getElementById('f_ignore_cert').value),
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving...'; btn.disabled = true;
+
+  try {
+    if (editingId) {
+      await apiFetch('smtp-profiles/' + editingId, 'PUT', payload);
+      showToast('Profile updated ✅', 'success');
+    } else {
+      await apiFetch('smtp-profiles', 'POST', payload);
+      showToast('Profile created ✅', 'success');
+    }
+    closeModal();
+    await loadProfiles();
+  } catch(e) {
+    showToast('Save failed: ' + e.message, 'error');
+  }
+  btn.textContent = 'Save Profile'; btn.disabled = false;
+}
+
+async function activateProfile(id) {
+  try {
+    await apiFetch('smtp-profiles/' + id + '/activate', 'POST');
+    showToast('Profile activated ✅', 'success');
+    await loadProfiles();
+  } catch(e) {
+    showToast('Failed: ' + e.message, 'error');
+  }
+}
+
+async function deleteProfile(id) {
+  const p = profiles.find(x => x.id === id);
+  if (!confirm(`Delete profile "${p?.name}"? This cannot be undone.`)) return;
+  try {
+    await apiFetch('smtp-profiles/' + id, 'DELETE');
+    showToast('Profile deleted', 'success');
+    await loadProfiles();
+  } catch(e) {
+    showToast('Delete failed: ' + e.message, 'error');
+  }
+}
+
+async function testProfile(id) {
+  showToast('Testing profile...', 'success');
+  try {
+    const r = await apiFetch('smtp-profiles/' + id + '/test', 'POST');
+    if (r.success) showToast('Connection OK — ' + r.message, 'success');
+    else           showToast('Test failed: ' + r.error, 'error');
+  } catch(e) {
+    showToast('Test failed: ' + e.message, 'error');
+  }
+}
+
+async function testCurrentProfile() {
+  // Test with current modal values without saving
+  const resultEl = document.getElementById('testResult');
+  const btn = document.getElementById('testBtn');
+  btn.textContent = 'Testing...'; btn.disabled = true;
+  resultEl.className = 'test-result';
+
+  // Save temporarily then test then delete
+  const sec = document.getElementById('f_security').value;
+  const payload = {
+    name:               '__PG_TEST_TEMP__',
+    type:               activeType,
+    host:               document.getElementById('f_host').value.trim() || '127.0.0.1',
+    port:               parseInt(document.getElementById('f_port').value) || 1025,
+    username:           document.getElementById('f_username').value.trim(),
+    password:           document.getElementById('f_password').value,
+    from_name:          document.getElementById('f_from_name').value.trim() || 'PhishGuard',
+    from_email:         document.getElementById('f_from_email').value.trim() || 'test@phishguard.local',
+    use_tls:            sec === 'tls' ? 1 : 0,
+    use_ssl:            sec === 'ssl' ? 1 : 0,
+    ignore_cert_errors: 1,
+  };
+
+  try {
+    // Delete any existing temp profile
+    const existing = profiles.find(p => p.name === '__PG_TEST_TEMP__');
+    if (existing) await apiFetch('smtp-profiles/' + existing.id, 'DELETE');
+    // Create temp, test, delete
+    const created = await apiFetch('smtp-profiles', 'POST', payload);
+    const testRes = await apiFetch('smtp-profiles/' + created.id + '/test', 'POST');
+    await apiFetch('smtp-profiles/' + created.id, 'DELETE');
+
+    if (testRes.success) {
+      resultEl.textContent = 'Connection OK — profile pushed to GoPhish successfully';
+      resultEl.className = 'test-result ok';
+    } else {
+      resultEl.textContent = 'Failed: ' + (testRes.error || 'Unknown error');
+      resultEl.className = 'test-result fail';
+    }
+  } catch(e) {
+    resultEl.textContent = 'Error: ' + e.message;
+    resultEl.className = 'test-result fail';
+  }
+  btn.textContent = 'Test Connection'; btn.disabled = false;
+  await loadProfiles();
+}
+
+function logout() { clearSession(); window.location.href = 'login.html'; }
+
+init();
+</script>
+</body>
+</html>

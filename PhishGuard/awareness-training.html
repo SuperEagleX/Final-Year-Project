@@ -138,7 +138,7 @@
       <div class="reg-logo-text">Phish<span>Guard</span></div>
     </div>
     <h2>&#128218; Security Awareness Training</h2>
-    <p>You have been redirected to this page because you have FAILED a phishing simulation. Please complete mandatory security awareness training. Before you begin, please enter your details below. This helps your organisation track training completion and improve future simulations.</p>
+    <p>Before you begin, please enter your details below. This helps your organisation track training completion and improve future simulations.</p>
     <div class="reg-field">
       <label class="reg-label" for="regName">Full Name *</label>
       <input class="reg-input" id="regName" type="text" placeholder="e.g. Sarah Johnson" autocomplete="name"/>
@@ -147,6 +147,10 @@
       <label class="reg-label" for="regDept">Department *</label>
       <input class="reg-input" id="regDept" type="text" placeholder="e.g. Finance, HR, IT..." autocomplete="organization-title"/>
     </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:0.8rem">
+          <label style="font-size:0.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Email Address (optional — for progress tracking)</label>
+          <input id="regEmail" type="email" placeholder="your@company.com" style="background:var(--deep);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'Share Tech Mono',monospace;font-size:0.85rem;color:var(--text);outline:none;width:100%;transition:border-color 0.2s"/>
+        </div>
     <div class="reg-error" id="regError"></div>
     <button class="reg-btn" id="regBtn" onclick="submitRegistration()">Begin Training &#8594;</button>
     <p class="reg-note">&#128274; Your details are stored securely and only used by your organisation's security team.</p>
@@ -215,10 +219,27 @@
 let MODULES = []; // populated from API
 
 
-const STORE_KEY = 'pg_training_progress';
+// Per-user progress key — based on logged-in user email or training session email
+function getStoreKey() {
+  try {
+    // Prefer logged-in employee session
+    const u = JSON.parse(localStorage.getItem('pg_user')||'null');
+    if (u && u.email) return 'pg_training_' + u.email;
+  } catch(e){}
+  // Fall back to training session email (set after registration)
+  const sessEmail = sessionStorage.getItem('pg_training_email');
+  if (sessEmail) return 'pg_training_' + sessEmail;
+  // Fall back to session key
+  const sessKey = sessionStorage.getItem('pg_training_session');
+  if (sessKey && sessKey !== 'offline') return 'pg_training_sess_' + sessKey;
+  return 'pg_training_anon';
+}
 let state = { completed:{}, scores:{} };
-function loadState() { try { state = JSON.parse(localStorage.getItem(STORE_KEY)||'{"completed":{},"scores":{}}'); } catch(e){} }
-function saveState() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function loadState() {
+  try { state = JSON.parse(localStorage.getItem(getStoreKey())||'{"completed":{},"scores":{}}'); }
+  catch(e){ state = { completed:{}, scores:{} }; }
+}
+function saveState() { localStorage.setItem(getStoreKey(), JSON.stringify(state)); }
 
 const STRIPE_COLORS = {1:'var(--accent)',2:'var(--success)',3:'var(--warn)',4:'var(--accent2)',5:'#c39bd3',6:'var(--danger)',7:'#2ecc71',8:'var(--muted)'};
 
@@ -373,6 +394,10 @@ async function submitRegistration() {
       sessionStorage.setItem('pg_training_session', data.session_key);
       sessionStorage.setItem('pg_training_name', name);
       sessionStorage.setItem('pg_training_dept', dept);
+      // Save email if provided for per-user state key
+      const emailEl = document.getElementById('regEmail');
+      if (emailEl && emailEl.value) sessionStorage.setItem('pg_training_email', emailEl.value.trim().toLowerCase());
+      loadState(); // Load THIS user's state after registering
       hideRegistration();
     } else {
       document.getElementById('regError').textContent = data.error || 'Registration failed.';

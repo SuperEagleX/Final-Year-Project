@@ -74,12 +74,24 @@
     .conn-ok{background:#00e5a015;color:var(--success);border:1px solid #00e5a030}
     .conn-fail{background:#ff456015;color:var(--danger);border:1px solid #ff456030}
     .conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+    .u-tab { padding:5px 14px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.74rem;font-weight:700;cursor:pointer;background:var(--deep);color:var(--muted);border:1px solid var(--border);transition:all 0.15s }
+    .u-tab.active-tab { background:var(--border);color:var(--accent);border-color:var(--accent) }
+    .u-table { width:100%;border-collapse:collapse }
+    .u-table th { font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;padding:0 0 8px;border-bottom:1px solid var(--border);text-align:left }
+    .u-table td { padding:10px 0;border-bottom:1px solid #0d284740;font-size:0.82rem;vertical-align:middle }
+    .u-table tr:last-child td { border-bottom:none }
+    .role-badge { display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.66rem;font-weight:700;text-transform:uppercase }
+    .role-badge.admin { background:#0077ff18;color:var(--accent2) }
+    .role-badge.employee { background:#00e5a015;color:var(--success) }
+    .u-action { background:none;border:none;cursor:pointer;padding:4px 7px;border-radius:5px;font-size:0.76rem;transition:background 0.15s }
+    .u-action:hover { background:var(--border) }
     @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
     @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
     .spinning{animation:spin 1s linear infinite}
   </style>
 </head>
 <body>
+<script src="config.js"></script>
 
 <aside class="sidebar">
   <div class="sidebar-logo">
@@ -94,7 +106,8 @@
   <a class="nav-item" href="inbox.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>Inbox</a>
   <a class="nav-item" href="employees.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Employees</a>
   <a class="nav-item" href="training-admin.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Training</a>
-  <div class="sidebar-section">System</div>
+  <div class="sidebar-section">Configuration</div>
+  <a class="nav-item" href="phish-profiles.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.09 1.18 2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/><circle cx="18" cy="5" r="3" fill="currentColor" stroke="none"/></svg>Phish Profiles</a>
   <a class="nav-item active" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>Settings</a>
   <div class="sidebar-footer">
     <div class="user-chip">
@@ -245,7 +258,7 @@
       <!-- ── Notifications ── -->
       <div class="settings-section" style="animation-delay:0.15s">
         <div class="settings-section-header">
-          <div class="settings-section-icon" style="background:#00e5a015">&#128276;</div>
+          <div class="settings-section-icon" style="background:#00e5a015"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg></div>
           <div>
             <div class="settings-section-title">Notifications</div>
             <div class="settings-section-sub">Control what events trigger in-app alerts</div>
@@ -285,8 +298,80 @@
         </div>
       </div>
 
-      <!-- ── Risk Score ── -->
-      <div class="settings-section" style="animation-delay:0.2s">
+      <!-- ── User Management ── -->
+      <div class="settings-section" style="animation-delay:0.15s">
+        <div class="settings-section-header">
+          <div class="settings-section-icon" style="background:#9b59b615">&#128101;</div>
+          <div>
+            <div class="settings-section-title">User Management</div>
+            <div class="settings-section-sub">Manage administrator and employee accounts</div>
+          </div>
+          <button onclick="openAddUserModal()" style="margin-left:auto;padding:7px 14px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000;border:none;display:flex;align-items:center;gap:6px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add User
+          </button>
+        </div>
+        <div class="settings-body">
+          <!-- Role filter tabs -->
+          <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+            <button onclick="filterUsers('all')"   id="uTab_all"   class="u-tab active-tab">All Users</button>
+            <button onclick="filterUsers('admin')" id="uTab_admin" class="u-tab">Admins</button>
+            <button onclick="filterUsers('employee')" id="uTab_emp" class="u-tab">Employees</button>
+          </div>
+          <div id="userTable" style="font-size:0.82rem">
+            <div style="color:var(--muted);text-align:center;padding:1.5rem">Loading users...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Add/Edit User Modal ── -->
+      <div id="userModalOverlay" onclick="if(event.target===this)closeUserModal()" style="position:fixed;inset:0;background:#000000cc;backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s">
+        <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:480px;padding:0;transform:translateY(20px);transition:transform 0.25s" id="userModalBox">
+          <div style="padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:0.95rem;font-weight:800;color:#fff" id="userModalTitle">Add User</div>
+              <div style="font-size:0.72rem;color:var(--muted);margin-top:2px">Create a new admin or employee account</div>
+            </div>
+            <button onclick="closeUserModal()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.3rem">&times;</button>
+          </div>
+          <div style="padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:0.9rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Full Name *</label>
+                <input id="um_name" class="settings-input" placeholder="John Doe" style="width:100%"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Role *</label>
+                <select id="um_role" class="settings-input" style="width:100%">
+                  <option value="admin">Administrator</option>
+                  <option value="employee" selected>Employee</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Email Address *</label>
+              <input id="um_email" type="email" class="settings-input" placeholder="user@company.com" style="width:100%"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Department</label>
+                <input id="um_dept" class="settings-input" placeholder="e.g. IT, Finance" style="width:100%"/>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <label style="font-size:0.66rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em" id="um_pass_label">Password *</label>
+                <input id="um_pass" type="password" class="settings-input" placeholder="Min 6 characters" style="width:100%"/>
+              </div>
+            </div>
+            <div id="um_pass_hint" style="font-size:0.72rem;color:var(--muted)">Leave password blank to keep existing password when editing.</div>
+          </div>
+          <div style="padding:0.9rem 1.4rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:0.6rem">
+            <button onclick="closeUserModal()" style="padding:8px 16px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;background:var(--panel);color:var(--text);border:1px solid var(--border)">Cancel</button>
+            <button id="um_save_btn" onclick="saveUser()" style="padding:8px 18px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#000;border:none">Save User</button>
+          </div>
+        </div>
+      </div>
+
+<div class="settings-section" style="animation-delay:0.2s">
         <div class="settings-section-header">
           <div class="settings-section-icon" style="background:#ff456015">&#128209;</div>
           <div>
@@ -380,7 +465,6 @@
   </div>
 </main>
 
-<script src="config.js"></script>
 <script>
 async function init() {
   const user = requireAuth('admin');
@@ -393,6 +477,7 @@ async function init() {
   }
   loadSavedSettings();
   checkConnections();
+  loadUsers();
 }
 
 // ── Load / save settings from localStorage ────────────────────────────────
@@ -533,6 +618,201 @@ function signOut() {
 }
 
 init();
+
+// ── User Management ───────────────────────────────────────────────────────
+let allUsers     = [];
+let userFilter   = 'all';
+let editingUserId = null;
+
+async function loadUsers() {
+  try {
+    allUsers = await apiFetch('admin/users');
+    renderUserTable();
+  } catch(e) {
+    document.getElementById('userTable').innerHTML =
+      '<div style="color:var(--muted);text-align:center;padding:1rem">Could not load users</div>';
+  }
+}
+
+function filterUsers(role) {
+  userFilter = role;
+  ['all','admin','emp'].forEach(t => {
+    const el = document.getElementById('uTab_' + t);
+    if (el) el.classList.remove('active-tab');
+  });
+  const activeId = role === 'employee' ? 'uTab_emp' : 'uTab_' + role;
+  const activeEl = document.getElementById(activeId);
+  if (activeEl) activeEl.classList.add('active-tab');
+  renderUserTable();
+}
+
+function renderUserTable() {
+  const box = document.getElementById('userTable');
+  if (!box) return;
+  const filtered = userFilter === 'all' ? allUsers : allUsers.filter(u => u.role === userFilter);
+  if (!filtered.length) {
+    box.innerHTML = '<div style="color:var(--muted);text-align:center;padding:1.5rem">No users found</div>';
+    return;
+  }
+  const BGCOLS = ['#0077ff','#9b59b6','#e67e22','#2ecc71','#e74c3c','#1abc9c'];
+  const selfEmail = (function(){ try{ return JSON.parse(localStorage.getItem('pg_user')||'{}').email||''; }catch(e){ return ''; } })();
+
+  const table = document.createElement('table');
+  table.className = 'u-table';
+  table.innerHTML = '<thead><tr><th style="width:32px"></th><th>Name</th><th>Email</th><th>Department</th><th>Role</th><th>Risk</th><th style="text-align:right">Actions</th></tr></thead>';
+  const tbody = document.createElement('tbody');
+
+  filtered.forEach(u => {
+    const bg  = BGCOLS[u.email.charCodeAt(0) % BGCOLS.length];
+    const ini = (u.name||'?').split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,2);
+    const isSelf = u.email === selfEmail;
+    const riskColor = u.risk_score>=70 ? 'var(--danger)' : u.risk_score>=30 ? 'var(--warn)' : 'var(--success)';
+
+    const tr = document.createElement('tr');
+
+    // Avatar
+    const tdAv = document.createElement('td');
+    tdAv.innerHTML = '<div style="width:28px;height:28px;border-radius:50%;background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:0.64rem;font-weight:700;color:#fff">'+ini+'</div>';
+    tr.appendChild(tdAv);
+
+    // Name
+    const tdName = document.createElement('td');
+    tdName.style.fontWeight = '600'; tdName.style.color = '#fff';
+    tdName.textContent = u.name + (isSelf ? ' (you)' : '');
+    if (isSelf) { const s = document.createElement('span'); s.style.cssText='font-size:0.62rem;color:var(--accent);margin-left:4px'; s.textContent='(you)'; tdName.textContent=u.name; tdName.appendChild(s); }
+    tr.appendChild(tdName);
+
+    // Email
+    const tdEmail = document.createElement('td');
+    tdEmail.style.cssText = 'color:var(--muted);font-size:0.74rem;font-family:monospace';
+    tdEmail.textContent = u.email;
+    tr.appendChild(tdEmail);
+
+    // Dept
+    const tdDept = document.createElement('td');
+    tdDept.style.color = 'var(--muted)';
+    tdDept.textContent = u.department || '—';
+    tr.appendChild(tdDept);
+
+    // Role badge
+    const tdRole = document.createElement('td');
+    const badge = document.createElement('span');
+    badge.className = 'role-badge ' + u.role;
+    badge.textContent = u.role;
+    tdRole.appendChild(badge);
+    tr.appendChild(tdRole);
+
+    // Risk
+    const tdRisk = document.createElement('td');
+    tdRisk.style.cssText = 'font-family:monospace;color:'+riskColor;
+    tdRisk.textContent = u.risk_score;
+    tr.appendChild(tdRisk);
+
+    // Actions
+    const tdAct = document.createElement('td');
+    tdAct.style.textAlign = 'right';
+    const editBtn = document.createElement('button');
+    editBtn.className = 'u-action'; editBtn.title = 'Edit';
+    editBtn.style.color = 'var(--muted)'; editBtn.innerHTML = '&#9998;';
+    editBtn.onclick = () => openEditUser(u.id);
+    tdAct.appendChild(editBtn);
+    if (!isSelf) {
+      const delBtn = document.createElement('button');
+      delBtn.className = 'u-action'; delBtn.title = 'Delete';
+      delBtn.style.color = 'var(--danger)'; delBtn.innerHTML = '&#128465;';
+      delBtn.onclick = () => deleteUser(u.id, u.name);
+      tdAct.appendChild(delBtn);
+    }
+    tr.appendChild(tdAct);
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  box.innerHTML = '';
+  box.appendChild(table);
+}
+
+
+function openAddUserModal() {
+  editingUserId = null;
+  document.getElementById('userModalTitle').textContent = 'Add User';
+  document.getElementById('um_pass_label').textContent = 'Password *';
+  document.getElementById('um_pass_hint').style.display = 'none';
+  ['um_name','um_email','um_dept','um_pass'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('um_role').value = 'employee';
+  const ov = document.getElementById('userModalOverlay');
+  ov.style.opacity='1'; ov.style.pointerEvents='all';
+  document.getElementById('userModalBox').style.transform='translateY(0)';
+}
+
+function openEditUser(id) {
+  const u = allUsers.find(x => x.id === id);
+  if (!u) return;
+  editingUserId = id;
+  document.getElementById('userModalTitle').textContent = 'Edit User';
+  document.getElementById('um_pass_label').textContent = 'New Password';
+  document.getElementById('um_pass_hint').style.display = 'block';
+  document.getElementById('um_name').value  = u.name  || '';
+  document.getElementById('um_email').value = u.email || '';
+  document.getElementById('um_dept').value  = u.department || '';
+  document.getElementById('um_role').value  = u.role  || 'employee';
+  document.getElementById('um_pass').value  = '';
+  const ov = document.getElementById('userModalOverlay');
+  ov.style.opacity='1'; ov.style.pointerEvents='all';
+  document.getElementById('userModalBox').style.transform='translateY(0)';
+}
+
+function closeUserModal() {
+  const ov = document.getElementById('userModalOverlay');
+  ov.style.opacity='0'; ov.style.pointerEvents='none';
+  document.getElementById('userModalBox').style.transform='translateY(20px)';
+  editingUserId = null;
+}
+
+async function saveUser() {
+  const name  = document.getElementById('um_name').value.trim();
+  const email = document.getElementById('um_email').value.trim();
+  const role  = document.getElementById('um_role').value;
+  const dept  = document.getElementById('um_dept').value.trim();
+  const pass  = document.getElementById('um_pass').value;
+
+  if (!name)  { showToast('Name is required','error'); return; }
+  if (!email) { showToast('Email is required','error'); return; }
+  if (!editingUserId && !pass) { showToast('Password is required for new users','error'); return; }
+
+  const btn = document.getElementById('um_save_btn');
+  btn.textContent='Saving...'; btn.disabled=true;
+
+  try {
+    const payload = { name, email, role, department: dept };
+    if (pass) payload.password = pass;
+
+    if (editingUserId) {
+      await apiFetch('admin/users/' + editingUserId, 'PUT', payload);
+      showToast('User updated ✅','success');
+    } else {
+      await apiFetch('admin/users', 'POST', payload);
+      showToast('User created ✅','success');
+    }
+    closeUserModal();
+    await loadUsers();
+  } catch(e) {
+    showToast('Failed: ' + e.message,'error');
+  }
+  btn.textContent='Save User'; btn.disabled=false;
+}
+
+async function deleteUser(id, name) {
+  if (!confirm('Delete user "' + name + '"? This cannot be undone.')) return;
+  try {
+    await apiFetch('admin/users/' + id, 'DELETE');
+    showToast('User "' + name + '" deleted','success');
+    await loadUsers();
+  } catch(e) {
+    showToast('Delete failed: ' + e.message,'error');
+  }
+}
+
 </script>
 </body>
 </html>
