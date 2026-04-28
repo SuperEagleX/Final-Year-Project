@@ -33,12 +33,7 @@ except ImportError:
                 line = line.strip()
                 if line and not line.startswith('#') and '=' in line:
                     key, _, val = line.partition('=')
-                    key = key.strip()
-                    val = val.strip()
-                    # Strip surrounding quotes (single or double)
-                    if (val.startswith('"') and val.endswith('"')) or                        (val.startswith("'") and val.endswith("'")):
-                        val = val[1:-1]
-                    os.environ.setdefault(key, val)
+                    os.environ.setdefault(key.strip(), val.strip())
 import json
 from datetime import datetime, timedelta
 
@@ -54,27 +49,10 @@ BACKEND_URL  = os.getenv('BACKEND_URL',  'http://127.0.0.1:5000')
 
 # ── Database Setup ─────────────────────────────────────────────────────────
 def get_db():
-    """Get a database connection with WAL mode and timeout to prevent locking."""
-    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
-    conn.execute('PRAGMA synchronous=NORMAL')
-    conn.execute('PRAGMA busy_timeout=30000')
-    conn.execute('PRAGMA cache_size=-64000')
+    """Get a database connection."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # Return rows as dictionaries
     return conn
-
-
-def init_wal():
-    """Enable WAL mode on the database file itself (run once at startup)."""
-    try:
-        conn = sqlite3.connect(DB_PATH, timeout=30)
-        conn.execute('PRAGMA journal_mode=WAL')
-        conn.execute('PRAGMA busy_timeout=30000')
-        conn.commit()
-        conn.close()
-        print('✅ WAL mode enabled on database')
-    except Exception as e:
-        print(f'⚠️  WAL init failed: {e}')
 
 
 def init_db():
@@ -875,31 +853,21 @@ def track_click():
                 print(f'⚠️ RId lookup failed: {e}')
 
     if campaign_id and email:
-        import time as _t
-        for _attempt in range(5):
-            try:
-                conn = get_db()
-                existing = conn.execute(
-                    "SELECT id FROM tracking_events WHERE campaign_id=? AND email=? AND event_type='clicked'",
-                    (campaign_id, email)
-                ).fetchone()
-                if not existing:
-                    conn.execute(
-                        "INSERT INTO tracking_events (campaign_id,email,event_type,ip_address,user_agent) VALUES (?,?,'clicked',?,?)",
-                        (campaign_id, email, request.remote_addr, request.user_agent.string)
-                    )
-                    conn.commit()
-                    print(f'🎣 Click tracked: {email} in campaign {campaign_id}')
-                conn.close()
-                update_risk_score(email)
-                break
-            except sqlite3.OperationalError as _e:
-                if 'locked' in str(_e) and _attempt < 4:
-                    _t.sleep(0.3 * (_attempt + 1))
-                else:
-                    print(f'⚠️ track_click DB error: {_e}')
-                    try: conn.close()
-                    except: pass
+        conn = get_db()
+        # Avoid duplicate click events for same email+campaign
+        existing = conn.execute(
+            "SELECT id FROM tracking_events WHERE campaign_id=? AND email=? AND event_type='clicked'",
+            (campaign_id, email)
+        ).fetchone()
+        if not existing:
+            conn.execute('''
+                INSERT INTO tracking_events (campaign_id, email, event_type, ip_address, user_agent)
+                VALUES (?, ?, 'clicked', ?, ?)
+            ''', (campaign_id, email, request.remote_addr, request.user_agent.string))
+            conn.commit()
+            print(f'🎣 Click tracked: {email} in campaign {campaign_id}')
+        conn.close()
+        update_risk_score(email)
     else:
         print(f'⚠️ Click event with no email — campaign_id={campaign_id}')
 
@@ -933,7 +901,7 @@ def track_click():
     if phishing_type in ('link', 'attachment'):
         # Straight to awareness training — mark as full fail immediately
         training_url = (
-            FRONTEND_URL + f'/awareness-training.html'
+            fFRONTEND_URL + '/awareness-training.html'
             f'?caught=1&stage=clicked&campaign_id={campaign_id}'
             f'&phishing_type={phishing_type}&category={template_category}'
         )
@@ -941,23 +909,9 @@ def track_click():
     else:
         # landing / credential → go to landing page first
         if not landing_page:
-            # Try to find landing file from template name in templates.json
-            try:
-                all_t = load_templates()
-                if campaign_id:
-                    conn_t = get_db()
-                    camp_t = conn_t.execute('SELECT template FROM campaigns WHERE id=?', (campaign_id,)).fetchone()
-                    conn_t.close()
-                    if camp_t:
-                        tmatch = next((t for t in all_t if t['name'] == camp_t['template']), None)
-                        if tmatch and tmatch.get('landing_file'):
-                            landing_page = tmatch['landing_file']
-            except Exception:
-                pass
-        if not landing_page:
             landing_page = 'it_password_reset_landing.html'
         return redirect(
-            BACKEND_URL + f'/landing/{landing_page}'
+            fBACKEND_URL + '/landing/{landing_page}'
             f'?campaign_id={campaign_id}&email={email}'
             f'&phishing_type={phishing_type}&category={template_category}'
         )
@@ -1005,7 +959,7 @@ def track_submit():
             pass
 
     redirect_url = (
-        FRONTEND_URL + '/awareness-training.html'
+        fFRONTEND_URL + '/awareness-training.html'
         f'?caught=1&stage=submitted&campaign_id={campaign_id}'
         f'&phishing_type={phishing_type_s}&category={category_s}'
     )
@@ -1264,32 +1218,6 @@ def gophish_request(endpoint, method='GET', data=None):
 
 
 
-# ── Force sync SMTP profiles from env ─────────────────────────────────────
-@app.route('/api/smtp-profiles/sync-env', methods=['POST'])
-def sync_smtp_from_env():
-    """Force update Gmail/SMTP profiles from .env variables."""
-    gmail_addr = os.getenv('GMAIL_ADDRESS', '').strip()
-    gmail_pass = os.getenv('GMAIL_APP_PASSWORD', '').strip().strip('"').strip("'").replace(' ', '')
-    results = []
-
-    if gmail_addr and '@' in gmail_addr:
-        conn = get_db()
-        conn.execute("""
-            UPDATE smtp_profiles
-            SET from_email=?, username=?, password=?,
-                host='smtp.gmail.com', port=587, use_tls=1, use_ssl=0
-            WHERE type='gmail'
-        """, (gmail_addr, gmail_addr, gmail_pass))
-        rows = conn.execute('SELECT changes()').fetchone()[0]
-        conn.commit()
-        conn.close()
-        results.append(f'Gmail: updated {rows} profile(s) → {gmail_addr}')
-    else:
-        results.append('Gmail: GMAIL_ADDRESS not set in .env')
-
-    return jsonify({'success': True, 'results': results})
-
-
 # ── Admin User Management Routes ───────────────────────────────────────────
 @app.route('/api/admin/users', methods=['GET'])
 def get_all_users():
@@ -1485,7 +1413,6 @@ def send_test_email_direct(pid):
         host = p['host']
         port = int(p['port'])
         print(f'📧 Sending test email via {host}:{port} to {to_email}')
-        print(f'📧 Using username: {repr(p.get("username",""))}  password len: {len(p.get("password",""))} chars  password: {repr(p.get("password",""))}')
 
         if p.get('use_ssl'):
             import ssl
@@ -2035,9 +1962,6 @@ def send_campaign_emails(campaign_id):
     try:
         import time as _time
         _ts = int(_time.time())
-
-        # Convert targets to plain dicts — sqlite3.Row doesn't support .get()
-        targets = [dict(t) if not isinstance(t, dict) else t for t in targets]
 
         # ── 0. Load active SMTP profile ────────────────────────────────────
         _conn = get_db()
@@ -2654,21 +2578,19 @@ def migrate_db():
           AND type = 'mailhog'
     """)
 
-    # Fix Gmail profiles — always sync from env vars if set
-    gmail_addr = os.getenv('GMAIL_ADDRESS', '').strip()
-    gmail_pass = os.getenv('GMAIL_APP_PASSWORD', '').strip().strip('"').strip("'").replace(' ', '')
+    # Fix Gmail profiles with missing credentials (fill from env if available)
+    gmail_addr = os.getenv('GMAIL_ADDRESS', '')
+    gmail_pass = os.getenv('GMAIL_APP_PASSWORD', '')
     if gmail_addr and '@' in gmail_addr:
         conn.execute("""
             UPDATE smtp_profiles
-            SET from_email = ?, from_name = CASE WHEN from_name='' OR from_name IS NULL THEN 'PhishGuard' ELSE from_name END,
-                username = ?, password = ?,
-                host = 'smtp.gmail.com', port = 587, use_tls = 1, use_ssl = 0
+            SET from_email = ?, username = ?, password = ?,
+                host = 'smtp.gmail.com', port = 587, use_tls = 1
             WHERE type = 'gmail'
+              AND (from_email = '' OR from_email IS NULL OR username = '' OR username IS NULL)
         """, (gmail_addr, gmail_addr, gmail_pass))
-        rows = conn.execute("SELECT changes()").fetchone()[0]
-        print(f'✅ Gmail profile synced from env: {gmail_addr} ({rows} row(s) updated)')
-    else:
-        print('⚠️  GMAIL_ADDRESS not set in .env — Gmail profiles not synced')
+        if conn.execute("SELECT changes()").fetchone()[0]:
+            print(f'✅ Gmail profile updated from env: {gmail_addr}')
 
     conn.commit()
     conn.close()
@@ -2678,7 +2600,6 @@ def migrate_db():
 if __name__ == '__main__':
     init_db()
     migrate_db()
-    init_wal()
     print('🚀 PhishGuard API starting on http://127.0.0.1:5000')
     print('📋 Available endpoints:')
     print('   POST /api/login')

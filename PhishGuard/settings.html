@@ -41,11 +41,14 @@
     .settings-section-title{font-size:0.95rem;font-weight:800;color:#fff}
     .settings-section-sub{font-size:0.75rem;color:var(--muted);margin-top:2px}
     .settings-body{padding:1.4rem 1.6rem;display:flex;flex-direction:column;gap:1.1rem}
-    .setting-row{display:flex;align-items:center;justify-content:space-between;gap:2rem;padding-bottom:1.1rem;border-bottom:1px solid #0d284750}
+    .settings-footer{display:flex;justify-content:flex-end;padding-top:1rem;margin-top:0.2rem;border-top:1px solid var(--border)}
+    .setting-row:has(+ .settings-footer){border-bottom:none;padding-bottom:0}
+    .setting-row{display:flex;align-items:center;justify-content:space-between;gap:1.5rem;padding-bottom:1.1rem;border-bottom:1px solid #0d284750}
     .setting-row:last-child{border-bottom:none;padding-bottom:0}
+    .setting-row > div:first-child{flex:1;min-width:0}
     .setting-label{font-size:0.88rem;font-weight:700;color:#fff;margin-bottom:3px}
     .setting-desc{font-size:0.74rem;color:var(--muted);line-height:1.55}
-    .setting-control{flex-shrink:0}
+    .setting-control{flex-shrink:0;display:flex;align-items:center}
     /* Toggle switch */
     .toggle{position:relative;width:42px;height:24px;flex-shrink:0}
     .toggle input{opacity:0;width:0;height:0}
@@ -249,7 +252,7 @@
               <input class="fi" id="trainingUrl" value="http://127.0.0.1:8088/awareness-training.html"/>
             </div>
           </div>
-          <div style="display:flex;justify-content:flex-end">
+          <div class="settings-footer">
             <button class="btn btn-primary" onclick="saveCampaignDefaults()">Save Defaults</button>
           </div>
         </div>
@@ -268,7 +271,7 @@
           <div class="setting-row">
             <div>
               <div class="setting-label">Campaign activity alerts</div>
-              <div class="setting-desc">Show toast when an employee clicks, submits, or reports during an active campaign</div>
+              <div class="setting-desc">Notify when an employee clicks, submits or reports a phishing email</div>
             </div>
             <div class="setting-control">
               <label class="toggle"><input type="checkbox" id="notifActivity" checked/><span class="toggle-slider"></span></label>
@@ -277,7 +280,7 @@
           <div class="setting-row">
             <div>
               <div class="setting-label">High risk employee alerts</div>
-              <div class="setting-desc">Notify when an employee risk score exceeds 70</div>
+              <div class="setting-desc">Alert when an employee risk score exceeds 70</div>
             </div>
             <div class="setting-control">
               <label class="toggle"><input type="checkbox" id="notifHighRisk" checked/><span class="toggle-slider"></span></label>
@@ -286,13 +289,13 @@
           <div class="setting-row">
             <div>
               <div class="setting-label">Training completion alerts</div>
-              <div class="setting-desc">Notify when employees complete training modules</div>
+              <div class="setting-desc">Alert when employees complete training modules</div>
             </div>
             <div class="setting-control">
               <label class="toggle"><input type="checkbox" id="notifTraining"/><span class="toggle-slider"></span></label>
             </div>
           </div>
-          <div style="display:flex;justify-content:flex-end">
+          <div class="settings-footer">
             <button class="btn btn-ghost" onclick="saveNotifications()">Save Preferences</button>
           </div>
         </div>
@@ -415,7 +418,7 @@
               <input class="fi fi-small" id="wQuiz" type="number" value="15" min="0" max="50" style="width:80px;text-align:center"/>
             </div>
           </div>
-          <div style="display:flex;justify-content:flex-end">
+          <div class="settings-footer">
             <button class="btn btn-primary" onclick="saveRiskWeights()">Save Weights</button>
           </div>
         </div>

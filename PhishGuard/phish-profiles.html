@@ -138,9 +138,14 @@
       <h1>Phish Profiles</h1>
       <p>Configure SMTP sending profiles for your phishing campaigns</p>
     </div>
-    <button class="btn btn-primary" onclick="openAddModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Profile
-    </button>
+    <div style="display:flex;gap:0.6rem">
+      <button onclick="syncFromEnv()" style="padding:8px 14px;border-radius:7px;font-family:'Syne',sans-serif;font-size:0.76rem;font-weight:700;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--muted)">
+        Sync from .env
+      </button>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Profile
+      </button>
+    </div>
   </div>
 
   <div class="content">
@@ -189,6 +194,16 @@
             <div class="type-pill-icon">G</div>
             <div class="type-pill-label">Gmail SMTP</div>
             <div class="type-pill-sub">Real emails</div>
+          </div>
+          <div class="type-pill" id="pill_brevo" onclick="selectType('brevo')">
+            <div class="type-pill-icon">BV</div>
+            <div class="type-pill-label">Brevo</div>
+            <div class="type-pill-sub">Free relay</div>
+          </div>
+          <div class="type-pill" id="pill_outlook" onclick="selectType('outlook')">
+            <div class="type-pill-icon">OL</div>
+            <div class="type-pill-label">Outlook</div>
+            <div class="type-pill-sub">Hotmail/Live</div>
           </div>
           <div class="type-pill" id="pill_custom" onclick="selectType('custom')">
             <div class="type-pill-icon">SMTP</div>
@@ -253,12 +268,46 @@
             </select>
           </div>
         </div>
-        <div id="gmail_hint" class="field" style="display:none;margin-top:0.6rem">
-          <div class="hint" style="background:#ffb30010;border:1px solid #ffb30030;border-radius:6px;padding:8px 10px;color:var(--warn)">
-            Gmail requires an <strong>App Password</strong> — not your regular password.
-            Enable 2FA on your Google account, then go to
-            <strong>Google Account → Security → App Passwords</strong> to generate one.
-            Use <code>smtp.gmail.com</code> port <code>587</code> with STARTTLS.
+        <div id="gmail_hint" class="field" style="display:none;margin-top:0.8rem">
+          <div style="background:#0077ff0a;border:1px solid #0077ff25;border-radius:8px;overflow:hidden">
+            <div style="background:#0077ff15;padding:8px 12px;font-size:0.72rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.08em">Gmail Setup — 3 Steps</div>
+            <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--accent2);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
+                <div style="font-size:0.76rem;color:var(--text);line-height:1.5">Enable 2-Factor Authentication on your Google account at <a href="https://myaccount.google.com/security" target="_blank" style="color:var(--accent)">myaccount.google.com/security</a></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--accent2);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
+                <div style="font-size:0.76rem;color:var(--text);line-height:1.5">Go to <strong style="color:#fff">Google Account → Security → App Passwords</strong> — search "App Passwords" in the search bar if you can't find it</div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--accent2);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;flex-shrink:0;margin-top:1px">3</span>
+                <div style="font-size:0.76rem;color:var(--text);line-height:1.5">Create a new App Password (name it "PhishGuard"), copy the 16-character code and paste it in the <strong style="color:#fff">Password</strong> field above</div>
+              </div>
+              <div style="background:var(--deep);border-radius:6px;padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--muted);margin-top:2px">
+                Host: smtp.gmail.com &nbsp;|&nbsp; Port: 587 &nbsp;|&nbsp; Security: STARTTLS<br/>
+                Username: <em style="color:var(--text)">your@gmail.com</em> &nbsp;|&nbsp; Password: <em style="color:var(--text)">16-char app password</em>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="brevo_hint" class="field" style="display:none;margin-top:0.8rem">
+          <div style="background:#0077ff0a;border:1px solid #0077ff25;border-radius:8px;overflow:hidden">
+            <div style="background:#0077ff15;padding:8px 12px;font-size:0.72rem;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.08em">Brevo Setup — 2 Steps</div>
+            <div style="padding:10px 12px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--accent2);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;flex-shrink:0;margin-top:1px">1</span>
+                <div style="font-size:0.76rem;color:var(--text);line-height:1.5">Sign up free at <a href="https://brevo.com" target="_blank" style="color:var(--accent)">brevo.com</a> — 300 free emails/day, no credit card needed</div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start">
+                <span style="background:var(--accent2);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;flex-shrink:0;margin-top:1px">2</span>
+                <div style="font-size:0.76rem;color:var(--text);line-height:1.5">Go to <strong style="color:#fff">Account → SMTP &amp; API → SMTP</strong> — copy your login (email) and the generated <strong style="color:#fff">SMTP password/key</strong></div>
+              </div>
+              <div style="background:var(--deep);border-radius:6px;padding:8px 10px;font-family:'Share Tech Mono',monospace;font-size:0.72rem;color:var(--muted);margin-top:2px">
+                Host: smtp-relay.brevo.com &nbsp;|&nbsp; Port: 587 &nbsp;|&nbsp; Security: STARTTLS<br/>
+                Username: <em style="color:var(--text)">your Brevo login email</em> &nbsp;|&nbsp; Password: <em style="color:var(--text)">SMTP key from dashboard</em>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -309,8 +358,8 @@ function renderGrid() {
     return;
   }
 
-  const TYPE_ICON  = { mailhog:'MH', gmail:'G', custom:'SMTP' };
-  const TYPE_LABEL = { mailhog:'Mailhog (Local)', gmail:'Gmail SMTP', custom:'Custom SMTP' };
+  const TYPE_ICON  = { mailhog:'MH', gmail:'G', brevo:'BV', outlook:'OL', custom:'SMTP' };
+  const TYPE_LABEL = { mailhog:'Mailhog (Local)', gmail:'Gmail SMTP', brevo:'Brevo SMTP', outlook:'Outlook SMTP', custom:'Custom SMTP' };
 
   grid.innerHTML = profiles.map(p => {
     const icon  = TYPE_ICON[p.type]  || 'SMTP';
@@ -402,12 +451,13 @@ function closeModal() {
 
 function selectType(type) {
   activeType = type;
-  ['mailhog','gmail','custom'].forEach(t => {
+  ['mailhog','gmail','brevo','outlook','custom'].forEach(t => {
     document.getElementById('pill_'+t).classList.toggle('sel', t === type);
   });
   const smtp = document.getElementById('smtp_fields');
   const gmailHint = document.getElementById('gmail_hint');
 
+  const bh = document.getElementById('brevo_hint'); if(bh) bh.style.display='none';
   if (type === 'mailhog') {
     smtp.style.display = 'none';
     document.getElementById('f_host').value = '127.0.0.1';
@@ -424,8 +474,35 @@ function selectType(type) {
     document.getElementById('f_port').value = '587';
     document.getElementById('f_security').value = 'tls';
     document.getElementById('f_ignore_cert').value = '0';
+    document.getElementById('f_username').value = 'johndoe.phishguard@gmail.com';
+    document.getElementById('f_password').value = 'hjururlubaizygbm';
+    document.getElementById('f_from_email').value = 'johndoe.phishguard@gmail.com';
+    document.getElementById('f_from_name').value = document.getElementById('f_from_name').value || 'PhishGuard';
     if (!document.getElementById('f_name').value)
       document.getElementById('f_name').value = 'Gmail SMTP';
+  } else if (type === 'brevo') {
+    smtp.style.display = 'block';
+    gmailHint.style.display = 'none';
+    document.getElementById('f_host').value = 'smtp-relay.brevo.com';
+    document.getElementById('f_port').value = '587';
+    document.getElementById('f_security').value = 'tls';
+    document.getElementById('f_ignore_cert').value = '0';
+    if (!document.getElementById('f_name').value)
+      document.getElementById('f_name').value = 'Brevo SMTP';
+    if (!document.getElementById('f_from_email').value)
+      document.getElementById('f_from_email').value = '';
+    // Show brevo hint
+    const bh = document.getElementById('brevo_hint');
+    if (bh) bh.style.display = 'block';
+  } else if (type === 'outlook') {
+    smtp.style.display = 'block';
+    gmailHint.style.display = 'none';
+    document.getElementById('f_host').value = 'smtp-mail.outlook.com';
+    document.getElementById('f_port').value = '587';
+    document.getElementById('f_security').value = 'tls';
+    document.getElementById('f_ignore_cert').value = '0';
+    if (!document.getElementById('f_name').value)
+      document.getElementById('f_name').value = 'Outlook SMTP';
   } else {
     smtp.style.display = 'block';
     gmailHint.style.display = 'none';
@@ -495,13 +572,31 @@ async function deleteProfile(id) {
 }
 
 async function testProfile(id) {
-  showToast('Testing profile...', 'success');
+  const p = profiles.find(x => x.id === id);
+  // Ask for a recipient email to send the test to
+  const to = prompt(
+    (p && p.type === 'mailhog')
+      ? 'Enter any email address for the test (Mailhog catches all):'
+      : 'Enter your real email address to receive the test:',
+    p && p.type === 'mailhog' ? 'test@phishguard.local' : ''
+  );
+  if (!to) return;
+
+  showToast('Sending test email...', 'success');
   try {
-    const r = await apiFetch('smtp-profiles/' + id + '/test', 'POST');
-    if (r.success) showToast('Connection OK — ' + r.message, 'success');
-    else           showToast('Test failed: ' + r.error, 'error');
+    // Use direct SMTP (smtplib) — bypasses GoPhish, more reliable for testing
+    const r = await apiFetch('smtp-profiles/' + id + '/send-test-email', 'POST', { to_email: to });
+    if (r.success) {
+      if (p && p.type === 'mailhog') {
+        showToast('Email sent — check Mailhog at http://127.0.0.1:8025', 'success');
+      } else {
+        showToast('Email sent — check your inbox for ' + to, 'success');
+      }
+    } else {
+      showToast('Send failed: ' + (r.error || 'Unknown error'), 'error');
+    }
   } catch(e) {
-    showToast('Test failed: ' + e.message, 'error');
+    showToast('Error: ' + e.message, 'error');
   }
 }
 
@@ -550,6 +645,18 @@ async function testCurrentProfile() {
   }
   btn.textContent = 'Test Connection'; btn.disabled = false;
   await loadProfiles();
+}
+
+async function syncFromEnv() {
+  try {
+    const r = await apiFetch('smtp-profiles/sync-env', 'POST');
+    if (r.success) {
+      showToast(r.results.join(' | '), 'success');
+      await loadProfiles();
+    }
+  } catch(e) {
+    showToast('Sync failed: ' + e.message, 'error');
+  }
 }
 
 function logout() { clearSession(); window.location.href = 'login.html'; }
