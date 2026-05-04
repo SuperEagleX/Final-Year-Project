@@ -1,6 +1,6 @@
-# PhishGuard — Phishing Simulation & Security Awareness Training Platform
+# PhishNet — Phishing Simulation & Security Awareness Training Platform
 
-PhishGuard is a web-based platform that allows organizations to run controlled phishing simulations against their employees, track engagement metrics, and deliver security awareness training — all from a single admin dashboard.
+PhishNet is a web-based platform that allows organizations to run controlled phishing simulations against their employees, track engagement metrics, and deliver security awareness training — all from a single admin dashboard.
 
 ---
 
@@ -170,7 +170,7 @@ SECRET_KEY=your-secret-key-change-this
 FLASK_PORT=5000
 
 # Database
-DB_PATH=phishguard.db
+DB_PATH=PhishNet.db
 
 # GoPhish
 GOPHISH_URL=https://127.0.0.1:3333
@@ -181,7 +181,7 @@ FRONTEND_URL=http://127.0.0.1:8088
 BACKEND_URL=http://127.0.0.1:5000
 
 # Default admin account (created on first run)
-ADMIN_EMAIL=admin@phishguard.com
+ADMIN_EMAIL=admin@PhishNet.com
 ADMIN_PASSWORD=admin123
 ADMIN_NAME=Super Admin
 
@@ -241,7 +241,7 @@ http://127.0.0.1:8088/login.html
 
 | Role  | Email                   | Password  |
 |-------|-------------------------|-----------|
-| Admin | admin@phishguard.com    | admin123  |
+| Admin | admin@PhishNet.com    | admin123  |
 
 > Change the admin password after first login via **Settings → User Management**.
 
@@ -471,4 +471,4 @@ This project was developed as a Final Year Project (FYP) by **Savakroth Leav**. 
 academics/Savakroth_Leav_PhishNet_THESIS_Report.pdf
 ```
 
-> **Ethical Use Notice:** PhishGuard is built for authorized, internal security awareness programs only. Do not use this platform to target individuals or organizations without explicit written consent. Unauthorized phishing is illegal.
+> **Ethical Use Notice:** PhishNet is built for authorized, internal security awareness programs only. Do not use this platform to target individuals or organizations without explicit written consent. Unauthorized phishing is illegal.
